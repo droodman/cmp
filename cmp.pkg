@@ -1,6 +1,5 @@
 d 'CMP': module to implement conditional (recursive) mixed process estimator
-d version 7.1.0 (archived)
-d Latest version, available via "ssc install", incorporates changes that may slightly alter results.
+d version 7.1.0, 25 January 2017
 d
 d  cmp estimates multi-equation, mixed process models, potentially
 d with hierarchical random effects. "Mixed process" means that
@@ -39,7 +38,7 @@ d KW: ordered probit
 d KW: truncated regression
 d KW: fractional probit
 d
-d Requires: Stata version 10.1 and package ghk2 (q.v.)
+d Requires: Stata version 11 and package ghk2 (q.v.)
 d
 d Distribution-Date: 20170226
 d
@@ -47,11 +46,11 @@ d Author: David Roodman
 d Support: email david@@davidroodman.com
 d
 f cmp.ado
-f cmp_p.ado
 f cmp_lf1.ado
 f cmp_lf.ado
 f cmp_d1.ado
+f cmp_p.ado
 f cmp.sthlp
-f cmp_clear.ado
 f cmp.mata
 f lcmp.mlib
+f cmp_clear.ado

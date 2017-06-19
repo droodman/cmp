@@ -34,8 +34,8 @@ struct mprobit_group {
 }
 
 struct scores {
-	real matrix ThetaScores, CutScores  // in nonhierarchical models, views onto dataset
-	struct smatrix vector TScores, SigScores, GammaScores // SigScores only used at top level, for views onto data. In hierarchical models, TScores[L] holds base Sig scores
+	real rowvector ThetaScores, CutScores  // in nonhierarchical models, vectors specifying relevant cols of master score matrix, S
+	struct smatrix vector TScores, SigScores, GammaScores // SigScores only used at top level, to refer to cols of S. In hierarchical models, TScores[L] holds base Sig scores
 }
 
 struct scorescol {
@@ -44,21 +44,20 @@ struct scorescol {
 
 struct subview { // info associated with subsets of data defined by given combinations of indicator values
 	real matrix ECens, EUncens, F, Et, Ft
-	struct smatrix rowvector theta, y
+	struct smatrix colvector theta, y, Lt, Ut, yL
 	struct smatrix matrix dOmega_dGamma
 	struct scorescol rowvector Scores // one col for each level, one col for each draw
-	struct smatrix colvector tau // in hierarchical models, views onto REs->theta, XB without added random effects/coefficients
 	real matrix Yi
 	real colvector subsample, SubsampleInds, one2N
 	real scalar GHKStart, GHKStartTrunc // starting indexes in ghk2() point structure
 	real scalar d_uncens, d_cens, d2_cens, d_two_cens, d_oprobit, d_trunc, d_frac, NFracCombs, N
 	real scalar NumCuts // number of cuts in ordered probit eqs relevant for *these* observations
-	real rowvector vNumCuts // number of cuts per eq for the eq for *these* observations
+	real colvector vNumCuts // number of cuts per eq for the eq for *these* observations
 	real matrix dSig_dLTSig // derivative of Sig w.r.t. its lower triangle
 	real scalar bounded // d_oprobit? d_one_cens+1..d_cens:J(1,0,0)
-	real scalar N_perm, NumRoprobitGroups, NumMprobitGroups
+	real scalar N_perm
 	real colvector CensLTInds // indexes of lower triangle of a vectorized square matrix of dimension d_cens
-	real colvector lnL, WeightProduct
+	real colvector WeightProduct
 	real rowvector TheseInds // user-provided indicator values
 	real rowvector uncens, two_cens, oprobit, cens, cens_nonrobase,trunc, one2d_trunc, frac, censnonfrac
 	real rowvector cens_uncens // one_cens, oprobit, uncens
@@ -89,61 +88,151 @@ struct subview { // info associated with subsets of data defined by given combin
 }
 
 struct RE { // info associated with given level of model. Top level also holds various globals as an alternative to storing them as separate externals, references to which are slow
-	struct smatrix colvector y, theta, Lt, Ut, yL
-	real scalar N // number of groups at this level
-	real colvector one2N
-	real rowvector one2d, one2R
-	real scalar R // number of draws. (*REs)[l].R =(*REs)[l+1].NumREDraws
+	real scalar R // number of draws. (*REs)[l].R = NumREDraws[l+1]
 	real scalar d, d2 // number of RCs and REs, corresponding triangular number
-	real scalar dCns // number of *indepedent* RCs and REs
+	real rowvector one2d, one2R
+	real scalar HasRC
+	real matrix J_N_NEq_0
+	real rowvector REInds // indexes, within vector of effects, of random effects
+	struct smatrix colvector RCInds // for each equation, indexes of equation's set of random-coefficient effects within vector of effects
+	real rowvector Eqs // indexes of equations in this level--for upper levels, ones with REs or RCs
+	real rowvector REEqs // indexes of equations, within Eqs, with REs (as distinct from RCs)
+	real rowvector GammaEqs // indexes of equations in this level that have REs or RCs or depend on them indirectly through Gamma
 	real scalar NEq // number of equations
 	real rowvector NEff // number of effects/coefficients by equation, one entry for each eq that has any effects
-	real scalar ThisDraw, NumREDraws, L
-	real matrix Sig, T, Omega
-	real matrix D // derivative of vech(Sig) w.r.t lnsigs and atanhrhos
-	real matrix dSig_dT // derivative of vech(Sig) w.r.t vech(cholesky(Sig))
+	struct smatrix colvector X // NEq-vector of data matrices for variables with random coefficients
 	struct smatrix rowvector U // draws/observation-vector of N_g x d sets of draws
 	struct smatrix matrix XU // draws/observation x d matrix of matrices of X, U products; coefficients on these, elements of T, set contribution to simulated error 
 	struct smatrix matrix TotalEffect // matrices of, for each draw set and equation, total simulated effects at this level: RE + RC*(RC vars)
-	real matrix id // group id var
-	real colvector IDRangesGroup // N x 1, max id for each group's subgroups in the next level down
-	real matrix IDRanges // N x 1, id ranges for each group in data set, as returned by panelsetup()
-	real matrix lnL, lnLByDraw // lnL holds latest likelihoods at this level; lnLByDraw acculumulates sums of them at next level up, by draw
-	real colvector Weights // weights at this level, one obs per group, renormalized if pweights or aweights
-	real colvector WeightProduct // obs-level product of weights at all levels, for weighting scores
-	real colvector J_N_1_0
-	real matrix J_N_NEq_0
-	real rowvector Eqs // indexes of equations in this level--for upper levels, ones with REs or RCs
-	real rowvector GammaEqs // indexes of equations in this level that have REs or RCs or depend on them indirectly through Gamma
-	real rowvector REEqs // indexes of equations, within Eqs, with REs (as distinct from RCs)
-	real rowvector REInds // indexes, within vector of effects, of random effects
-	real scalar HasRC
-	struct smatrix colvector RCInds // for each equation, indexes of equation's set of random-coefficient effects within vector of effects
-	struct smatrix colvector X // NEq-vector of data matrices for variables with random coefficients
+	real matrix Sig, T, invGamma
+	real matrix D // derivative of vech(Sig) w.r.t lnsigs and atanhrhos
 	real matrix dSigdParams // derivative of sig, vech(rho) vector w.r.t. vector of actual sig, rho parameters, reflecting "exchangeable" and "independent" options
-	real scalar lnLlimits, lnNumREDraws
-	// stash here to avoid slow references to externals
+	real scalar N // number of groups at this level
+	real colvector one2N, J_N_1_0
+	real matrix IDRanges // N x 1, id ranges for each group in data set, as returned by panelsetup()
+	real colvector IDRangesGroup // N x 1, max id for each group's subgroups in the next level down
+	real matrix id // group id var
+	real rowvector sig, rho // vector of error variances only, and atanhrho's
+	real scalar covAcross // cross- and within-eq covariance type: unstructured, exchangeable, independent; indexed by *included* equations at this level
+	real colvector covWithin, FixedSigs
+	real matrix FixedRhos
+	struct smatrix colvector theta
+	real colvector Weights // weights at this level, one obs per group, renormalized if pweights or aweights
+	real colvector ToAdapt // by group, state of adaptation attempt for this iteration. 2 = ordinary adaptation needed; 1 = adaptation needed having been reset because of divergence; 0 = converged
+	real scalar lnNumREDraws
+	real scalar lnLlimits
+	real matrix lnLByDraw // lnLByDraw acculumulates sums of them at next level up, by draw
+	pointer (real matrix) scalar plnL // lnL holds latest likelihoods at this level, points to cmp_lnL lnf return arg at top level
+	real colvector QuadW, QuadX // quadrature weights
+	struct smatrix colvector QuadMean, QuadSD // by group, estimated RE/RC mean and variance, for adaptive quadrature
+	real rowvector lnnormaldenQuadX
+	transmorphic scalar QuadXAdapt // asarray("real", l), one set of adaptive shifters per multi-level draw combination; first index is always 1, to prevent vector length 0
+	real scalar AdaptivePhaseThisIter, AdaptiveShift
+}
+
+class cmp_model {
+	pointer (struct RE scalar) scalar REs, base
+	pointer (struct subview scalar) scalar subviews
+	struct smatrix colvector y, Lt, Ut, yL
+	real matrix Theta // individual theta's in one matrix
+	real scalar d, L, todo, ghkDraws, ghkScramble, REScramble, REAnti, NumRoprobitGroups, MaxCuts, NSimEff
+	real matrix MprobitGroupInds, RoprobitGroupInds
+	real colvector NumREDraws
+	real rowvector NonbaseCases
+	real scalar reverse
+	string scalar ghkType, REType
+	real matrix Omega, Gamma
+	real matrix dSig_dT // derivative of vech(Sig) w.r.t vech(cholesky(Sig))
+	real colvector WeightProduct // obs-level product of weights at all levels, for weighting scores
 	transmorphic ghk2DrawSet
-	real scalar mprobit_ind_base, roprobit_ind_base, nonbase_cases, ghkAnti, NumCuts, HasGamma, SigXform, d_cens
+	real scalar mprobit_ind_base, roprobit_ind_base, ghkAnti, NumCuts, HasGamma, SigXform, d_cens
+	real matrix Eqs, GammaId, NumEff
+	real colvector vNumCuts
+	real matrix cuts
 	real colvector G // number of Gamma params in each eq
-	pointer(real matrix) colvector GammaInds // d x 1 vector of pointers to rowvectors indicating which columns of Gamma, for a given row, are real model parameters
-	real matrix dOmega_dSig, invGamma
+	pointer(real matrix) colvector GammaIndByEq // d x 1 vector of pointers to rowvectors indicating which columns of Gamma, for the given row, are real model parameters
+	real matrix GammaInd // same information in a 2-col matrix, each row the coordinates in Gamma of a real parameter
 	struct smatrix matrix dOmega_dGamma
 	real rowvector trunceqs, intregeqs
-	real matrix RC_T // transform simulated effects into full, constrained ones
-	real scalar Quadrature, IntMethod, AdaptivePhaseThisEst, AdaptivePhaseThisIter, QuadTol, QuadIter
-	real colvector ToAdapt // by group, state of adaptation attempt for this iteration. 2 = ordinary adaptation needed; 1 = adaptation needed having been reset because of divergence; 0 = converged
-	real colvector QuadXinner2, QuadW, QuadX // quadrature weights
-	struct smatrix rowvector QuadXAdapt // one set of adapted nodes per group
-	struct smatrix colvector QuadMean, QuadSD // by group, estimated RE/RC mean and variance, for adaptive quadrature
-	real matrix RichardZhangPX, RichardZhangPXX, AdaptiveShift
-	real rowvector lnnormaldenQuadX
-	real scalar LastlnLLastIter, LastlnLThisIter
-	string scalar LastIter
-	real scalar todo // whether this is an lf1 search, even if this particular iteration isn't
-	real matrix Idd, Ld, IKI, Kd
+	real scalar Quadrature, AdaptivePhaseThisEst, WillAdapt, QuadTol, QuadIter, Adapted, AdaptNextTime
+	real rowvector Lastb
+	real scalar LastlnLLastIter, LastlnLThisIter, LastIter
+	real matrix Idd
+	real rowvector vKd, vIKI, vLd
+	real matrix indicators
+	real matrix S0 // empty, pre-allocated matrix to build score matrix S
+	struct scores scalar Scores // column indices in S corresponding to different parameter groups
+	string rowvector indVars, yVars, LtVars, UtVars, yLVars
+	real rowvector ThisDraw
+
+	void new(), cmp_init(), BuildXU(), BuildTotalEffects(), _st_view(), 
+				set_reverse(), set_SigXform(), set_QuadTol(), set_QuadIter(), set_ghkType(), set_MaxCuts(), set_indVars(), set_yVars(), set_LtVars(), set_UtVars(), set_yLVars(), 
+				set_ghkAnti(), set_ghkDraws(), set_ghkScramble(), set_Quadrature(), set_d(), set_L(), set_todo(),
+				set_REAnti(), set_REType(), set_REScramble(), set_Eqs(), set_GammaI(), set_NumEff(), set_NumMprobitGroups(), set_NumRoprobitGroups(),
+				set_MprobitGroupInds(), set_RoprobitGroupInds(), set_NonbaseCases(), set_vNumCuts(), set_trunceqs(), set_intregeqs(), set_NumREDraws(), set_GammaInd(),
+				set_AdaptNow(), set_WillAdapt()
 }
-	
+
+void cmp_model::new() {
+	mprobit_ind_base  = 20
+	roprobit_ind_base = 40
+	Adapted = AdaptivePhaseThisEst = WillAdapt = AdaptNextTime = HasGamma = ghkScramble = REScramble = 0
+}
+
+void cmp_model::set_d       (real scalar t) d  = t
+void cmp_model::set_L       (real scalar t) L  = t
+void cmp_model::set_todo    (real scalar t) todo  = t
+void cmp_model::set_MaxCuts (real scalar t) MaxCuts  = t
+void cmp_model::set_reverse (real scalar t) reverse  = t
+void cmp_model::set_SigXform(real scalar t) SigXform = t
+void cmp_model::set_QuadTol (real scalar t) QuadTol  = t
+void cmp_model::set_QuadIter(real scalar t) QuadIter = t
+void cmp_model::set_ghkType(string scalar t) ghkType = t
+void cmp_model::set_ghkAnti(real scalar t) ghkAnti = t
+void cmp_model::set_ghkDraws(real scalar t) ghkDraws = t
+void cmp_model::set_ghkScramble(string scalar t) ghkScramble = select(0..3, ("", "sqrt", "negsqrt", "fl"):==t)
+void cmp_model::set_REType    (string scalar t) REType = t
+void cmp_model::set_REAnti    (real scalar t) REAnti = t
+void cmp_model::set_NumREDraws(real colvector t) NumREDraws = 1 \ t*REAnti
+void cmp_model::set_REScramble(string scalar t) REScramble = select(0..3, ("", "sqrt", "negsqrt", "fl"):==t)
+void cmp_model::set_Quadrature(real scalar t) Quadrature = t
+void cmp_model::set_Eqs(real matrix t) Eqs = t
+void cmp_model::set_NumEff(real matrix t) NumEff = t
+void cmp_model::set_NumRoprobitGroups(real matrix t) NumRoprobitGroups = t
+void cmp_model::set_MprobitGroupInds(real matrix t) MprobitGroupInds = t
+void cmp_model::set_RoprobitGroupInds(real matrix t) NumRoprobitGroups = rows(RoprobitGroupInds = t)
+void cmp_model::set_NonbaseCases(real rowvector t) NonbaseCases = t
+void cmp_model::set_vNumCuts(real colvector t) NumCuts=sum(vNumCuts = t)
+void cmp_model::set_trunceqs(real rowvector t) trunceqs = t
+void cmp_model::set_intregeqs(real rowvector t) intregeqs = t
+void cmp_model::set_indVars(string scalar t) indVars = tokens(t)
+void cmp_model::set_yVars (string scalar t) yVars = tokens(t)
+void cmp_model::set_yLVars(string scalar t) yLVars = tokens(t)
+void cmp_model::set_LtVars(string scalar t) LtVars = tokens(t)
+void cmp_model::set_UtVars(string scalar t) UtVars = tokens(t)
+void cmp_model::set_WillAdapt(real scalar t) WillAdapt  = t
+void cmp_model::set_AdaptNow(real scalar t) Adapted = AdaptivePhaseThisEst = t
+
+void cmp_model::set_GammaI(real matrix t) { // infinite loop if d is not set
+	real scalar i
+	GammaId = t
+	for (i=d-2; i>0; i--)
+		GammaId = GammaId * t
+}
+
+void cmp_model::set_GammaInd(real matrix t) {
+	real scalar i
+	GammaInd = t
+	if (HasGamma = rows(t)) {
+		GammaIndByEq = J(d, 1, NULL)
+		for (i=d; i; i--)
+			GammaIndByEq[i] = &(select(GammaInd, GammaInd[,2]:==i)[,1])
+	}
+}
+
+string scalar cmpStataVersion() return("`c(stata_version)'")
+string scalar      cmpVersion() return("08.00.00")
+
 // substitute for built-in Stata command _ms_findomitted, since missing from Stata 11
 void _ms_findomitted(string scalar bname, string scalar Vname) {
 	string matrix stripe; string rowvector s; real scalar i, j
@@ -162,21 +251,44 @@ void _ms_findomitted(string scalar bname, string scalar Vname) {
 	st_matrixcolstripe(bname, stripe)
 }
 
-// bypass built-in Kmatrix() to be compatible with Stata 10, in which it is "kmatrix()"
-real matrix _Kmatrix(real scalar d)
-	return (designmatrix(vec(rowshape(1::d*d,d))))
+// stick call to panelsum() in separate function to prevent run-time error in old Stata versions
+real matrix _cmp_panelsum(real matrix X, real matrix arg2, | real matrix arg3)
+	return (cols(arg3)? panelsum(X, arg2, arg3) : panelsum(X, arg2))
+
+// implement Mata's panelsum() for pre-version 13. Differs in that a single missing value in X doesn't make all results missing.
+real matrix cmp_panelsum(real matrix X, real matrix W, real matrix info) {
+	if (stataversion() >= 1300)
+		return (rows(W)? _cmp_panelsum(X, W, info) : _cmp_panelsum(X, info))
+	
+	real matrix retval, Xi, Wi; real scalar i
+	pragma unset Xi; pragma unset Wi
+	
+	retval = J(rows(info), cols(X), .)
+	for (i=rows(info); i; i--) {
+		panelsubview(Xi, X, i, info)
+		if (rows(W)==0)
+			retval[i,] = colsum(Xi)
+		else if (rows(W)==1)
+			retval[i,] = Xi * W
+		else {
+			panelsubview(Wi, W, i, info)
+			retval[i,] = cross(Xi, Wi)'
+		}
+	}
+	return (retval)
+}
 
 // fast(?) computation of a :+ quadrowsum(lnnormalden(X))
 real colvector quadrowsum_lnnormalden(real matrix X, real scalar a)
 	return ( (a - 0.91893853320467267 /*ln(2pi)/2*/ * cols(X)) :- .5*quadrowsum(X:*X) )
 
 // prepare matrix to transform scores w.r.t. elements of Sigma to ones w.r.t. lnsig's and rho's
-real matrix dSigdsigrhos(pointer (struct RE scalar) scalar REs, real rowvector sig, real matrix Sig, real rowvector rho, real matrix Rho) {
+real matrix dSigdsigrhos(real scalar SigXform, real rowvector sig, real matrix Sig, real rowvector rho, real matrix Rho) {
 	real matrix D, t, t2; real scalar i, j, k, d, d2
 	d = cols(sig); d2 = d + cols(rho)
 	D = I(d2)
 	for (k=1; k<=d; k++) {  // derivatives of Sigma w.r.t. lnsig's
-		t2 = REs->SigXform? Sig[k,] : Rho[k,]:*sig
+		t2 = SigXform? Sig[k,] : (d>1? Rho[k,]:*sig : sig)
 		(t = J(d,d,0))[k,] = t2
 		t[,k] = t[,k] + t2'
 		D[,k] = vech(t)
@@ -187,7 +299,7 @@ real matrix dSigdsigrhos(pointer (struct RE scalar) scalar REs, real rowvector s
 				(t = J(d,d,0))[i,j] = sig[i] * sig[j]
 				D[,k++] = vech(t)
 			}
-		if (REs->SigXform) {
+		if (SigXform) {
 			t = cosh(rho)
 			D[|.,d+1 \ .,.|] = D[|.,d+1 \ .,.|] :/ (t:*t)  //Datanh=cosh^2
 		}
@@ -832,27 +944,23 @@ real colvector vecmultinormal(real matrix E, real matrix F, real matrix Sig, rea
 // i.e., the ones not censored
 // dphi_dE should already be allocated
 real colvector lnLContinuous(pointer(struct subview scalar) scalar v, real scalar todo) {
-	real matrix C, t, phi, invSig; real rowvector in
-
-	in = v->uncens
-//if in were before out, then this would just be the upper left of cholesky(Omega)
-	C = luinv(cholesky(v->Omega[in, in]))
+	real matrix C, t, phi, invSig
+	C = luinv(cholesky(v->Omega[v->uncens, v->uncens])) // if uncens were before cens, then this would just be the upper left of cholesky(Omega)
 	phi = quadrowsum_lnnormalden(v->EUncens * C', quadsum(ln(diagonal(C)), 1))
 	if (todo) {
-		t = v->EUncens * -(invSig = quadcross(C,C))
-		v->dphi_dE[., in] = t
+		v->dphi_dE[., v->uncens] = t = v->EUncens * -(invSig = quadcross(C,C))
 		v->dphi_dSig[., v->SigIndsUncens] = neg_half_E_Dinvsym_E(t, v->one2N, v->EDE) :- vec(invSig) ' v->halfDmatrix
 	}
 	return (phi)
 }
 
 // log likelihood and scores for likelihood over total range of truncation--denominator of L
-real colvector lnLTrunc(pointer(struct subview scalar) scalar v, pointer (struct RE colvector) REs, real scalar todo) {
+real colvector lnLTrunc(pointer(struct subview scalar) scalar v, pointer (class cmp_model scalar) scalar mod, real scalar todo) {
 	real matrix dPhi_dEt, dPhi_dFt, dPhi_dSigt; real colvector Phi
 	pragma unset dPhi_dEt; pragma unset dPhi_dFt; pragma unset dPhi_dSigt
 
 	Phi = vecmultinormal(v->Et, v->Ft, v->Omega[v->trunc,v->trunc], v->d_trunc, v->one2d_trunc, v->one2N, todo, 
-							dPhi_dEt, dPhi_dFt, dPhi_dSigt, REs->ghk2DrawSet, REs->ghkAnti, v->GHKStartTrunc, 1)
+							dPhi_dEt, dPhi_dFt, dPhi_dSigt, mod->ghk2DrawSet, mod->ghkAnti, v->GHKStartTrunc, 1)
 
 	if (todo) {
 		v->dPhi_dEt[v->one2N,v->trunc] = dPhi_dEt + dPhi_dFt
@@ -863,7 +971,7 @@ real colvector lnLTrunc(pointer(struct subview scalar) scalar v, pointer (struct
 
 // log likelihood and scores for cumulative normal
 // returns scores in v->dPhi_dE.M, v->dPhi_dSig.M if requested
-real colvector lnLCensored(pointer(struct subview scalar) scalar v, pointer (struct RE colvector) REs, real scalar todo) {
+real colvector lnLCensored(pointer(struct subview scalar) scalar v, pointer (class cmp_model scalar) scalar mod, real scalar todo) {
 	real matrix t, pSig, roprobit_pSig, fracprobit_pSig, beta, invSig_uncens, Sig_uncens_cens, S_dPhi_dpE, S_dPhi_dpF, S_dPhi_dpSig, SS_dPhi_dpE, SS_dPhi_dpF, SS_dPhi_dpSig, dPhi_dpE, dPhi_dpF, dPhi_dpSig
 	real scalar ThisNumCuts, d_cens, d_two_cens, N_perm, ThisPerm, ThisFracComb
 	real colvector i, j, S_Phi, SS_Phi, Phi
@@ -872,7 +980,7 @@ real colvector lnLCensored(pointer(struct subview scalar) scalar v, pointer (str
 	pragma unset dPhi_dpE; pragma unset dPhi_dpF; pragma unset dPhi_dpSig
 
 	uncens=v->uncens; oprobit=v->oprobit; cens=v->cens; d_cens=v->d_cens; d_two_cens=v->d_two_cens; N_perm=v->N_perm; ThisNumCuts=v->NumCuts
-	pdPhi_dpF = v->NumRoprobitGroups? &dPhi_dpF : &(v->dPhi_dpF)
+	pdPhi_dpF = mod->NumRoprobitGroups? &dPhi_dpF : &(v->dPhi_dpF)
 
 	if (v->d_uncens) { // Partial continuous variables out of the censored ones
 		beta = (invSig_uncens = cholinv(v->Omega[uncens,uncens])) * (Sig_uncens_cens = v->Omega[uncens, cens])
@@ -894,16 +1002,16 @@ real colvector lnLCensored(pointer(struct subview scalar) scalar v, pointer (str
 		}
 
 		for (ThisPerm = N_perm; ThisPerm; ThisPerm--) {
-			if (v->NumRoprobitGroups) {
+			if (mod->NumRoprobitGroups) {
 				roprobit_pQE = v->roprobit_QE[ThisPerm]
 				roprobit_pE = &(*fracprobit_pE * *roprobit_pQE)
 				roprobit_pSig = cross(*roprobit_pQE, fracprobit_pSig) * *roprobit_pQE
 			}
 
 			Phi = vecmultinormal(*roprobit_pE, *pF, roprobit_pSig, v->dCensNonrobase, v->two_cens, v->one2N, todo, dPhi_dpE, v->dPhi_dpF, dPhi_dpSig, 
-			                                            REs->ghk2DrawSet, REs->ghkAnti, v->GHKStart, N_perm)
+			                                            mod->ghk2DrawSet, mod->ghkAnti, v->GHKStart, N_perm)
 
-			if (todo & v->NumRoprobitGroups) {
+			if (todo & mod->NumRoprobitGroups) {
 				dPhi_dpE   = dPhi_dpE   * *roprobit_pQE'
 				dPhi_dpSig = dPhi_dpSig * *v->roprobit_Q_Sig[ThisPerm]
 				if (d_two_cens)
@@ -1014,10 +1122,10 @@ real colvector lnLCensored(pointer(struct subview scalar) scalar v, pointer (str
 }
 
 // translate draws or nodes at a given level, possibly adaptively shifted, into total effects of random effects and coefficients
-void BuildTotalEffects(pointer (struct RE colvector) scalar REs, real scalar l) {
-	real scalar r, eq; real matrix UT; pointer (struct RE scalar) scalar RE, base
-	RE = &((*REs)[l]); base = &((*REs)[REs->L])
-	for (r=(*REs)[l+1].NumREDraws; r; r--) {
+void cmp_model::BuildTotalEffects(real scalar l) {
+	real scalar r, eq; real matrix UT; pointer (struct RE scalar) scalar RE
+	RE = &((*REs)[l])
+	for (r=NumREDraws[l+1]; r; r--) {
 		if (RE->HasRC) {
 			UT = RE->J_N_NEq_0
 			if (cols(RE->REInds))
@@ -1028,7 +1136,7 @@ void BuildTotalEffects(pointer (struct RE colvector) scalar REs, real scalar l) 
 		for (eq=RE->NEq; eq; eq--)               // RCs
 			if (cols(RE->X[eq].M))
 				UT[base->one2N,eq] = UT[base->one2N,eq] + quadrowsum((RE->U[r].M * RE->T[, RE->RCInds[eq].M]) :* RE->X[eq].M) // RCs * X
-		if (REs->HasGamma)
+		if (HasGamma)
 			for (eq=cols(RE->GammaEqs); eq; eq--)
 				RE->TotalEffect[r,eq].M = UT * RE->invGamma[,eq]
 		else
@@ -1037,10 +1145,9 @@ void BuildTotalEffects(pointer (struct RE colvector) scalar REs, real scalar l) 
 	}
 }
 
-void BuildXU(pointer(struct subview scalar) scalar subviews, pointer (struct RE colvector) scalar REs, real scalar l, real scalar L) {
-	real scalar c, r, j, k, e, eq1, eq2; pointer (struct RE scalar) scalar RE, base; pointer(struct subview scalar) scalar v
+void cmp_model::BuildXU(real scalar l) {
+	real scalar c, r, j, k, e, eq1, eq2; pointer (struct RE scalar) scalar RE; pointer(struct subview scalar) scalar v
 	RE = &((*REs)[l])
-	base = &((*REs)[L])
 	if (RE->HasRC)
 		for (r=RE->R; r; r--) { // pre-compute X-U products in order most convenient for computing scores w.r.t upper-level T's
 			k = e = 0
@@ -1069,11 +1176,10 @@ void BuildXU(pointer(struct subview scalar) scalar subviews, pointer (struct RE 
 					v->XU[l].M[r,j].M = (RE->XU[r,j].M)[v->SubsampleInds,]
 }
 
-void _st_view(real matrix V, real scalar missing, string rowvector vars) {
-	external real scalar _interactive; pragma unused missing
+void cmp_model::_st_view(real matrix V, real scalar missing, string rowvector vars) {
+	pragma unused missing
 	if (vars != ".")
-		if (_interactive) st_view(V, ., vars, st_global("ML_samp"))
-			else            st_view(V, ., vars                      )
+		st_view(V, ., vars, st_global("ML_samp"))
 }
 
 
@@ -1092,762 +1198,275 @@ void _st_view(real matrix V, real scalar missing, string rowvector vars) {
 
 
 // main evaluator routine
-// return value indicates whether parameters feasible. .=infeasible
-// lf indicates lf or lf1 estimator:  name of variable to receive log likelihoods (otherwise stored in var _cmp_lnfi)
-// ScoreVars indicates lf1 estimate: contains names of variables to store scores in
-void cmp_lnL(real scalar todo, string scalar lf, | string rowvector ScoreVars) {
-	real matrix Rho, t, L_g, invGamma, C
-	real scalar i, j, k, l, m, _l, r, d, d2, L, tEq, EUncensEq, ECensEq, FCensEq, cols, NewIter
-	real rowvector sig, rho, one2d, cuts
-	real colvector this_lnL, shift, lnLmin, lnLmax, lnL, out, in
-	string rowvector signames, atanhrhonames 
+void cmp_lnL(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
+	real matrix Rho, t, L_g, invGamma, C, dOmega_dSig
+	real scalar e, c, i, j, k, l, m, _l, r, d, L, tEq, EUncensEq, ECensEq, FCensEq, NewIter, eq, eq1, eq2, c1, c2, cut, lnsigWithin, lnsigAccross, atanhrhoAccross, atanhrhoWithin, Iter
+	real colvector shift, lnLmin, lnLmax, lnL, out
 	pointer(struct subview scalar) scalar v
-	pointer(real matrix) scalar pdlnL_dtheta, pdlnL_dSig
+	pointer(real matrix) scalar pdlnL_dtheta, pdlnL_dSig, pThisQuadXAdapt_j
 	pointer(struct scores scalar) scalar pScores
-	external pointer(struct subview scalar) scalar _subviews
-	pointer(struct subview scalar) scalar subviews
-	external real scalar _first_call, _interactive, _NumCuts, _L, _REAnti, _REScramble, _ghkScramble, _HasGamma, _SigXform
-	external real colvector _vNumCuts, _NumREDraws
-	external real matrix _NumEff
-	external pointer(real matrix) colvector _Eqs, _GammaEqs, _GammaInds // , _RC_T
-	external struct RE colvector _REs
 	pointer (struct RE colvector) scalar REs
 	pointer (struct RE scalar) scalar RE, base
-	pragma unset this_lnL; pragma unset out
+	pointer(class cmp_model scalar) scalar mod
+	pointer(struct smatrix colvector) scalar pThisQuadXAdapt
+	pragma unset out; pragma unused H
 
-	L = _L
-	signames = tokens(st_local("sigs"))
-	atanhrhonames = tokens(st_local("atanhrhos"))
-	one2d = 1.. (d = cols(st_matrix(signames[L]))); d2 = d*(d+1)*.5
-	ScoreVars = tokens(ScoreVars)
-	
-	if (_first_call | _interactive) {
-		external real scalar _ghkDraws, _ghkAnti, _num_mprobit_groups, _mprobit_ind_base, _num_roprobit_groups, _roprobit_ind_base, _intreg, _trunc, _reverse, _Quadrature, _IntMethod, _QuadTol, _QuadIter
-		external real matrix _mprobit_group_inds, _roprobit_group_inds, _nonbase_cases, _trunceqs, _intregeqs
-		external string scalar _ghkType, _REType
-		real scalar ghk_nobs, eq, eq1, eq2, c, e, d_oprobit, d_mprobit, d_roprobit, start, stop, PrimeIndex, Hammersley, NDraws, HasRE
-		real matrix Yi, indicators, U, theta
-		real colvector remaining, S
-		real rowvector mprobit, Primes
-		pointer(struct subview scalar) scalar next
-		string scalar varnames, Iter, LevelName
-		struct scores scalar Scores
-		pointer(real matrix) rowvector QuadData
-		pragma unset indicators; pragma unset Yi; pragma unset theta; pragma unset in
+	mod = moptimize_init_userinfo(M, 1)
+	REs = mod->REs
+	base = mod->base
+	lnf = .
+	d = base->d
+	L = mod->L
 
-		if (_first_call) {
-			REs = &(_REs = RE(L, 1))
-			REs->ghkAnti = _ghkAnti
-			REs->NumCuts = _NumCuts
-			REs->trunceqs = _trunceqs
-			REs->intregeqs = _intregeqs
-			REs->mprobit_ind_base = _mprobit_ind_base
-			REs->roprobit_ind_base = _roprobit_ind_base
-			REs->nonbase_cases = _nonbase_cases
-			REs->GammaInds = _GammaInds
-			REs->NumREDraws = 1
-			REs->Quadrature = _Quadrature
-			REs->AdaptivePhaseThisEst = REs->IntMethod = _IntMethod
-			if (REs->IntMethod) {
-				REs->QuadTol = _QuadTol
-				REs->QuadIter = _QuadIter
-			}
-			REs->L = L
-			REs->SigXform = _SigXform
-			base = &((*REs)[L])
-			REs->y = REs->Lt = REs->Ut = REs->yL = smatrix(d)
-			if (REs->HasGamma = _HasGamma) {
-				base->Ld =  Lmatrix(d)
-				base->dOmega_dGamma = smatrix(d,d)
-				base->Idd = I(d*d)
-				base->IKI = I(d) # (base->Kd = _Kmatrix(d)) # I(d) // storage demand grows with d^8 !
-			}
-		} else {
-			REs=&_REs
-			base = &((*REs)[L])
-		}
-
-		_st_view(indicators, ., "_cmp_ind" :+ strofreal(one2d))
-		base->N = rows(indicators)
-		base->one2N = 1 :: base->N
-
-		for (l=L; l; l--) {
-			RE = &((*REs)[l])
-			RE->ThisDraw = 1
-			RE->one2d = 1..( RE->d = cols(st_matrix(signames[l])) )
-			RE->NEq = length(RE->Eqs = *_Eqs[l])
-			RE->GammaEqs = *_GammaEqs[l]
-			RE->theta = smatrix(d)
-			RE->d2 = RE->d * (RE->d + 1) * .5
-//			RE->RC_T = *(_RC_T[l])
-			RE->dCns = cols(RE->RC_T) ? cols(RE->RC_T) : RE->d
-			RE->NEff = _NumEff[l,RE->Eqs]
-			
-			if (cols(ScoreVars)) {
-				// build dSigdParams, derivative of sig, vech(rho) vector w.r.t. vector of actual sig, rho parameters, reflecting "exchangeable" and "independent" options
-				real scalar accross, within, c1, c2; string scalar cmp_covl, cmp_covl_eq1
-				t = J(0, 1, 0); i = 0 // index of entries in full sig, vech(rho) vector
-				if ((cmp_covl = st_global("cmp_cov"+strofreal(l))) == "exchangeable")
-					accross  = ++i
-				for (eq1=1; eq1<=RE->NEq; eq1++) {
-					if ((cmp_covl_eq1 = st_global("cmp_cov"+strofreal(l)+"_"+strofreal(RE->Eqs[eq1]))) == "exchangeable")
-						if (cmp_covl == "exchangeable")
-							within = accross
-						else
-							within = ++i
-					for (c1=1; c1<=RE->NEff[eq1]; c1++)
-						if  (st_matrix("cmp_fixed_sigs"+strofreal(l))[1, RE->Eqs[eq1]] == .)
-							if (anyof(("unstructured","independent"), cmp_covl_eq1) & cmp_covl != "exchangeable")
-								t = t \ ++i
-							else
-								t = t \ within
-						else
-							t = t \ . // entry of sig vector corresponds to no parameter in model, being fixed
-				}
-				if (cmp_covl=="exchangeable" & RE->d>1)
-					accross  = ++i
-				for (eq1=1; eq1<=RE->NEq; eq1++) {
-					if ((cmp_covl_eq1 = st_global("cmp_cov"+strofreal(l)+"_"+strofreal(RE->Eqs[eq1])))=="exchangeable" & RE->NEff[eq1]>1)
-						within = ++i
-					for (c1=1; c1<=RE->NEff[eq1]; c1++) {
-						for (c2=c1+1; c2<=RE->NEff[eq1]; c2++) {
-							if (cmp_covl_eq1=="unstructured")
-								within = ++i
-							t = t \ (cmp_covl_eq1=="independent"? . : within)
-						}
-						for (eq2=eq1+1; eq2<=RE->NEq; eq2++)
-							for (c2=1; c2<=RE->NEff[eq2]; c2++) {
-								if (st_matrix("cmp_fixed_rhos"+strofreal(l))[RE->Eqs[eq2],RE->Eqs[eq1]]==.) {
-									if (cmp_covl == "unstructured")
-										accross = ++i
-									t = t \ accross
-								} else
-									t = t \ .
-						}
-					}
-				}
-				RE->dSigdParams = i? designmatrix(editmissing(t,i+1))[|.,.\.,i|] : J(RE->d2, 0, 0)
-			}
-		}
-
-		for (i=d; i; i--) {
-			_st_view(REs->y   [i].M,  ., st_global("cmp_y"   + strofreal(i)))
-			if (_trunc) {
-			  _st_view(REs->Lt[i].M,  ., st_global("cmp_Lt"  + strofreal(i)))
-			  _st_view(REs->Ut[i].M,  ., st_global("cmp_Ut"  + strofreal(i)))
-			}
-
-			if (REs->intregeqs[i])
-			  _st_view(REs->yL[i].M,  ., st_global("cmp_y" + strofreal(i) + "_L"))
-		}
-
-		if (L > 1)
-			base->lnL = J(base->N, 1, 0)
-		else if (strlen(lf) == 0)
-			_st_view(base->lnL, ., "_cmp_lnfi")
-
-		Primes = 2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101,103,107,109
-		if (L>1 & _REType != "random" & length(Primes) < strtoreal(st_global("cmp_NSimEff")) + d - 1 - (_ghkType=="hammersley" | _REType=="hammersley")) {
-			errprintf("Number of unobserved variables to simulate too high for Halton-based simulation. Try {cmd retype(random)}.\n")
-			return 
-		}
-		PrimeIndex = 1
-
-		if (cols(ScoreVars)) {
-			Scores = scores()
-			REs->G = J(d, 1, 0); Scores.GammaScores = smatrix(d*d) // more than needed
-			cols = d + 1
-			for (c=m=1; m<=d; m++)
-				for (i=1; i<=(REs->G[m]=rows(*REs->GammaInds[m])); i++)
-				                _st_view(Scores.GammaScores[c++].M, ., ScoreVars[cols++]                      )
-			                  _st_view(Scores.ThetaScores       , ., ScoreVars[|.    \ d                  |])
-			if (REs->NumCuts) _st_view(Scores.CutScores         , ., ScoreVars[|cols \ cols+REs->NumCuts-1|])
-			cols = cols + REs->NumCuts
-			Scores.SigScores = smatrix(L)
-			for (l=1; l<=L; l++)
-				if (t = cols((*REs)[l].dSigdParams)) {
-			                  _st_view(Scores.SigScores[l].M    , ., ScoreVars[|cols \ cols+t-1           |])
-					cols = cols + t
-				}
-		}
-
-		for (l=L-1; l; l--)
-			_st_view((*REs)[l].id,  ., "_cmp_id" + strofreal(l))
-
-		for (l=L-1; l; l--) {
-			RE = &((*REs)[l])
-
-			if (_first_call) {
-				RE->N = RE->id[base->N]
-				RE->one2N = RE->N<10000? 1::RE->N : .
-				RE->J_N_1_0 = J(RE->N, 1, 0)
-				RE->REInds = cmp_selectindex(tokens(st_global("cmp_rc"+strofreal(l))) :== "_cons")
-				RE->X = RE->RCInds = smatrix(RE->NEq)
-
-				RE->HasRC = 0
-				for (start=j=1; j<=RE->NEq; j++) {
-					if (HasRE = st_global("cmp_re"+strofreal(l)+"_"+strofreal(RE->Eqs[j])) != "")
-						RE->REEqs = RE->REEqs, j
-					if (strlen(varnames = st_global("cmp_rc"+strofreal(l)+"_"+strofreal(RE->Eqs[j])))) {
-						RE->HasRC = 1
-						RE->X[j].M = st_data(., varnames)
-						stop = start + cols(tokens(varnames))
-						RE->RCInds[j].M = start..stop-1
-						start = stop + HasRE
-					}
-				}
-				if (RE->HasRC) RE->J_N_NEq_0 = J(base->N, RE->NEq, 0)
-
-				RE->IDRanges = panelsetup(RE->id, 1)
-				RE->IDRangesGroup = l==L-1? RE->IDRanges : panelsetup(RE->id[(*REs)[l+1].IDRanges[,1]], 1)
-
-				Hammersley = _REType=="hammersley" & l==1
-				
-				LevelName = L>2? " for level " +strofreal(l) : ""
-				if (REs->Quadrature)
-						if (REs->IntMethod) {
-							if (l==1) printf("{res}Performing %s adaptive quadrature.\n",("Naylor-Smith", "Richard-Zhang")[REs->IntMethod])
-						} else if (RE->d > 2)
-							printf("{res}Random effects/coefficients%s modeled with Gauss-Hermite quadrature.\n", LevelName)
-						else {
-							printf("{res}Random effects/coefficients%s modeled with sparse-grid quadrature.\n", LevelName)
-							printf("Precision equivalent to that of one-dimensional quadrature with %f integration points.\n", _NumREDraws[l+1])
-						}
-				else {
-					printf("{res}Random effects/coefficients%s simulated.\n", LevelName)
-					printf("    Sequence type = %s\n", _REType)
-					printf("    Number of draws per observation = %f\n", _NumREDraws[l+1]/_REAnti)
-					printf("    Include antithetic draws = %s\n", _REAnti==2? "yes" : "no")
-					printf("    Scramble = %s\n", _REScramble? "yes" : "no")
-					if ((_REType=="halton" | _REType=="ghalton") | (Hammersley & RE->d>1))
-						printf("    Prime base%s = %s\n", RE->d > 1+Hammersley? "s" : "", invtokens(strofreal(Primes[PrimeIndex..PrimeIndex-1+RE->dCns-Hammersley])))
-					if (l==1) printf(`"Each observation gets different draws, so changing the order of observations in the data set would change the results.\n\n"')
-				}
-
-				if (REs->Quadrature) {
-					QuadData = SpGr(RE->d, _NumREDraws[l+1])
-					NDraws = (*REs)[l+1].NumREDraws = rows(*QuadData[1])
-					if (_first_call & !REs->IntMethod) printf("Number of integration points = %f.\n\n", NDraws)
-	 // inefficiently duplicates draws over groups then parcels them out below
-					U = J(RE->N, 1, 1) # (*QuadData[1])
-					RE->QuadX = *QuadData[1]
-					RE->QuadW = *QuadData[2]'
-					if (REs->IntMethod) {
-						REs->todo = cols(ScoreVars)
-						RE->QuadMean = RE->QuadSD = RE->QuadXAdapt = smatrix(RE->N)
-						for (j=RE->N; j; j--) {
-							RE->QuadXAdapt[j].M = RE->QuadX
-							RE->QuadSD[j].M = J(RE->d, 1, .)
-						}
-						RE->AdaptiveShift = J(RE->N, NDraws, 0)
-						RE->lnnormaldenQuadX = quadrowsum_lnnormalden(RE->QuadX,0)'
-						REs->LastlnLThisIter=0; REs->LastlnLLastIter=1
-					}
-				} else {
-					NDraws = ((*REs)[l+1].NumREDraws = _NumREDraws[l+1]) / _REAnti
-					if (_REType=="random")
-						U = invnormal(uniform(RE->N * NDraws / _REAnti, RE->d))
-					else if (_REType=="halton" | Hammersley) {
-						U = J(RE->N * NDraws, RE->d, 0)
-						if (Hammersley)
-							U[,1] = invnormal(J(RE->N,1,1) # (0.5::NDraws)/NDraws)
-						for (r=1+Hammersley; r<=cols(U); r++)
-							U[,r] = invnormal(halton2(rows(U), Primes[PrimeIndex++], _REScramble? &ghk2SqrtScrambler() : J(1,0,NULL)))
-					} else {
-						U = J(RE->N * NDraws, RE->d, 0)
-						for (r=1; r<=cols(U); r++)
-							U[,r] = invnormal(ghalton(rows(U), Primes[PrimeIndex++], uniform(1,1)))
-					}
-				}
-				RE->one2R = 1..(RE->R = (*REs)[l+1].NumREDraws)
-				RE->U = smatrix(RE->R)
-				RE->TotalEffect = smatrix(RE->R, cols(RE->GammaEqs))
-				RE->XU          = smatrix(RE->R, sum((RE->NEq..1) :* RE->NEff))
-
-//			if (rows(RE->RC_T)) // expand reduced set of simulated effects set into full, constrained set
-//				U = U * RE->RC_T'
-
-				S = ((1::RE->N) * NDraws)[RE->id]
-				for (r=NDraws; r; r--) {
-					RE->U[r].M = U[S, RE->one2d]
-					if (_REAnti == 2)
-						RE->U[r+RE->R*0.5].M = -RE->U[r].M
-					S = S :- 1
-				}
-
-				RE->lnLlimits = ln(smallestdouble()) + 1, ln(maxdouble()) - (RE->lnNumREDraws = ln(RE->R)) - 1
-
-				RE->lnLByDraw = J(RE->N, RE->R, 0)
-			} // if (_first_call)
-		}
-
-		if (_first_call) {
-			if (L > 1) {
-				for (l=L; l; l--)
-					if (st_global("parse_wexp"+strofreal(l)) != "") {
-						RE = &((*REs)[l])
-						_st_view(RE->Weights, ., "_cmp_weight"+strofreal(l))
-						if (l < L) RE->Weights = RE->Weights[RE->IDRanges[,1]] // get one instance of each group's weight
-						if (anyof(("pweight", "aweight"), st_global("parse_wtype"+strofreal(l)))) // normalize pweights, aweights to sum to # of groups
-							if (l == 1)
-								REs->Weights = RE->Weights / mean(RE->Weights)
-							else
-								for (j=(*REs)[l-1].N; j; j--) {
-									S = (*REs)[l-1].IDRangesGroup[j,]', (.\.)
-									RE->Weights[|S|] = RE->Weights[|S|] / mean(RE->Weights[|S|])
-								}
-						t = l==L? RE->Weights : RE->Weights[RE->id]
-						REs->WeightProduct = rows(REs->WeightProduct)? REs->WeightProduct:* t : t
-					}
-			}
-
-			for (l=L-1; l; l--)
-				(*REs)[l].IDRangesGroup = (*REs)[l].IDRangesGroup[,2]
-		}
-
-		ghk_nobs = 0; v = NULL
-		remaining = base->one2N
-		REs->d_cens = 0
-		while (t = max(remaining)) { // build linked list of subviews onto data, each a set of rows with same indicator combination
-			next = v; (v = &(subview()))->next = next  // add new subview to linked list
-			remaining = remaining :* !(v->subsample = rowmin(indicators :== (v->TheseInds = indicators[t,])))
-			v->SubsampleInds = cmp_selectindex(v->subsample)
-			if (!strlen(lf)) st_select(v->lnL, base->lnL, v->subsample)
-			v->theta = v->tau = smatrix(d)
-			v->QE = diag(2*(v->TheseInds:==3 :| v->TheseInds:==8 :| v->TheseInds:==10) :- 1)
-			v->N = colsum(v->subsample)
-			v->one2N = v->N<10000? 1::v->N : .
-			v->d_uncens = cols(v->uncens = cmp_selectindex(v->TheseInds:==1))
-			v->halfDmatrix = 0.5 * Dmatrix(v->d_uncens)
-			v->d_oprobit = d_oprobit = cols(v->oprobit = cmp_selectindex(v->TheseInds:==5))
-			v->d_trunc = cols(v->trunc = cmp_selectindex(REs->trunceqs))
-			v->d_cens = cols(v->cens = cmp_selectindex(v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<REs->mprobit_ind_base :| v->TheseInds:>=REs->roprobit_ind_base)))
-			v->censnonfrac           = cmp_selectindex(v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<REs->mprobit_ind_base :| v->TheseInds:>=REs->roprobit_ind_base) :& v->TheseInds:!=10)
-			v->d_frac = cols(v->frac = cmp_selectindex(v->TheseInds:==10))
-			REs->d_cens = max((REs->d_cens, v->d_cens))
-			v->dCensNonrobase = cols(v->cens_nonrobase = cmp_selectindex(_nonbase_cases :& (v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<REs->mprobit_ind_base :| v->TheseInds:>=REs->roprobit_ind_base))))
-			if (v->d_cens)
-				v->d_two_cens = cols(v->two_cens = cmp_selectindex((v->TheseInds:==5 :| v->TheseInds:==7 :| (v->TheseInds:==2 :| v->TheseInds:==3 :| v->TheseInds:==4 :| v->TheseInds:==8) :& REs->trunceqs)[v->cens])) //indexes *within* list of censored eqs of doubly censored ones
-			else
-				v->d_two_cens = 0
-			
-			if (v->d_cens > 2) {
-				v->GHKStart = ghk_nobs + 1
-				ghk_nobs = ghk_nobs + v->N
-			}
-			if (v->d_uncens) v->EUncens = J(v->N, v->d_uncens, 0)
-			if (v->d_cens)   v->ECens   = J(v->N, v->d_cens  , 0)
-			if (REs->NumCuts | _intreg | _trunc) {
-				v->F = J(v->N, v->dCensNonrobase, .)
-				if (_trunc)
-					v->Et = v->Ft = J(v->N, v->d_trunc, .)
-			}
-			
-			if (v->d_frac) {
-				v->FracCombs = 2*mod(floor(J(1,v->d_frac,0::2^v->d_frac-1):/2:^(v->d_frac-1..0)),2):-1 // matrix whose rows count from 0 to 2^v->d_frac-1 in +/-1 binary, one digit/column
-				v->yProd = v->frac_QE = v->frac_QSig = smatrix(v->NFracCombs = rows(v->FracCombs))
-				for (i=v->NFracCombs; i; i--) {
-					if (i < v->NFracCombs) {
-					 (v->frac_QE[i].M = I(v->d_cens))[v->frac,v->frac] = diag(v->FracCombs[i,])
-					 v->frac_QSig[i].M = QE2QSig(v->frac_QE[i].M)
-					}
-
-					v->yProd[i].M = J(v->N, 1, 1)
-					for (j=v->d_frac; j; j--) // make all the combinations of products of frac prob y's and 1-y's
-						v->yProd[i].M = v->yProd[i].M :* (v->FracCombs[i,j]==1? REs->y[v->frac[j]].M[v->SubsampleInds] : 1:-REs->y[v->frac[j]].M[v->SubsampleInds])
-				}
-			} else
-				v->NFracCombs = 1
-
-			v->dPhi_dpE = v->dPhi_dpSig = smatrix(2^v->d_frac)
-
-			if (d_oprobit) {
-				l = 1
-				if (v->oprobit[1]>1) l = l + colsum(_vNumCuts[1::v->oprobit[1]-1])
-				v->CutInds = l .. l+_vNumCuts[v->oprobit[1]]-1
-				for (k=2; k<=d_oprobit; k++) {
-					l = l + colsum(_vNumCuts[v->oprobit[k-1]::v->oprobit[k]-1])
-					v->CutInds = v->CutInds, l .. l+_vNumCuts[v->oprobit[k]]-1
-				}
-				v->vNumCuts = _vNumCuts[v->oprobit]
-
- 				v->NumCuts = cols(v->CutInds)
-			} else
-				v->NumCuts = 0
-
-			if (v->NumMprobitGroups = _num_mprobit_groups) {
-				v->mprobit = mprobit_group(v->NumMprobitGroups)
-
-				for (k=v->NumMprobitGroups; k; k--) {
-					start = _mprobit_group_inds[k, 1]; stop = _mprobit_group_inds[k, 2]
-
-					v->mprobit[k].d = d_mprobit = cols( mprobit = cmp_selectindex(v->TheseInds :& one2d:>=start :& one2d:<=stop) ) - 1
-
-					if (d_mprobit>0) {
-						v->mprobit[k].out = v->TheseInds[start] - REs->mprobit_ind_base // eq of chosen alternative
-						v->mprobit[k].res = cmp_selectindex((v->TheseInds :& one2d:>start  :& one2d:<=stop)[v->cens]) // index in v->ECens for relative differencing results
-						v->mprobit[k].in =  cmp_selectindex( v->TheseInds :& one2d:>=start :& one2d:<=stop :& one2d:!=v->mprobit[k].out) // eqs of rejected alternatives
-						(v->QE)[mprobit,mprobit] = J(d_mprobit+1, 1, 0), insert(-I(d_mprobit), v->mprobit[k].out-start+1, J(1, d_mprobit, 1))
-					}
-				}
-			}
-
-			v->N_perm = 1
-			if (v->NumRoprobitGroups = _num_roprobit_groups) {
-				pointer (real rowvector) colvector roprobit
-				real rowvector this_roprobit
-				pointer (real matrix) colvector perms
-				pointer (real matrix) scalar ThesePerms
-				real scalar ThisPerm
-				
-				perms = roprobit = J(v->NumRoprobitGroups, 1, NULL)
-				v->d2_cens = v->d_cens * (v->d_cens + 1)*.5
-
-				for (k=v->NumRoprobitGroups; k; k--)
-					if (cols(this_roprobit=*(roprobit[k] = &cmp_selectindex(v->TheseInds :& one2d:>=_roprobit_group_inds[k,1] :& one2d:<=_roprobit_group_inds[k,2]))))
-						v->N_perm = v->N_perm * (rows(*(perms[k] = &PermuteTies(_reverse? v->TheseInds[this_roprobit] : -v->TheseInds[this_roprobit]))))
-				
-				v->roprobit_QE = v->roprobit_Q_Sig = J(i=v->N_perm, 1, NULL)
-				for (; i; i--) { // combinations of perms across multiple roprobit groups
-					j = i - 1
-					t = I(d)
-					for (k = v->NumRoprobitGroups; k; k--) 
-						if (d_roprobit = cols(this_roprobit = *roprobit[k])) {
-							ThisPerm = mod(j, rows(*(ThesePerms=perms[k]))) + 1
-							t[this_roprobit, this_roprobit] = 
-								J(d_roprobit, 1, 0), (I(d_roprobit)[,(*ThesePerms)[|ThisPerm, 2 \ ThisPerm, .           |]] - 
-								                      I(d_roprobit)[,(*ThesePerms)[|ThisPerm, 1 \ ThisPerm, d_roprobit-1|]] )
-							j = (j - ThisPerm + 1) / rows(*ThesePerms)
-						}
-					(v->roprobit_Q_Sig)[i] = &QE2QSig(*((v->roprobit_QE)[i] = &t[v->cens, v->cens_nonrobase]))
-				}
-			}
-
-			if (v->d_trunc) {
-				v->one2d_trunc = 1..v->d_trunc
-				v->SigIndsTrunc = vSigInds(v->trunc, d)
-
-				if (v->d_trunc > 2) {
-					v->GHKStartTrunc = ghk_nobs + 1
-					ghk_nobs = ghk_nobs + v->N
-				}
-			}
-
-			if (REs->todo) {
-				v->XU = ssmatrix(L-1)
-				for (l=L-1; l; l--)
-					v->XU[l].M = smatrix(rows(REs->XU), cols(REs->XU))
-			}
-
-			if (cols(ScoreVars)) { // pre-compute stuff for scores
-				v->Scores = scorescol(L)
-				for (l=L; l; l--) {
-					v->Scores[l].M = scores((*REs)[l].NumREDraws)
-					for (r=(*REs)[l].NumREDraws; r; r--) {
-						v->Scores[l].M[r].GammaScores = smatrix(sum(REs->G))
-						v->Scores[l].M[r].TScores = smatrix(L) // last entry holds scores of base-level Sig parameters not T
-					}
-				}
-				v->Scores.M.SigScores = smatrix(L)
-				v->id =  smatrix(L-1)
-				for (l=L-1; l; l--)
-					v->id[l].M = (*REs)[l].id[v->SubsampleInds,]
-
-				if (rows(REs->WeightProduct)) v->WeightProduct = REs->WeightProduct[v->SubsampleInds,]
-					
-				                                   st_select(v->Scores.M.ThetaScores     , Scores.ThetaScores     , v->subsample)
-				if (REs->NumCuts)                  st_select(v->Scores.M.CutScores       , Scores.CutScores       , v->subsample)
-				for (c=L; c; c--)
-					if (cols((*REs)[c].dSigdParams)) st_select(v->Scores.M.SigScores  [c].M, Scores.SigScores[c].M  , v->subsample)
-				for (c=sum(REs->G); c; c--)        st_select(v->Scores.M.GammaScores[c].M, Scores.GammaScores[c].M, v->subsample)
-
-				for (l=L-1; l; l--)
-					for (r=base->NumREDraws; r; r--)
-						v->Scores[L].M[r].TScores[l].M = J(v->N, (*REs)[l].d2, 0)
-
-				v->J_N_1_0 = J(v->N, 1, 0)
-
-				v->dOmega_dGamma = smatrix(d,d)
-				
-				v->SigIndsUncens = vSigInds(v->uncens, d)
-				v->cens_uncens = v->cens, v->uncens
-				v->J_d_uncens_d_cens_0 = J(v->d_uncens, v->d_cens, 0)
-				v->J_d_cens_d_0 = J(v->d_cens, d, 0)
-				v->J_d2_cens_d2_0 = J(v->d_cens*(v->d_cens+1)*0.5, d2, 0)				
-
-				if (v->d_uncens) {
-					v->dphi_dE = J(v->N, d, 0)
-					v->dphi_dSig = J(v->N, d2, 0)
-					v->EDE = J(v->N, v->d_uncens*(v->d_uncens+1)*.5, 0)
-				} else
-					v->dPhi_dE = J(v->N, d, 0)
-
-				if (v->d_two_cens | v->d_trunc) {
-					v->dPhi_dpF = J(v->N, v->dCensNonrobase, 0)
-					if (!v->d_uncens)
-						v->dPhi_dF = J(v->N, d, 0)
-					if (v->d_trunc) {
-						v->dPhi_dEt = J(v->N, d,  0)
-						v->dPhi_dSigt = J(v->N, d2, 0)
-					}
-				}
-
-				if (v->d_cens & !v->d_uncens)
-					v->dPhi_dSig = J(v->N, d2, 0)
-				if (v->d_cens & v->d_uncens) {
-					v->dPhi_dpE_dSig = J(v->N, d2, 0)
-					v->_dPhi_dpE_dSig = J(v->N, (v->d_cens+v->d_uncens)*(v->d_cens+v->d_uncens+1)*.5, 0)
-				}
-				if (v->d_two_cens & v->d_uncens) {
-					v->dPhi_dpF_dSig = J(v->N, d2, 0)
-					v->_dPhi_dpF_dSig = J(v->N, (v->d_cens+v->d_uncens)*(v->d_cens+v->d_uncens+1)*.5, 0)
-				}
-				if (REs->NumCuts)
-					v->dPhi_dcuts = J(v->N, REs->NumCuts, 0)
-				
-				if (v->d_cens)
-					v->CensLTInds = vech(colshape(1..v->d_cens*v->d_cens, v->d_cens)')
-
-				if (d_oprobit) {
-					varnames = ""
-					for (k=1; k<=d_oprobit; k++) {
-						stata("unab yis: _cmp_y" + strofreal(v->oprobit[k]) + "_*")
-						varnames = varnames + " " + st_local("yis")
-					}
-					_st_view(Yi, ., tokens(varnames))
-					st_select(v->Yi, Yi, v->subsample)
-				}
-
-				v->QSig = QE2QSig(v->QE)'
-				v->SigIndsCensUncens = vSigInds(v->cens_uncens, d)
-				v->dSig_dLTSig = Dmatrix(v->d_cens + v->d_uncens)
-			}
-		}
-		_subviews = v
-
-		if (cols(ScoreVars))
-			for (l=L-1; l; l--)
-				BuildXU(v, REs, l, L)
-
-		if (ghk_nobs) {
-			// by default, make # draws at least sqrt(N) (Cappellari and Jenkins 2003)
-			if (_ghkDraws == 0) _ghkDraws = ceil(2 * sqrt(ghk_nobs+1))
-
-			if ((!_interactive | _first_call) & !REs->IntMethod) {
-				printf("{res}Likelihoods for %f observations involve cumulative normal distributions above dimension 2.\n", ghk_nobs)
-				printf(`"Using {stata "help ghk2" :ghk2()} to simulate them. Settings:\n"')
-				printf("    Sequence type = %s\n", _ghkType)
-				printf("    Number of draws per observation = %f\n", _ghkDraws)
-				printf("    Include antithetic draws = %s\n", _ghkAnti? "yes" : "no")
-				printf("    Scramble = %s\n", _ghkScramble? "yes" : "no")
-				printf("    Prime bases = %s\n", invtokens(strofreal(Primes[PrimeIndex..PrimeIndex-2+REs->d_cens])))
-				if (_ghkType=="random" | _ghkType=="ghalton")
-					printf(`"    Initial {stata "help mf_uniform" :seed string} = %s\n"', uniformseed())
-				printf(`"Each observation gets different draws, so changing the order of observations in the data set would change the results.\n\n"')
-			}
-			
-			REs->ghk2DrawSet = ghk2setup(ghk_nobs, _ghkDraws, REs->d_cens, _ghkType, PrimeIndex, _ghkScramble? &ghk2SqrtScrambler() : J(1,0,NULL))
-		}
-		
-		if ((ghk_nobs & (_ghkType=="random" | _ghkType=="ghalton")) | (L>1 & (_REType=="random" | _REType=="ghalton")))
-			printf("Starting seed for random number generator = %s\n", st_strscalar("c(seed)"))
-		
-		_first_call = 0 // done with one-time prep
-	} else {
-		REs=&_REs
-		base = &((*REs)[L])
-	}
-	subviews = _subviews
-	cuts = st_matrix(st_local("cuts"))
-
-	if (strlen(lf)) _st_view(base->lnL, ., lf)
-
-	for (eq1=d; eq1; eq1--)
-		_st_view(REs->theta[eq1].M, ., "_cmp_theta"+strofreal(eq1))
-
-	if (REs->HasGamma) {
-		invGamma = luinv(I(d) - st_matrix(st_local("Gamma")))
-		if (invGamma[1,1] == .) return
-		_st_view(theta, ., "_cmp_theta" :+ strofreal(1..d))
-		for (eq1=d; eq1; eq1--)
-			REs->theta[eq1].M = theta * invGamma[,eq1]
+	for (i=1; i<=d; i++) {
+		REs->theta[i].M = moptimize_util_xb(M, b, i)
+		if (rows(REs->theta[i].M)==1) REs->theta[i].M = J(base->N, 1, REs->theta[i].M)
 	}
 
-	if (REs->AdaptivePhaseThisEst)
-		NewIter = (Iter = st_global("ML_ic")) != REs->LastIter
+	for (j=1; j<=rows(mod->GammaInd); j++)
+		mod->Gamma[|mod->GammaInd[j,]|] = moptimize_util_xb(M, b, i++)
+
+	for (eq1=1; eq1<=d; eq1++)
+		if (mod->vNumCuts[eq1])
+			for (cut=2; cut<=mod->vNumCuts[eq1]+1; cut++) {
+				mod->cuts[cut, eq1] = moptimize_util_xb(M, b, i++)
+				if (mod->trunceqs[eq1])
+					if (any(mod->indicators[,eq1] :& ((mod->Lt[eq1].M :< . & mod->cuts[cut, eq1] :< mod->Lt[eq1].M) :| mod->cuts[cut, eq1]:>mod->Ut[eq1].M)))
+						return
+			}
 
 	for (l=1; l<=L; l++) {
 		RE = &((*REs)[l])
+		RE->sig = RE->rho = J(1, 0, 0)
+		if (!RE->covAcross) // exchangeable across?
+			lnsigWithin = lnsigAccross = moptimize_util_xb(M, b, i++)
 
-		sig = st_matrix(signames[l])
-		if (RE->d == 1) {
-			Rho = J(0,0,0); rho = J(1,0,0)
-			RE->Sig = (RE->T = sig) * sig
-		} else {
-			rho = st_matrix(atanhrhonames[l])
+		for (eq1=1; eq1<=RE->NEq; eq1++) {
+			if (!RE->covWithin[RE->Eqs[eq1]] & RE->covAcross) // exchangeable within but not across?
+				lnsigWithin = lnsigAccross
+
+			for (c1=1; c1<=RE->NEff[eq1]; c1++)
+				if (RE->FixedSigs[RE->Eqs[eq1]] == .) {
+					if (RE->covWithin[RE->Eqs[eq1]] & RE->covAcross) // exchangeable neither within nor accross?
+						lnsigWithin = moptimize_util_xb(M, b, i++)
+				  if (mod->SigXform==0 & lnsigWithin==0)
+						return
+					RE->sig = RE->sig, (mod->SigXform? exp(lnsigWithin) : lnsigWithin)
+				} else
+					RE->sig = RE->sig, RE->FixedSigs[RE->Eqs[eq1]]
+		}
+
+		if (!RE->covAcross & RE->d > 1) // exchangeable across?
+			atanhrhoAccross = moptimize_util_xb(M, b, i++)
+		for (eq1=1; eq1<=RE->NEq; eq1++) {
+			if (RE->covWithin[RE->Eqs[eq1]] == 2) // independent?
+				atanhrhoWithin = 0
+			else if (!RE->covWithin[RE->Eqs[eq1]] & RE->NEff[eq1] > 1) // exchangeable within?
+				atanhrhoWithin = moptimize_util_xb(M, b, i++)
+			for (c1=1; c1<=RE->NEff[eq1]; c1++) {
+				for (c2=c1+1; c2<=RE->NEff[eq1]; c2++) {
+					if (RE->covWithin[RE->Eqs[eq1]] == 1) // unstructured?
+						atanhrhoWithin = moptimize_util_xb(M, b, i++)
+					RE->rho = RE->rho, atanhrhoWithin
+				}
+				for (eq2=eq1+1; eq2<=RE->NEq; eq2++)
+					for (c2=1; c2<=RE->NEff[eq2]; c2++)
+						if (RE->FixedRhos[RE->Eqs[eq2],RE->Eqs[eq1]] == .) {
+							if (RE->covAcross == 1) // unstructured?
+								atanhrhoAccross = moptimize_util_xb(M, b, i++)
+							RE->rho = RE->rho, atanhrhoAccross
+						} else
+							RE->rho = RE->rho, RE->FixedRhos[RE->Eqs[eq2],RE->Eqs[eq1]]
+			}
+		}
+	}
+
+	if (mod->HasGamma) {
+		invGamma = luinv(I(d) - mod->Gamma)
+		if (invGamma[1,1] == .) return
+		for (eq1=d; eq1; eq1--)
+			mod->Theta[base->one2N,eq1] = REs->theta[eq1].M // XXX is this faster than manually multipling invGamma by the individual theta columns and summing?
+		_editmissing(mod->Theta, 0) // only time missing values would appear and be used is when multiplied by invGamma with 0's in corresponding entries
+		for (eq1=d; eq1; eq1--)
+			REs->theta[eq1].M = mod->Theta * invGamma[,eq1]
+	}
+
+	if (mod->WillAdapt)
+		if (NewIter = (Iter = moptimize_result_iterations(M)) != mod->LastIter) {
+			mod->LastIter = Iter
+			if (!mod->Adapted)
+				if (mod->AdaptNextTime) {
+					mod->set_AdaptNow(1)
+					printf("\n{res}Performing Naylor-Smith adaptive quadrature.\n")
+				} else {
+					if (cols(mod->Lastb))
+						mod->AdaptNextTime = mreldif(b, mod->Lastb)<.1 // criterion to begin adaptive phase
+					mod->Lastb = b
+				}
+		}
+
+	for (l=1; l<=L; l++) {
+		RE = &((*REs)[l])
+		if (RE->d == 1)
+			RE->Sig = (RE->T = RE->sig) * RE->sig
+		else {
 			Rho = I(RE->d); k = 0
 			for (j=1; j<=RE->d; j++)
 				for (i=j+1; i<=RE->d; i++)
-					if (REs->SigXform)
-						if (rho[++k]>100)
+					if (mod->SigXform)
+						if (RE->rho[++k]>100)
 							Rho[i,j] = 1
-						else if (rho[k]<-100)
+						else if (RE->rho[k]<-100)
 							Rho[i,j] = -1
 						else
-							Rho[i,j] = tanh(rho[k])
+							Rho[i,j] = tanh(RE->rho[k])
 					else
-						Rho[i,j] = rho[++k]
+						Rho[i,j] = RE->rho[++k]
 			_makesymmetric(Rho)
-			RE->T = cholesky(Rho)' :* sig
+			RE->T = cholesky(Rho)' :* RE->sig
 			if (RE->T[1,1] == .) return
-			RE->Sig = quadcross(sig,sig) :* Rho
+			RE->Sig = quadcross(RE->sig,RE->sig) :* Rho
 		}
 
 		if (todo)
-			RE->D = dSigdsigrhos(REs, sig, RE->Sig, rho, Rho) * RE->dSigdParams
+			RE->D = dSigdsigrhos(mod->SigXform, RE->sig, RE->Sig, RE->rho, Rho) * RE->dSigdParams
 
-		if (REs->HasGamma)
+		if (mod->HasGamma)
 			RE->invGamma = invGamma[RE->Eqs,RE->GammaEqs]
 
 		if (l < L) {
-			BuildTotalEffects(REs, l)
+			mod->BuildTotalEffects(l)
 			for (eq1=cols(RE->GammaEqs); eq1; eq1--) // compute effect of first draws
-				(*REs)[l+1].theta[RE->GammaEqs[eq1]].M = RE->theta[RE->GammaEqs[eq1]].M + RE->TotalEffect[1,eq1].M
+				(*REs)[l+1].theta[RE->GammaEqs[eq1]].M = RE->theta[RE->GammaEqs[eq1]].M :+ RE->TotalEffect[1,eq1].M
 			for (eq1=d; eq1; eq1--) // by default lower errors = upper ones, for eqs with no random effects/coefs at this level
 				if (!anyof(RE->GammaEqs,eq1))
 					(*REs)[l+1].theta[eq1].M = RE->theta[eq1].M
 			if (todo)
 				RE->D = ghk2_dTdV(RE->T') * RE->D
-			if (REs->AdaptivePhaseThisEst & NewIter)
+			if (mod->AdaptivePhaseThisEst & NewIter)
 				RE->ToAdapt = J(RE->N, 1, 2)
 			RE->AdaptivePhaseThisIter = 0
 		}
 	}
 
-	if (REs->HasGamma) {
+	if (mod->HasGamma) {
 		if (todo) {
-			base->dOmega_dSig = QE2QSig(invGamma)
+			dOmega_dSig = (Lmatrix(cols(invGamma))*(invGamma'#invGamma')*Dmatrix(rows(invGamma))) // QE2QSig(invGamma)
 			t = vec(invGamma')
-			t = base->Ld * vec(base->Sig)'#base->Idd * base->IKI * (base->Idd#t + t#base->Idd) * base->Kd
+			t = (vec(base->Sig)'#mod->Idd)[mod->vLd,mod->vIKI] * (mod->Idd#t + t#mod->Idd)[,mod->vKd]
 			for (m=d; m; m--)
-				for (c=1; c<=REs->G[m]; c++)
-					base->dOmega_dGamma[m,c].M = t * invGamma[m,]'#invGamma[,(*REs->GammaInds[m])[c]]
+				for (c=1; c<=mod->G[m]; c++)
+					mod->dOmega_dGamma[m,c].M = t * invGamma[m,]'#invGamma[,(*mod->GammaIndByEq[m])[c]]
 		}
-		base->Omega = quadcross(invGamma, base->Sig) * invGamma
+		mod->Omega = quadcross(invGamma, base->Sig) * invGamma
 	} else
-		base->Omega = base->Sig
-	
+		mod->Omega = base->Sig
 
-	for (v = subviews; v!=NULL; v = v->next) {
-		v->Omega = quadcross(v->QE, base->Omega) * v->QE
+	for (v = mod->subviews; v!=NULL; v = v->next) {
+		v->Omega = quadcross(v->QE, mod->Omega) * v->QE
 		if (todo)
-			if (REs->HasGamma) {
+			if (mod->HasGamma) {
 				for (m=d; m; m--) {
-					st_select(v->tau[m].M, REs->theta[m].M, v->subsample)
-					if (REs->G[m] & v->TheseInds[m])
-						for (c=1; c<=REs->G[m]; c++)
-							v->dOmega_dGamma[m,c].M = v->QSig * base->dOmega_dGamma[m,c].M
+					if (mod->G[m] & v->TheseInds[m])
+						for (c=1; c<=mod->G[m]; c++)
+							v->dOmega_dGamma[m,c].M = v->QSig * mod->dOmega_dGamma[m,c].M
 				}
 				v->QEinvGamma    = quadcross(v->QE, invGamma')
-				v->invGammaQSigD = quadcross(v->QSig, base->dOmega_dSig) * base->D
+				v->invGammaQSigD = quadcross(v->QSig, dOmega_dSig) * base->D
 			} else {
 				v->QEinvGamma    = v->QE'
 				v->invGammaQSigD = quadcross(v->QSig, base->D)
 			}
 	}
 
+	base->plnL = &(lnf = base->J_N_1_0)
+	if (todo) S = mod->S0
+
 	do {   // for each draw combination
-		for (v = subviews; v!=NULL; v = v->next) {
-			tEq = EUncensEq = ECensEq = 0; FCensEq = 0
+		for (v = mod->subviews; v!=NULL; v = v->next) {
+			tEq = EUncensEq = ECensEq = FCensEq = 0
 			for (i=1; i<=d; i++)
 				if (v->TheseInds[i]==6) { // handle mprobit eqs below
 					++ECensEq
 					++FCensEq
 				} else {
-					if (v->TheseInds[i]<REs->mprobit_ind_base | v->TheseInds[i]>=REs->roprobit_ind_base) { // skip mprobit base eqs but include unobserved case (TheseInds=.)
-						if(REs->HasGamma | L > 1)
-							v->theta[i].M = base->theta[i].M[v->SubsampleInds]
-						else
-							st_select(v->theta[i].M, base->theta[i].M, v->subsample)
+					if (v->TheseInds[i]<mod->mprobit_ind_base | v->TheseInds[i]>=mod->roprobit_ind_base) { // skip mprobit base eqs but include unobserved case (TheseInds=.)
+						v->theta[i].M = base->theta[i].M[v->SubsampleInds]
 
 						if (v->TheseInds[i] & v->TheseInds[i]<.) {
 							if (v->TheseInds[i]==1)
-								v->EUncens[v->one2N,++EUncensEq] = REs->y[i].M[v->SubsampleInds] - v->theta[i].M
-							else if (v->TheseInds[i]==2 | v->TheseInds[i]==7)
-								v->ECens  [v->one2N,++ECensEq  ] = REs->y[i].M[v->SubsampleInds] - v->theta[i].M
-							else if (v->TheseInds[i]==3)
-								v->ECens  [v->one2N,++ECensEq  ] =  v->theta[i].M - REs->y[i].M[v->SubsampleInds]
-							else if (v->TheseInds[i]==4)
-								v->ECens  [v->one2N,++ECensEq  ] = -v->theta[i].M
-							else if (v->TheseInds[i]==8 || v->TheseInds[i]==10)
-								v->ECens  [v->one2N,++ECensEq  ] =  v->theta[i].M
-							else if (v->TheseInds[i]==5) {
-								if (REs->trunceqs[i]) {
-									t = REs->y[i].M[v->SubsampleInds] :> v->vNumCuts[i] // bit of inefficiency in truncated oprobit case
-									v->ECens[v->one2N,++ECensEq] = (t :* REs->Ut[i].M[v->SubsampleInds] + (1:-t) :* cuts[REs->y[i].M[v->SubsampleInds]:+1, i]) - v->theta[i].M
-								} else
-									v->ECens[v->one2N,++ECensEq] = cuts[REs->y[i].M[v->SubsampleInds]:+1, i] - v->theta[i].M
-							} else // roprobit
-								v->ECens[v->one2N,++ECensEq] = -v->theta[i].M
+								v->EUncens[v->one2N,++EUncensEq] = v->y[i].M - v->theta[i].M
+							else {
+								++ECensEq
+								if (v->TheseInds[i]==2 | v->TheseInds[i]==7)
+									v->ECens  [v->one2N,ECensEq  ] = v->y[i].M - v->theta[i].M
+								else if (v->TheseInds[i]==3)
+									v->ECens  [v->one2N,ECensEq  ] =  v->theta[i].M - v->y[i].M
+								else if (v->TheseInds[i]==4)
+									v->ECens  [v->one2N,ECensEq  ] = -v->theta[i].M
+								else if (v->TheseInds[i]==8 || v->TheseInds[i]==10)
+									v->ECens  [v->one2N,ECensEq  ] =  v->theta[i].M
+								else if (v->TheseInds[i]==5) {
+									if (mod->trunceqs[i]) {
+										t = v->y[i].M :> v->vNumCuts[i] // bit of inefficiency in truncated oprobit case
+										v->ECens[v->one2N,ECensEq] = (t :* v->Ut[i].M + (1:-t) :* mod->cuts[v->y[i].M:+1, i]) - v->theta[i].M
+									} else
+										v->ECens[v->one2N,ECensEq] = mod->cuts[v->y[i].M:+1, i] - v->theta[i].M
+								} else // roprobit
+									v->ECens[v->one2N,ECensEq] = -v->theta[i].M
 
-							if (cols(v->F))
-								if (REs->nonbase_cases[ECensEq]) {
-									++FCensEq
-									if (v->TheseInds[i]==7)
-										v->F[v->one2N,FCensEq] = REs->yL[i].M[v->SubsampleInds] - v->theta[i].M
-									else if (v->TheseInds[i]==5)
-										if (REs->trunceqs[i]) {
-											t = REs->y[i].M[v->SubsampleInds]
-											v->F[v->one2N,FCensEq] = (t :* REs->Lt[i].M[v->SubsampleInds] + (1:-t) :* cuts[REs->y[i].M[v->SubsampleInds], i]) - v->theta[i].M
-										} else
-											v->F[v->one2N,FCensEq] = cuts[ REs->y[i].M[v->SubsampleInds], i] - v->theta[i].M
-									else if (REs->trunceqs[i])
-										if (v->TheseInds[i]==2)
-											v->F[v->one2N,FCensEq] = REs->Lt[i].M[v->SubsampleInds] - v->theta[i].M
-										else if (v->TheseInds[i]==3)
-											v->F[v->one2N,FCensEq] = v->theta[i].M - REs->Ut[i].M[v->SubsampleInds]
-										else if (v->TheseInds[i]==4)
-											v->F[v->one2N,FCensEq] = REs->Lt[i].M[v->SubsampleInds] - v->theta[i].M
-										else if (v->TheseInds[i]==8)
-											v->F[v->one2N,FCensEq] = v->theta[i].M - REs->Ut[i].M[v->SubsampleInds]
-								}
+								if (cols(v->F))
+									if (mod->NonbaseCases[ECensEq]) {
+										++FCensEq
+										if (v->TheseInds[i]==7)
+											v->F[v->one2N,FCensEq] = v->yL[i].M - v->theta[i].M
+										else if (v->TheseInds[i]==5)
+											if (mod->trunceqs[i]) {
+												t = v->y[i].M
+												v->F[v->one2N,FCensEq] = (t :* v->Lt[i].M + (1:-t) :* mod->cuts[v->y[i].M, i]) - v->theta[i].M
+											} else
+												v->F[v->one2N,FCensEq] = mod->cuts[ v->y[i].M, i] - v->theta[i].M
+										else if (mod->trunceqs[i])
+											if (v->TheseInds[i]==2)
+												v->F[v->one2N,FCensEq] = v->Lt[i].M - v->theta[i].M
+											else if (v->TheseInds[i]==3)
+												v->F[v->one2N,FCensEq] = v->theta[i].M - v->Ut[i].M
+											else if (v->TheseInds[i]==4)
+												v->F[v->one2N,FCensEq] = v->Lt[i].M - v->theta[i].M
+											else if (v->TheseInds[i]==8)
+												v->F[v->one2N,FCensEq] = v->theta[i].M - v->Ut[i].M
+									}
+							}
 
-							if (REs->trunceqs[i]) {
+							if (mod->trunceqs[i]) {
 								++tEq
 								if (v->TheseInds[i]==2) {
-									v->Et[v->one2N,tEq] = REs->Ut[i].M[v->SubsampleInds] - v->theta[i].M
+									v->Et[v->one2N,tEq] = v->Ut[i].M - v->theta[i].M
 									v->Ft[v->one2N,tEq] = v->F[v->one2N,i]
 								} else if (v->TheseInds[i]==3) {
-									v->Et[v->one2N,tEq] = v->theta[i].M - REs->Lt[i].M[v->SubsampleInds]
+									v->Et[v->one2N,tEq] = v->theta[i].M - v->Lt[i].M
 									v->Ft[v->one2N,tEq] = v->F[v->one2N,i]
 								} else if (v->TheseInds[i]==4) {
-									v->Et[v->one2N,tEq] = REs->Ut[i].M[v->SubsampleInds] - v->theta[i].M
+									v->Et[v->one2N,tEq] = v->Ut[i].M - v->theta[i].M
 									v->Ft[v->one2N,tEq] = v->F[v->one2N,i]
 								} else if (v->TheseInds[i]==8) {
-									v->Et[v->one2N,tEq] = v->theta[i].M - REs->Lt[i].M[v->SubsampleInds]
+									v->Et[v->one2N,tEq] = v->theta[i].M - v->Lt[i].M
 									v->Ft[v->one2N,tEq] = v->F[v->one2N,i]
 								} else if (anyof((1,5,7), v->TheseInds[i])) {
-									v->Et[v->one2N,tEq] = REs->Ut[i].M[v->SubsampleInds] - v->theta[i].M
-									v->Ft[v->one2N,tEq] = REs->Lt[i].M[v->SubsampleInds] - v->theta[i].M
+									v->Et[v->one2N,tEq] = v->Ut[i].M - v->theta[i].M
+									v->Ft[v->one2N,tEq] = v->Lt[i].M - v->theta[i].M
 								}
 							}
 						}
 					}
 				}
 
-			for (j=v->NumMprobitGroups; j; j--) // relative-difference mprobit errors
-				if (v->mprobit[j].d > 0)
-					if(isview(base->theta.M)) { // non-hierarchical model?
-						st_select(out, base->theta[v->mprobit[j].out].M, v->subsample)
-						for (i=v->mprobit[j].d; i; i--) {
-							st_select(in, base->theta[(v->mprobit[j].in)[i]].M, v->subsample)
-							v->ECens[v->one2N,(v->mprobit[j].res)[i]] = out - in
-						}
-					} else {
-						out = base->theta[v->mprobit[j].out].M[v->SubsampleInds]
-						for (i=v->mprobit[j].d; i; i--)
-							v->ECens[v->one2N,(v->mprobit[j].res)[i]] = out - base->theta[(v->mprobit[j].in)[i]].M[v->SubsampleInds]
-					}
+			for (j=rows(mod->MprobitGroupInds); j; j--) // relative-difference mprobit errors
+				if (v->mprobit[j].d > 0) {
+					out = base->theta[v->mprobit[j].out].M[v->SubsampleInds]
+					for (i=v->mprobit[j].d; i; i--)
+						v->ECens[v->one2N,(v->mprobit[j].res)[i]] = out - base->theta[(v->mprobit[j].in)[i]].M[v->SubsampleInds]
+				}
 
 			_editmissing(v->ECens,  1.701e+38) // maxfloat()--just a big number
 			_editmissing(v->F    , -1.701e+38)
@@ -1855,21 +1474,17 @@ void cmp_lnL(real scalar todo, string scalar lf, | string rowvector ScoreVars) {
 			_editmissing(v->Ft   , -1.701e+38)
 
 			if (v->d_cens) {
-				lnL = lnLCensored(v, REs, todo)
+				lnL = lnLCensored(v, mod, todo)
 				if (v->d_uncens)
 					lnL = lnL + lnLContinuous(v, todo)
 			} else
 				lnL = lnLContinuous(v, todo)
 
 			if (v->d_trunc)
-				lnL = lnL - lnLTrunc(v, REs, todo)
-			if (strlen(lf)) {
-				st_select(this_lnL, base->lnL, v->subsample)
-				this_lnL[.,.] = lnL
-			} else if (L > 1)
-				(base->lnL)[v->SubsampleInds] = lnL
-			else
-				(v->lnL)[.,.] = lnL
+				lnL = lnL - lnLTrunc(v, mod, todo)
+
+			(*(base->plnL))[v->SubsampleInds] = lnL
+
 			if (todo) {
 				if (v->d_cens)
 					if (v->d_uncens) {
@@ -1891,28 +1506,28 @@ void cmp_lnL(real scalar todo, string scalar lf, | string rowvector ScoreVars) {
 				pdlnL_dtheta = &(*pdlnL_dtheta * v->QEinvGamma)
 
 				if (L == 1) {
-					                   (v->Scores.M.ThetaScores  )[.,.] = *pdlnL_dtheta
-					if (REs->NumCuts)  (v->Scores.M.  CutScores  )[.,.] = v->dPhi_dcuts
-					if (cols(base->D)) (v->Scores.M.  SigScores.M)[.,.] = *pdlnL_dSig * v->invGammaQSigD
+					                   S[v->SubsampleInds, mod->Scores.ThetaScores  ] = *pdlnL_dtheta
+					if (mod->NumCuts)  S[v->SubsampleInds, mod->Scores.  CutScores  ] = v->dPhi_dcuts
+					if (cols(base->D)) S[v->SubsampleInds, mod->Scores.  SigScores.M] = *pdlnL_dSig * v->invGammaQSigD
 					for (i=m=1; m<=d; m++)
-						for (c=1; c<=REs->G[m]; c++)
-							(v->Scores.M.GammaScores[i++].M)[.,.] = v->TheseInds[m]? 
-									(*pdlnL_dtheta)[v->one2N,m]:*v->theta[(*REs->GammaInds[m])[c]].M + *pdlnL_dSig*v->dOmega_dGamma[m,c].M : v->J_N_1_0
+						for (c=1; c<=mod->G[m]; c++)
+							S[v->SubsampleInds, mod->Scores.GammaScores[i++].M] = v->TheseInds[m]? 
+								(*pdlnL_dtheta)[v->one2N,m]:*v->theta[(*mod->GammaIndByEq[m])[c]].M + *pdlnL_dSig*v->dOmega_dGamma[m,c].M : v->J_N_1_0
 				} else {
 					_editmissing(*pdlnL_dtheta, 0)
 					_editmissing(v->dPhi_dcuts, 0)
 					_editmissing(*pdlnL_dSig, 0)
 
-					pScores = &(v->Scores[L].M[(*REs)[L-1].ThisDraw])
+					pScores = &(v->Scores[L].M[mod->ThisDraw[L]])
 					                   pScores->ThetaScores  = *pdlnL_dtheta
-					if (REs->NumCuts)  pScores->CutScores    = v->dPhi_dcuts
+					if (mod->NumCuts)  pScores->CutScores    = v->dPhi_dcuts
 					if (cols(base->D)) pScores->TScores[L].M = *pdlnL_dSig
 					for (i=m=1; m<=d; m++)
 						if (v->TheseInds[m])
-							for (c=1; c<=REs->G[m]; c++)
-								pScores->GammaScores[i++].M  = (*pdlnL_dtheta)[v->one2N,m] :* v->theta[(*REs->GammaInds[m])[c]].M
+							for (c=1; c<=mod->G[m]; c++)
+								pScores->GammaScores[i++].M  = (*pdlnL_dtheta)[v->one2N,m] :* v->theta[(*mod->GammaIndByEq[m])[c]].M
 						else
-							i = i + REs->G[m]
+							i = i + mod->G[m]
 
 					for (l=1; l<L; l++) {
 						RE = &((*REs)[l])
@@ -1922,9 +1537,9 @@ void cmp_lnL(real scalar todo, string scalar lf, | string rowvector ScoreVars) {
 								for (c=1; c<=cols(RE->RCInds[eq1].M)+anyof(RE->REEqs, eq1); c++)
 									for (eq2=eq1; eq2<=RE->NEq; eq2++)
 										PasteAndAdvance(pScores->TScores[l].M, k, 
-											(v->XU[l].M[RE->ThisDraw, e++].M) :* pScores->ThetaScores[v->one2N, RE->Eqs[eq2]])
+											(v->XU[l].M[mod->ThisDraw[l+1], e++].M) :* pScores->ThetaScores[v->one2N, RE->Eqs[eq2]])
 							else
-								PasteAndAdvance(pScores->TScores[l].M, k, (v->XU[l].M[RE->ThisDraw, eq1].M) :* pScores->ThetaScores[v->one2N, RE->Eqs[|eq1 \ .|]])
+								PasteAndAdvance(pScores->TScores[l].M, k, (v->XU[l].M[mod->ThisDraw[l+1], eq1].M) :* pScores->ThetaScores[v->one2N, RE->Eqs[|eq1 \ .|]])
 					}
 				}
 			}
@@ -1933,20 +1548,12 @@ void cmp_lnL(real scalar todo, string scalar lf, | string rowvector ScoreVars) {
 		for (l=L-1; l; l--) { // If L=1, sets l=0 as needed to terminate do loop. Usually this loop runs once.
 			RE = &((*REs)[l])
 
-			// efficient way to sum lnL by group
-			_quadrunningsum((*REs)[l+1].lnL, rows((*REs)[l+1].Weights)? (*REs)[l+1].lnL :* (*REs)[l+1].Weights : (*REs)[l+1].lnL, 1)
-			t = (*REs)[l+1].lnL[RE->IDRangesGroup]
-			if (rows(t) > 1)
-				RE->lnLByDraw[RE->one2N, RE->ThisDraw] = t - (0 \ t[|.\rows(t)-1|])
-			else
-				RE->lnLByDraw[1, RE->ThisDraw] = t
+			RE->lnLByDraw[RE->one2N, mod->ThisDraw[l+1]] = cmp_panelsum(*((*REs)[l+1].plnL), (*REs)[l+1].Weights, RE->IDRangesGroup)
 
-			if (RE->ThisDraw < RE->R)
-				RE->ThisDraw = RE->ThisDraw + 1
+			if (mod->ThisDraw[l+1] < RE->R)
+				mod->ThisDraw[l+1] = mod->ThisDraw[l+1] + 1
 			else {
-				RE->ThisDraw = 1
-
-				if (REs->IntMethod)
+				if (mod->Adapted)
 					RE->lnLByDraw = RE->lnLByDraw + RE->AdaptiveShift // even if active adaptation done, add adaptive ln(det(C)*normalden(QuadXAdapt)/normalden(QuadX))
 
 				// for each group, make weights proportional to L (not lnL) for the group/obs at next-lower level
@@ -1954,65 +1561,67 @@ void cmp_lnL(real scalar todo, string scalar lf, | string rowvector ScoreVars) {
 				lnLmin = t[,1]; lnLmax = t[,2]
 				t = lnLmin:*(lnLmin:>0) - lnLmax; shift = t:*(t :< 0) + lnLmax // parallelizes better than rowminmax()
 				_editmissing( L_g=exp(RE->lnLByDraw:+shift), 0) // un-log likelihood for each group & draw; lnL=. => L=0
-				if (REs->Quadrature)
+				if (mod->Quadrature)
 					L_g = L_g :* RE->QuadW
-				RE->lnL = quadrowsum(L_g) // in non-quadrature case, sum rather than average of likelihoods across draws
-				if (todo | (REs->AdaptivePhaseThisEst & REs->IntMethod==1))
-					_editmissing(L_g = L_g :/ RE->lnL, 0) // normalize L_g's as weights for obs-level scores or for use in Smith-Naylor adaptation
-				if (REs->AdaptivePhaseThisEst & NewIter) {
+				RE->plnL = &quadrowsum(L_g) // in non-quadrature case, sum rather than average of likelihoods across draws
+				if (todo | (mod->AdaptivePhaseThisEst & mod->WillAdapt))
+					_editmissing(L_g = L_g :/ *(RE->plnL), 0) // normalize L_g's as weights for obs-level scores or for use in Smith-Naylor adaptation
+				if (mod->AdaptivePhaseThisEst & NewIter) {
+					pThisQuadXAdapt = &asarray(RE->QuadXAdapt, mod->ThisDraw[|.\l|])
+					if (rows(*pThisQuadXAdapt)==0) { // initialize if needed
+						asarray(RE->QuadXAdapt, mod->ThisDraw[|.\l|], smatrix(RE->N))
+						pThisQuadXAdapt = &asarray(RE->QuadXAdapt, mod->ThisDraw[|.\l|])
+					}
 					for (j=RE->N; j; j--)
 						if (RE->ToAdapt[j]) {
-							RE->QuadMean[j].M = mean(RE->QuadXAdapt[j].M, t=L_g[j,]')
-							C = cholesky(quadcrossdev(RE->QuadXAdapt[j].M, RE->QuadMean[j].M, t, RE->QuadXAdapt[j].M, RE->QuadMean[j].M))
+						pThisQuadXAdapt_j = &((*pThisQuadXAdapt)[j].M)
+						if (rows(*pThisQuadXAdapt_j)==0) pThisQuadXAdapt_j = &(RE->QuadX)
+
+							RE->QuadMean[j].M = mean(*pThisQuadXAdapt_j, t=L_g[j,]')
+							C = cholesky(quadcrossdev(*pThisQuadXAdapt_j, RE->QuadMean[j].M, t, *pThisQuadXAdapt_j, RE->QuadMean[j].M))
 							if (C[1,1] == .) { // diverged? try restarting, but decrement counter to prevent infinite loop
 								RE->ToAdapt[j] = RE->ToAdapt[j] - 1
-								RE->QuadXAdapt[j].M = RE->QuadX
+								(*pThisQuadXAdapt)[j].M = RE->QuadX
 								RE->AdaptiveShift[j,] = J(1, RE->R, 0)
 							} else {
 								RE->QuadSD[j].M = diagonal(C)
-								if (mreldif(RE->QuadXAdapt[j].M, t=RE->QuadX*C':+RE->QuadMean[j].M) < REs->QuadTol) { // has adaptation converged for this ML search iteration?
+								if (mreldif(*pThisQuadXAdapt_j, t=RE->QuadX*C':+RE->QuadMean[j].M) < mod->QuadTol) { // has adaptation converged for this ML search iteration?
 									RE->ToAdapt[j] = 0
 									continue
 								}
-								RE->QuadXAdapt[j].M = t
-								RE->AdaptiveShift[j,] = quadrowsum_lnnormalden(RE->QuadXAdapt[j].M, quadcolsum(ln(RE->QuadSD[j].M),1))' - RE->lnnormaldenQuadX
+								(*pThisQuadXAdapt)[j].M = t
+								RE->AdaptiveShift[j,] = quadrowsum_lnnormalden(t, quadcolsum(ln(RE->QuadSD[j].M),1))' - RE->lnnormaldenQuadX
 							}
 							for (r=RE->R; r; r--)
-								RE->U[r].M[|RE->IDRanges[j,]', (.\.)|] = J(RE->IDRanges[j,2]-RE->IDRanges[j,1]+1, 1, RE->QuadXAdapt[j].M[r,])
+								RE->U[r].M[|RE->IDRanges[j,]', (.\.)|] = J(RE->IDRanges[j,2]-RE->IDRanges[j,1]+1, 1, (*pThisQuadXAdapt_j)[r,])
 						}
-					if (RE->AdaptivePhaseThisIter = any(RE->ToAdapt) * mod(RE->AdaptivePhaseThisIter-1, REs->QuadIter)) { // not converged and haven't hit max number of adaptations?
-						BuildTotalEffects(REs, l)
-						if (REs->todo)
-							BuildXU(subviews, REs, l, L)
+
+					if (RE->AdaptivePhaseThisIter = any(RE->ToAdapt) * mod(RE->AdaptivePhaseThisIter-1, mod->QuadIter)) { // not converged and haven't hit max number of adaptations?
+						mod->BuildTotalEffects(l)
+						if (mod->todo)
+							mod->BuildXU(l)
 					}
 				}
+				mod->ThisDraw[l+1] = 1
 			}
 
-			if (l < L-2 & REs->AdaptivePhaseThisEst & NewIter) { // reset adaptive quad points next level down, at some efficiency cost, since the best points at levels 2 and below vary with each higher-level choice of draw
-				for (j=(*REs)[l+1].N; j; j--)
-					(*REs)[l+1].QuadXAdapt[j].M = (*REs)[l+1].QuadX
-				(*REs)[l+1].AdaptiveShift = J((*REs)[l+1].N, (*REs)[l+1].NumREDraws, 0)
-				(*REs)[l+1].lnnormaldenQuadX = quadrowsum_lnnormalden((*REs)[l+1].QuadX, 0)'
-			}
-
-			if (RE->ThisDraw > 1 | RE->AdaptivePhaseThisIter) { // no (more) carrying? propagate draw changes down the tree
+			if (mod->ThisDraw[l+1] > 1 | RE->AdaptivePhaseThisIter) { // no (more) carrying? propagate draw changes down the tree
 				for (_l=l; _l<L; _l++)
 					for (eq=cols(RE->GammaEqs); eq; eq--)
-						(*REs)[_l+1].theta[RE->GammaEqs[eq]].M = (*REs)[_l].theta[RE->GammaEqs[eq]].M + (*REs)[_l].TotalEffect[(*REs)[_l].ThisDraw, eq].M
+						(*REs)[_l+1].theta[RE->GammaEqs[eq]].M = (*REs)[_l].theta[RE->GammaEqs[eq]].M + (*REs)[_l].TotalEffect[mod->ThisDraw[_l+1], eq].M
 				break
  			}
 
 			// finished the group's (adaptive) draws
 			if (todo) { // obs-level score for next level up is avg of scores over this level's draws, weighted by group's L for each draw
 				real matrix L_gv, L_gvr, sThetaScores, sCutScores
-				struct smatrix colvector sTScores, sGammaScores; sTScores=smatrix(L); sGammaScores=smatrix(sum(REs->G))
+				struct smatrix colvector sTScores, sGammaScores; sTScores=smatrix(L); sGammaScores=smatrix(sum(mod->G))
 
-				for (v = subviews; v!=NULL; v = v->next) {
+				for (v = mod->subviews; v!=NULL; v = v->next) {
 					L_gv = L_g[v->id[l].M, RE->one2R]
-
 					L_gvr = L_gv[v->one2N, 1]
 						sThetaScores = L_gvr :* v->Scores[l+1].M[1].ThetaScores
-					if (REs->NumCuts)
+					if (mod->NumCuts)
 						sCutScores   = L_gvr :* v->Scores[l+1].M[1].CutScores
 					for (i=L; i; i--)
 						if (cols((*REs)[i].D))
@@ -2020,11 +1629,11 @@ void cmp_lnL(real scalar todo, string scalar lf, | string rowvector ScoreVars) {
 					for (i=cols(v->Scores.M[1].GammaScores); i; i--)
 						if (rows(v->Scores[l+1].M[1].GammaScores[i].M))
 							sGammaScores[i].M = L_gvr :* v->Scores[l+1].M[1].GammaScores[i].M
-					for (r = (*REs)[l+1].NumREDraws; r>1; r--) {
+					for (r = mod->NumREDraws[l+1]; r>1; r--) {
 						L_gvr = L_gv[v->one2N, r]
 						
 							sThetaScores = sThetaScores + L_gvr :* v->Scores[l+1].M[r].ThetaScores
-						if (REs->NumCuts)
+						if (mod->NumCuts)
 							sCutScores   = sCutScores   + L_gvr :* v->Scores[l+1].M[r].CutScores
 						for (i=L; i; i--)
 							if (cols((*REs)[i].D))
@@ -2034,65 +1643,584 @@ void cmp_lnL(real scalar todo, string scalar lf, | string rowvector ScoreVars) {
 								sGammaScores[i].M = sGammaScores[i].M + L_gvr :* v->Scores[l+1].M[r].GammaScores[i].M
 					}
 					if (l==1) { // final scores
-							v->Scores.M.ThetaScores[v->one2N, .] = rows(v->WeightProduct)? sThetaScores  :* v->WeightProduct : sThetaScores
-						if (REs->NumCuts)
-							v->Scores.M.CutScores[v->one2N, .]   = rows(v->WeightProduct)? sCutScores    :* v->WeightProduct : sCutScores
+							S[v->SubsampleInds, mod->Scores.ThetaScores] = rows(v->WeightProduct)? sThetaScores  :* v->WeightProduct : sThetaScores
+						if (mod->NumCuts)
+							S[v->SubsampleInds, mod->Scores.CutScores]   = rows(v->WeightProduct)? sCutScores    :* v->WeightProduct : sCutScores
 						if (cols(base->D))
-							v->Scores.M.SigScores[L].M[v->one2N, .]   = rows(v->WeightProduct)? sTScores[L].M*v->invGammaQSigD :* v->WeightProduct : sTScores[L].M*v->invGammaQSigD
+							S[v->SubsampleInds, mod->Scores.SigScores[L].M]   = rows(v->WeightProduct)? sTScores[L].M*v->invGammaQSigD :* v->WeightProduct : sTScores[L].M*v->invGammaQSigD
 						for (i=L-1; i; i--)
 							if (cols((*REs)[i].D))
-								v->Scores.M.SigScores[i].M[v->one2N, .] = rows(v->WeightProduct)? (sTScores[i].M*(*REs)[i].D):*v->WeightProduct : sTScores[i].M*(*REs)[i].D
+								S[v->SubsampleInds, mod->Scores.SigScores[i].M] = rows(v->WeightProduct)? (sTScores[i].M*(*REs)[i].D):*v->WeightProduct : sTScores[i].M*(*REs)[i].D
 						for (i=m=1; m<=d; m++)
-							for (c=1; c<=REs->G[m]; c++) {
+							for (c=1; c<=mod->G[m]; c++) {
 								if (v->TheseInds[m])
-									v->Scores.M.GammaScores[i].M[v->one2N, .]  = rows(v->WeightProduct)? 
+									S[v->SubsampleInds, mod->Scores.GammaScores[i].M]  = rows(v->WeightProduct)? 
 										(sGammaScores[i].M + sTScores[L].M * v->dOmega_dGamma[m,c].M):*v->WeightProduct :
 										 sGammaScores[i].M + sTScores[L].M * v->dOmega_dGamma[m,c].M
 								else
-									v->Scores.M.GammaScores[i].M[v->one2N, .] = v->J_N_1_0
+									S[v->SubsampleInds, mod->Scores.GammaScores[i].M] = v->J_N_1_0
 								i++
 							}
 					} else {
-							v->Scores[l].M[(*REs)[l-1].ThisDraw].ThetaScores = sThetaScores
-						if (REs->NumCuts)
-							v->Scores[l].M[(*REs)[l-1].ThisDraw].CutScores   = sCutScores
+							v->Scores[l].M[mod->ThisDraw[l]].ThetaScores = sThetaScores
+						if (mod->NumCuts)
+							v->Scores[l].M[mod->ThisDraw[l]].CutScores   = sCutScores
 						for (i=L; i; i--)
 							if (cols((*REs)[i].D))
-								v->Scores[l].M[(*REs)[l-1].ThisDraw].TScores[i].M = sTScores[i].M
+								v->Scores[l].M[mod->ThisDraw[l]].TScores[i].M = sTScores[i].M
 						for (i=cols(v->Scores.M[1].GammaScores); i; i--)
-							v->Scores[l].M[(*REs)[l-1].ThisDraw].GammaScores[i].M = sGammaScores[i].M
+							v->Scores[l].M[mod->ThisDraw[l]].GammaScores[i].M = sGammaScores[i].M
 					}
 				}
 			}
-			RE->lnL = ln(RE->lnL) - shift
-			if (!REs->Quadrature)
-				RE->lnL = RE->lnL :- RE->lnNumREDraws
+			RE->plnL = &(ln(*(RE->plnL)) - shift)
+			if (!mod->Quadrature)
+				RE->plnL = &(*(RE->plnL) :- RE->lnNumREDraws)
 		}
 	} while (l) // exit when adding one more draw causes carrying all the way accross the draw counters, back to 1, 1, 1...
 
 	if (L > 1) {
-		t = quadsum(rows(REs->Weights)? REs->Weights:*REs->lnL : REs->lnL, 1)
-		if (REs->AdaptivePhaseThisEst & NewIter) {
-			if (REs->AdaptivePhaseThisEst = mreldif(REs->LastlnLThisIter, REs->LastlnLLastIter) >= 1e-6)
-				REs->LastlnLLastIter = REs->LastlnLThisIter
+		lnf = quadsum(rows(REs->Weights)? REs->Weights:* *(REs->plnL) : *(REs->plnL), 1)
+		if (mod->AdaptivePhaseThisEst & NewIter) {
+			if (mod->AdaptivePhaseThisEst = mreldif(mod->LastlnLThisIter, mod->LastlnLLastIter) >= 1e-6)
+				mod->LastlnLLastIter = mod->LastlnLThisIter
 			else
-				printf("\nAdaptive quadrature points fixed.\n")
-			REs->LastIter = Iter
+				printf("\n{res}Adaptive quadrature points fixed.\n")
 		}
-		if (t < .) REs->LastlnLThisIter = t
-		st_numscalar(st_local("lnfi"), t)
+		if (lnf < .) mod->LastlnLThisIter = lnf
 	}
 }
 
-void cmpSaveSomeResults() {
-	external struct RE colvector _REs; pointer (struct RE scalar) scalar RE; external real scalar _L; real scalar l, j, k_aux_nongamma; real matrix means, ses; string matrix colstripe, _colstripe
-	if (_L == 1)
-		st_matrix("e(Sigma)", _REs.Sig)
+
+
+
+
+
+
+
+
+
+
+void cmp_model::cmp_init() {
+	real scalar i, l
+	pointer(struct RE scalar) scalar RE
+	real scalar ghk_nobs, eq1, eq2, c, m, j, r, k, d_oprobit, d_mprobit, d_roprobit, start, stop, PrimeIndex, Hammersley, NDraws, HasRE, cols, d2
+	real matrix Yi, U
+	real colvector remaining, S
+	real rowvector mprobit, Primes, t, one2d
+	pointer(struct subview scalar) scalar v, next
+	string scalar varnames, LevelName
+	pointer(real matrix) rowvector QuadData
+	pragma unset Yi
+
+	REs = &RE(L, 1)
+	base = &((*REs)[L])
+	base->d = d
+	one2d = 1..d; d2 = d*(d+1)*.5
+
+	Gamma = J(d, d, 0)
+	cuts = J(MaxCuts+2, d, 1.701e+38) // maxfloat()
+	cuts[1,] = J(1, d, -1.701e+38) // minfloat()
+	y = Lt = Ut = yL = smatrix(d)
+
+	if (HasGamma) {
+		dOmega_dGamma = smatrix(d,d)
+		Idd = I(d*d)
+		vLd = rowsum(Lmatrix(d) :*(1..2^d)) // X[vLd,] = L*X, but faster
+		vKd = colsum(Kmatrix(d,d) :* (1::d*d))
+		vIKI = colsum((I(d) # Kmatrix(d,d) # I(d)) :*(1::d^4))
+	}
+	ThisDraw = J(1, L, 1)
+	for (l=L; l; l--) {
+		RE = &((*REs)[l])
+		RE->NEq = cols(RE->Eqs = cmp_selectindex(Eqs[,l]'))
+		RE->NEff = NumEff[l,RE->Eqs]
+		RE->GammaEqs = HasGamma? cmp_selectindex((GammaId * Eqs[,l])') : RE->Eqs
+		RE->one2d = 1..( RE->d = rowsum(RE->NEff) )
+		RE->theta = smatrix(d)
+		RE->d2 = RE->d * (RE->d + 1) * .5
+		RE->covAcross = cross( st_global("cmp_cov"+strofreal(l)) :== ("exchangeable"\"unstructured"\"independent"), 0::2 ) 
+		for (i=d; i; i--)
+			RE->covWithin = cross( st_global("cmp_cov"+strofreal(l)+"_"+strofreal(i)) :== ("exchangeable"\"unstructured"\"independent"), 0::2 ) \ RE->covWithin
+		RE->FixedSigs = st_matrix("cmp_fixed_sigs"+strofreal(l))
+		RE->FixedRhos = st_matrix("cmp_fixed_rhos"+strofreal(l))
+	}
+
+	_st_view(indicators, ., indVars)
+	base->N = rows(indicators)
+	base->one2N = base->N<10000? 1::base->N : .
+	base->J_N_1_0 = J(base->N, 1, 0)
+
+	Theta = J(base->N,d,0)
+
+	for (i=d; i; i--) {
+		_st_view(y   [i].M, ., yVars[i])
+		if (trunceqs[i]) {
+			_st_view(Lt[i].M, ., LtVars[i])
+			_st_view(Ut[i].M, ., UtVars[i])
+		}
+
+		if (intregeqs[i])
+			_st_view(yL[i].M,  ., yLVars[i])
+	}
+
+	for (l=L-1; l; l--)
+		_st_view((*REs)[l].id,  ., "_cmp_id" + strofreal(l))
+
+	for (l=L; l; l--) {
+		RE = &((*REs)[l])
+		if (todo | HasGamma) {
+			// build dSigdParams, derivative of sig, vech(rho) vector w.r.t. vector of actual sig, rho parameters, reflecting "exchangeable" and "independent" options
+			real scalar accross, within, c1, c2
+			t = J(0, 1, 0); i = 0 // index of entries in full sig, vech(rho) vector
+			if (!RE->covAcross) // exchangeable across?
+				accross = ++i
+			for (eq1=1; eq1<=RE->NEq; eq1++) {
+				if (!RE->covWithin[RE->Eqs[eq1]]) // exchangeable within?
+					if (!RE->covAcross) // exchangeable across?
+						within = accross
+					else
+						within = ++i
+				for (c1=1; c1<=RE->NEff[eq1]; c1++)
+					if  (RE->FixedSigs[RE->Eqs[eq1]] == .)
+						if (RE->covWithin[RE->Eqs[eq1]] & RE->covAcross) // exchangeable neither within nor across?
+							t = t \ ++i
+						else
+							t = t \ within
+					else
+						t = t \ . // entry of sig vector corresponds to no parameter in model, being fixed
+			}
+			if (!RE->covAcross & RE->d>1) // exchangeable across?
+				accross  = ++i
+			for (eq1=1; eq1<=RE->NEq; eq1++) {
+				if (!RE->covWithin[RE->Eqs[eq1]] & RE->NEff[eq1]>1) // exchangeable within?
+					within = ++i
+				for (c1=1; c1<=RE->NEff[eq1]; c1++) {
+					for (c2=c1+1; c2<=RE->NEff[eq1]; c2++) {
+						if (RE->covWithin[RE->Eqs[eq1]]==1) // unstructured
+							within = ++i
+						t = t \ (RE->covWithin[RE->Eqs[eq1]]==2? . : within) // independent?
+					}
+					for (eq2=eq1+1; eq2<=RE->NEq; eq2++)
+						for (c2=1; c2<=RE->NEff[eq2]; c2++) {
+							if (RE->FixedRhos[RE->Eqs[eq2],RE->Eqs[eq1]]==.) {
+								if (RE->covAcross == 1) // unstructured
+									accross = ++i
+								t = t \ accross
+							} else
+								t = t \ .
+					}
+				}
+			}
+			RE->dSigdParams = i? designmatrix(editmissing(t,i+1))[|.,.\.,i|] : J(RE->d2, 0, 0)
+		}
+	}
+
+	Primes = 2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101,103,107,109
+	if (L>1 & REType != "random" & length(Primes) < sum(NumEff) - 1 - (ghkType=="hammersley" | REType=="hammersley")) {
+		errprintf("Number of unobserved variables to simulate too high for Halton-based simulation. Try {cmd:retype(random)}.\n")
+		return 
+	}
+	PrimeIndex = 1
+
+	if (todo) {
+		Scores = scores()
+		G = J(d, 1, 0); Scores.GammaScores = smatrix(d*d) // more than needed
+		cols = d + 1
+		if (HasGamma)
+			for (c=m=1; m<=d; m++)
+				for (i=1; i<=(G[m]=rows(*GammaIndByEq[m])); i++)
+											Scores.GammaScores[c++].M = cols++
+		             Scores.ThetaScores   = one2d
+		if (NumCuts) Scores.CutScores     = cols..cols+NumCuts-1
+		cols = cols + NumCuts
+		Scores.SigScores = smatrix(L)
+		for (l=1; l<=L; l++)
+			if (t = cols((*REs)[l].dSigdParams)) {
+											Scores.SigScores[l].M  = cols..cols+t-1
+				cols = cols + t
+			}
+		S0 = J(base->N, cols-1, 0)
+	}
+
+	for (l=L-1; l; l--) {
+		RE = &((*REs)[l])
+
+		RE->N = RE->id[base->N]
+		RE->one2N = RE->N<10000? 1::RE->N : .
+		RE->J_N_1_0 = J(RE->N, 1, 0)
+		RE->REInds = cmp_selectindex(tokens(st_global("cmp_rc"+strofreal(l))) :== "_cons")
+		RE->X = RE->RCInds = smatrix(RE->NEq)
+
+		RE->HasRC = 0
+		for (start=j=1; j<=RE->NEq; j++) {
+			if (HasRE = st_global("cmp_re"+strofreal(l)+"_"+strofreal(RE->Eqs[j])) != "")
+				RE->REEqs = RE->REEqs, j
+			if (strlen(varnames = st_global("cmp_rc"+strofreal(l)+"_"+strofreal(RE->Eqs[j])))) {
+				RE->HasRC = 1
+				RE->X[j].M = st_data(., varnames)
+				stop = start + cols(tokens(varnames))
+				RE->RCInds[j].M = start..stop-1
+				start = stop + HasRE
+			}
+		}
+		if (RE->HasRC) RE->J_N_NEq_0 = J(base->N, RE->NEq, 0)
+
+		RE->IDRanges = panelsetup(RE->id, 1)
+		RE->IDRangesGroup = l==L-1? RE->IDRanges : panelsetup(RE->id[(*REs)[l+1].IDRanges[,1]], 1)
+
+		Hammersley = REType=="hammersley" & l==1
+		
+		LevelName = L>2? " for level " +strofreal(l) : ""
+
+		if (Quadrature)
+			if (RE->d <= 2)
+				printf("{res}Random effects/coefficients%s modeled with Gauss-Hermite quadrature.", LevelName)
+			else {
+				printf("{res}Random effects/coefficients%s modeled with sparse-grid quadrature.\n", LevelName)
+				printf("Precision equivalent to that of one-dimensional quadrature with %f integration points.", NumREDraws[l+1])
+			}
+		else {
+			printf("{res}Random effects/coefficients%s simulated.\n", LevelName)
+			printf("    Sequence type = %s\n", REType)
+			printf("    Number of draws per observation = %f\n", NumREDraws[l+1]/REAnti)
+			printf("    Include antithetic draws = %s\n", REAnti==2? "yes" : "no")
+			printf("    Scramble = %s\n", ("no", "square root", "negative square root", "Faure-Lemieux")[1+REScramble])
+			if ((REType=="halton" | REType=="ghalton") | (Hammersley & RE->d>1))
+				printf("    Prime base%s = %s\n", RE->d > 1+Hammersley? "s" : "", invtokens(strofreal(Primes[PrimeIndex..PrimeIndex-1+RE->d-Hammersley])))
+			if (l==1) printf(`"Each observation gets different draws, so changing the order of observations in the data set would change the results.\n\n"')
+		}
+
+		if (Quadrature) {
+			QuadData = SpGr(RE->d, NumREDraws[l+1])
+			NDraws = NumREDraws[l+1] = rows(*QuadData[1])
+			if (!WillAdapt) printf("Number of integration points = %f.\n\n", NDraws)
+// inefficiently duplicates draws over groups then parcels them out below
+			U = J(RE->N, 1, 1) # (*QuadData[1])
+			RE->QuadX = *QuadData[1]
+			RE->QuadW = *QuadData[2]'
+			if (WillAdapt) {
+				RE->QuadMean = RE->QuadSD = smatrix(RE->N)
+				RE->QuadXAdapt = asarray_create("real", l)
+				for (j=RE->N; j; j--) {
+//					RE->QuadXAdapt[j].M = RE->QuadX
+					RE->QuadSD[j].M = J(RE->d, 1, .)
+				}
+				RE->AdaptiveShift = J(RE->N, NDraws, 0)
+				RE->lnnormaldenQuadX = quadrowsum_lnnormalden(RE->QuadX,0)'
+				LastlnLThisIter=0; LastlnLLastIter=1
+			}
+		} else {
+			NDraws = NumREDraws[l+1] / REAnti
+			if (REType=="random")
+				U = invnormal(uniform(RE->N * NDraws / REAnti, RE->d))
+			else if (REType=="halton" | Hammersley) {
+				U = J(RE->N * NDraws, RE->d, 0)
+				if (Hammersley)
+					U[,1] = invnormal(J(RE->N,1,1) # (0.5::NDraws)/NDraws)
+				for (r=1+Hammersley; r<=cols(U); r++)
+					U[,r] = invnormal(halton2(rows(U), Primes[PrimeIndex++], (NULL, &ghk2SqrtScrambler(), &ghk2NegSqrtScrambler(), &ghk2FLScrambler())[1+REScramble]))
+			} else {
+				U = J(RE->N * NDraws, RE->d, 0)
+				for (r=1; r<=cols(U); r++)
+					U[,r] = invnormal(ghalton(rows(U), Primes[PrimeIndex++], uniform(1,1)))
+			}
+		}
+		RE->one2R = 1..(RE->R = NumREDraws[l+1])
+		RE->U = smatrix(RE->R)
+		RE->TotalEffect = smatrix(RE->R, cols(RE->GammaEqs))
+		RE->XU          = smatrix(RE->R, sum((RE->NEq..1) :* RE->NEff))
+
+		S = ((1::RE->N) * NDraws)[RE->id]
+		for (r=NDraws; r; r--) {
+			RE->U[r].M = U[S, RE->one2d]
+			if (REAnti == 2)
+				RE->U[r+RE->R*0.5].M = -RE->U[r].M
+			S = S :- 1
+		}
+
+		RE->lnLlimits = ln(smallestdouble()) + 1, ln(maxdouble()) - (RE->lnNumREDraws = ln(RE->R)) - 1
+
+		RE->lnLByDraw = J(RE->N, RE->R, 0)
+	}
+
+	if (L > 1)
+		for (l=L; l; l--)
+			if (st_global("parse_wexp"+strofreal(l)) != "") {
+				RE = &((*REs)[l])
+				_st_view(RE->Weights, ., "_cmp_weight"+strofreal(l))
+				if (l < L) RE->Weights = RE->Weights[RE->IDRanges[,1]] // get one instance of each group's weight
+				if (anyof(("pweight", "aweight"), st_global("parse_wtype"+strofreal(l)))) // normalize pweights, aweights to sum to # of groups
+					if (l == 1)
+						REs->Weights = RE->Weights / mean(RE->Weights)
+					else
+						for (j=(*REs)[l-1].N; j; j--) {
+							S = (*REs)[l-1].IDRangesGroup[j,]', (.\.)
+							RE->Weights[|S|] = RE->Weights[|S|] / mean(RE->Weights[|S|])
+						}
+				t = l==L? RE->Weights : RE->Weights[RE->id]
+				WeightProduct = rows(WeightProduct)? WeightProduct:* t : t
+			}
+
+	ghk_nobs = 0; v = NULL
+	remaining = 1::base->N
+	d_cens = 0
+	while (t = max(remaining)) { // build linked list of subviews onto data, each a set of rows with same indicator combination
+		next = v; (v = &(subview()))->next = next  // add new subview to linked list
+		remaining = remaining :* !(v->subsample = rowmin(indicators :== (v->TheseInds = indicators[t,])))
+		v->SubsampleInds = cmp_selectindex(v->subsample)
+		v->theta = smatrix(d)
+		v->QE = diag(2*(v->TheseInds:==3 :| v->TheseInds:==8 :| v->TheseInds:==10) :- 1)
+		v->N = colsum(v->subsample)
+		v->one2N = v->N<10000? 1::v->N : .
+		v->d_uncens = cols(v->uncens = cmp_selectindex(v->TheseInds:==1))
+		v->halfDmatrix = 0.5 * Dmatrix(v->d_uncens)
+		v->d_oprobit = d_oprobit = cols(v->oprobit = cmp_selectindex(v->TheseInds:==5))
+		v->d_trunc = cols(v->trunc = cmp_selectindex(trunceqs))
+		v->d_cens = cols(v->cens = cmp_selectindex(v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<mprobit_ind_base :| v->TheseInds:>=roprobit_ind_base)))
+		v->censnonfrac           = cmp_selectindex(v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<mprobit_ind_base :| v->TheseInds:>=roprobit_ind_base) :& v->TheseInds:!=10)
+		v->d_frac = cols(v->frac = cmp_selectindex(v->TheseInds:==10))
+		d_cens = max((d_cens, v->d_cens))
+		v->dCensNonrobase = cols(v->cens_nonrobase = cmp_selectindex(NonbaseCases :& (v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<mprobit_ind_base :| v->TheseInds:>=roprobit_ind_base))))
+		if (v->d_cens)
+			v->d_two_cens = cols(v->two_cens = cmp_selectindex((v->TheseInds:==5 :| v->TheseInds:==7 :| (v->TheseInds:==2 :| v->TheseInds:==3 :| v->TheseInds:==4 :| v->TheseInds:==8) :& trunceqs)[v->cens])) //indexes *within* list of censored eqs of doubly censored ones
+		else
+			v->d_two_cens = 0
+		
+		v->y = v->Lt = v->Ut = v->yL = smatrix(d)
+		for (i=d; i; i--) {
+			v->y[i].M = y[i].M[v->SubsampleInds]
+			if (trunceqs[i]) {
+				v->Lt[i].M = Lt[i].M[v->SubsampleInds]
+				v->Ut[i].M = Ut[i].M[v->SubsampleInds]
+			}
+			if (intregeqs[i])
+				v->yL[i].M = yL[i].M[v->SubsampleInds]
+		}
+
+		if (v->d_cens > 2) {
+			v->GHKStart = ghk_nobs + 1
+			ghk_nobs = ghk_nobs + v->N
+		}
+		if (v->d_uncens) v->EUncens = J(v->N, v->d_uncens, 0)
+		if (v->d_cens)   v->ECens   = J(v->N, v->d_cens  , 0)
+		if (NumCuts | sum(intregeqs) | sum(trunceqs)) {
+			v->F = J(v->N, v->dCensNonrobase, .)
+			if (sum(trunceqs))
+				v->Et = v->Ft = J(v->N, v->d_trunc, .)
+		}
+		
+		if (v->d_frac) {
+			v->FracCombs = 2*mod(floor(J(1,v->d_frac,0::2^v->d_frac-1):/2:^(v->d_frac-1..0)),2):-1 // matrix whose rows count from 0 to 2^v->d_frac-1 in +/-1 binary, one digit/column
+			v->yProd = v->frac_QE = v->frac_QSig = smatrix(v->NFracCombs = rows(v->FracCombs))
+			for (i=v->NFracCombs; i; i--) {
+				if (i < v->NFracCombs) {
+				 (v->frac_QE[i].M = I(v->d_cens))[v->frac,v->frac] = diag(v->FracCombs[i,])
+				 v->frac_QSig[i].M = QE2QSig(v->frac_QE[i].M)
+				}
+
+				v->yProd[i].M = J(v->N, 1, 1)
+				for (j=v->d_frac; j; j--) // make all the combinations of products of frac prob y's and 1-y's
+					v->yProd[i].M = v->yProd[i].M :* (v->FracCombs[i,j]==1? y[v->frac[j]].M[v->SubsampleInds] : 1:-y[v->frac[j]].M[v->SubsampleInds])
+			}
+		} else
+			v->NFracCombs = 1
+
+		v->dPhi_dpE = v->dPhi_dpSig = smatrix(2^v->d_frac)
+
+		if (d_oprobit) {
+			l = 1
+			if (v->oprobit[1]>1) l = l + colsum(vNumCuts[1::v->oprobit[1]-1])
+			v->CutInds = l .. l+vNumCuts[v->oprobit[1]]-1
+			for (k=2; k<=d_oprobit; k++) {
+				l = l + colsum(vNumCuts[v->oprobit[k-1]::v->oprobit[k]-1])
+				v->CutInds = v->CutInds, l .. l+vNumCuts[v->oprobit[k]]-1
+			}
+			v->vNumCuts = vNumCuts[v->oprobit]
+
+			v->NumCuts = cols(v->CutInds)
+		} else
+			v->NumCuts = 0
+
+		v->mprobit = mprobit_group(rows(MprobitGroupInds))
+		for (k=rows(MprobitGroupInds); k; k--) {
+			start = MprobitGroupInds[k, 1]; stop = MprobitGroupInds[k, 2]
+
+			v->mprobit[k].d = d_mprobit = cols( mprobit = cmp_selectindex(v->TheseInds :& one2d:>=start :& one2d:<=stop) ) - 1
+
+			if (d_mprobit>0) {
+				v->mprobit[k].out = v->TheseInds[start] - mprobit_ind_base // eq of chosen alternative
+				v->mprobit[k].res = cmp_selectindex((v->TheseInds :& one2d:>start  :& one2d:<=stop)[v->cens]) // index in v->ECens for relative differencing results
+				v->mprobit[k].in =  cmp_selectindex( v->TheseInds :& one2d:>=start :& one2d:<=stop :& one2d:!=v->mprobit[k].out) // eqs of rejected alternatives
+				(v->QE)[mprobit,mprobit] = J(d_mprobit+1, 1, 0), insert(-I(d_mprobit), v->mprobit[k].out-start+1, J(1, d_mprobit, 1))
+			}
+		}
+
+		v->N_perm = 1
+		if (NumRoprobitGroups) {
+			pointer (real rowvector) colvector roprobit
+			real rowvector this_roprobit
+			pointer (real matrix) colvector perms
+			pointer (real matrix) scalar ThesePerms
+			real scalar ThisPerm
+			
+			perms = roprobit = J(NumRoprobitGroups, 1, NULL)
+			v->d2_cens = v->d_cens * (v->d_cens + 1)*.5
+
+			for (k=NumRoprobitGroups; k; k--)
+				if (cols(this_roprobit=*(roprobit[k] = &cmp_selectindex(v->TheseInds :& one2d:>=RoprobitGroupInds[k,1] :& one2d:<=RoprobitGroupInds[k,2]))))
+					v->N_perm = v->N_perm * (rows(*(perms[k] = &PermuteTies(reverse? v->TheseInds[this_roprobit] : -v->TheseInds[this_roprobit]))))
+			
+			v->roprobit_QE = v->roprobit_Q_Sig = J(i=v->N_perm, 1, NULL)
+			for (; i; i--) { // combinations of perms across multiple roprobit groups
+				j = i - 1
+				t = I(d)
+				for (k = NumRoprobitGroups; k; k--) 
+					if (d_roprobit = cols(this_roprobit = *roprobit[k])) {
+						ThisPerm = mod(j, rows(*(ThesePerms=perms[k]))) + 1
+						t[this_roprobit, this_roprobit] = 
+							J(d_roprobit, 1, 0), (I(d_roprobit)[,(*ThesePerms)[|ThisPerm, 2 \ ThisPerm, .           |]] - 
+																		I(d_roprobit)[,(*ThesePerms)[|ThisPerm, 1 \ ThisPerm, d_roprobit-1|]] )
+						j = (j - ThisPerm + 1) / rows(*ThesePerms)
+					}
+				(v->roprobit_Q_Sig)[i] = &QE2QSig(*((v->roprobit_QE)[i] = &t[v->cens, v->cens_nonrobase]))
+			}
+		}
+
+		if (v->d_trunc) {
+			v->one2d_trunc = 1..v->d_trunc
+			v->SigIndsTrunc = vSigInds(v->trunc, d)
+
+			if (v->d_trunc > 2) {
+				v->GHKStartTrunc = ghk_nobs + 1
+				ghk_nobs = ghk_nobs + v->N
+			}
+		}
+
+		if (todo) {
+			v->XU = ssmatrix(L-1)
+			for (l=L-1; l; l--)
+				v->XU[l].M = smatrix(rows(REs->XU), cols(REs->XU))
+		}
+
+		if (todo) { // pre-compute stuff for scores
+			v->Scores = scorescol(L)
+			for (l=L; l; l--) {
+				v->Scores[l].M = scores(NumREDraws[l])
+				for (r=NumREDraws[l]; r; r--) {
+					v->Scores[l].M[r].GammaScores = smatrix(sum(G))
+					v->Scores[l].M[r].TScores = smatrix(L) // last entry holds scores of base-level Sig parameters not T
+				}
+			}
+			v->Scores.M.SigScores = smatrix(L)
+			v->id =  smatrix(L-1)
+			for (l=L-1; l; l--)
+				v->id[l].M = (*REs)[l].id[v->SubsampleInds,]
+
+			if (rows(WeightProduct)) v->WeightProduct = WeightProduct[v->SubsampleInds,]
+				
+			for (l=L-1; l; l--)
+				for (r=NumREDraws[L]; r; r--)
+					v->Scores[L].M[r].TScores[l].M = J(v->N, (*REs)[l].d2, 0)
+
+			v->J_N_1_0 = J(v->N, 1, 0)
+
+			v->dOmega_dGamma = smatrix(d,d)
+			
+			v->SigIndsUncens = vSigInds(v->uncens, d)
+			v->cens_uncens = v->cens, v->uncens
+			v->J_d_uncens_d_cens_0 = J(v->d_uncens, v->d_cens, 0)
+			v->J_d_cens_d_0 = J(v->d_cens, d, 0)
+			v->J_d2_cens_d2_0 = J(v->d_cens*(v->d_cens+1)*0.5, d2, 0)				
+
+			if (v->d_uncens) {
+				v->dphi_dE = J(v->N, d, 0)
+				v->dphi_dSig = J(v->N, d2, 0)
+				v->EDE = J(v->N, v->d_uncens*(v->d_uncens+1)*.5, 0)
+			} else
+				v->dPhi_dE = J(v->N, d, 0)
+
+			if (v->d_two_cens | v->d_trunc) {
+				v->dPhi_dpF = J(v->N, v->dCensNonrobase, 0)
+				if (!v->d_uncens)
+					v->dPhi_dF = J(v->N, d, 0)
+				if (v->d_trunc) {
+					v->dPhi_dEt = J(v->N, d,  0)
+					v->dPhi_dSigt = J(v->N, d2, 0)
+				}
+			}
+
+			if (v->d_cens & !v->d_uncens)
+				v->dPhi_dSig = J(v->N, d2, 0)
+			if (v->d_cens & v->d_uncens) {
+				v->dPhi_dpE_dSig = J(v->N, d2, 0)
+				v->_dPhi_dpE_dSig = J(v->N, (v->d_cens+v->d_uncens)*(v->d_cens+v->d_uncens+1)*.5, 0)
+			}
+			if (v->d_two_cens & v->d_uncens) {
+				v->dPhi_dpF_dSig = J(v->N, d2, 0)
+				v->_dPhi_dpF_dSig = J(v->N, (v->d_cens+v->d_uncens)*(v->d_cens+v->d_uncens+1)*.5, 0)
+			}
+			if (NumCuts)
+				v->dPhi_dcuts = J(v->N, NumCuts, 0)
+			
+			if (v->d_cens)
+				v->CensLTInds = vech(colshape(1..v->d_cens*v->d_cens, v->d_cens)')
+
+			if (d_oprobit) {
+				varnames = ""
+				for (k=1; k<=d_oprobit; k++) {
+					stata("unab yis: _cmp_y" + strofreal(v->oprobit[k]) + "_*")
+					varnames = varnames + " " + st_local("yis")
+				}
+				_st_view(Yi, ., tokens(varnames))
+				st_select(v->Yi, Yi, v->subsample)
+			}
+
+			v->QSig = QE2QSig(v->QE)'
+			v->SigIndsCensUncens = vSigInds(v->cens_uncens, d)
+			v->dSig_dLTSig = Dmatrix(v->d_cens + v->d_uncens)
+		}
+	}
+	subviews = v
+
+	if (todo)
+		for (l=L-1; l; l--)
+			BuildXU(l)
+
+	if (ghk_nobs) {
+		// by default, make # draws at least sqrt(N) (Cappellari and Jenkins 2003)
+		if (ghkDraws == 0) ghkDraws = ceil(2 * sqrt(ghk_nobs+1))
+
+		printf("{res}Likelihoods for %f observations involve cumulative normal distributions above dimension 2.\n", ghk_nobs)
+		printf(`"Using {stata "help ghk2" :ghk2()} to simulate them. Settings:\n"')
+		printf("    Sequence type = %s\n", ghkType)
+		printf("    Number of draws per observation = %f\n", ghkDraws)
+		printf("    Include antithetic draws = %s\n", ghkAnti? "yes" : "no")
+		printf("    Scramble = %s\n", ("no", "square root", "negative square root", "Faure-Lemieux")[1+ghkScramble])
+		printf("    Prime bases = %s\n", invtokens(strofreal(Primes[PrimeIndex..PrimeIndex-2+d_cens])))
+		if (ghkType=="random" | ghkType=="ghalton")
+			printf(`"    Initial {stata "help mf_uniform" :seed string} = %s\n"', uniformseed())
+		printf(`"Each observation gets different draws, so changing the order of observations in the data set would change the results.\n\n"')
+		
+		ghk2DrawSet = ghk2setup(ghk_nobs, ghkDraws, d_cens, ghkType, PrimeIndex, (NULL, &ghk2SqrtScrambler(), &ghk2NegSqrtScrambler(), &ghk2FLScrambler())[1+ghkScramble])
+	}
+
+	if ((ghk_nobs & (ghkType=="random" | ghkType=="ghalton")) | (L>1 & (REType=="random" | REType=="ghalton")))
+		printf("Starting seed for random number generator = %s\n", st_strscalar("c(seed)"))
+}
+
+
+void cmpSaveSomeResults(pointer(class cmp_model scalar) scalar mod) {
+	pointer (struct RE scalar) scalar RE, REs; real scalar L, l, j, k_aux_nongamma; real matrix means, ses; string matrix colstripe, _colstripe
+
+	REs = mod->REs
+	if ((L =st_numscalar("e(L)")) == 1)
+		st_matrix("e(Sigma)", REs->Sig)
 	else {
-		for (l=_L; l; l--) {
-			RE = &(_REs[l])
-			st_matrix("e(Sigma"+(l<_L?strofreal(l):"")+")", RE->Sig)
-			if (l<_L & _REs.Quadrature & _REs.IntMethod) {
+		for (l=L; l; l--) {
+			RE = &((*REs)[l])
+			st_matrix("e(Sigma"+(l<L?strofreal(l):"")+")", RE->Sig)
+			if (l<L & mod->Quadrature & mod->WillAdapt) {
 				ses = means = J(RE->N, RE->d, 0)
 				for (j=RE->N; j; j--) {
 					means[j,] = RE->QuadMean[j].M
@@ -2105,10 +2233,10 @@ void cmpSaveSomeResults() {
 				st_matrixcolstripe("e(RESEs"  +strofreal(l)+")", colstripe)
 			}
 		}
-		if (rows(_REs.WeightProduct))
-			st_numscalar("e(N)", sum(_REs.WeightProduct))
+		if (rows(mod->WeightProduct))
+			st_numscalar("e(N)", sum(mod->WeightProduct))
 	}
-	if (_REs.HasGamma) {
+	if (mod->HasGamma) {
 		real scalar eq, d, k, NumCoefs
 		real matrix Beta, BetaInd, GammaInd, REInd, dBeta_dB, dBeta_dGamma, dbr_db, dOmega_dSig, V, br, sig, rho, Rho, invGamma, Omega, NumEff
 		real rowvector eb, p
@@ -2118,8 +2246,8 @@ void cmpSaveSomeResults() {
 		
 		colstripe = J(0, 1, ""); _colstripe = J(0, 2, "")
 		V = st_matrix("e(V)")
-		BetaInd = st_matrix("cmpBetaInd") ; GammaInd = st_matrix("cmpGammaInd")
-		invGamma = _REs[_L].invGamma'
+		BetaInd = st_matrix("cmpBetaInd"); GammaInd = st_matrix("cmpGammaInd")
+		invGamma = (*REs)[L].invGamma'
 		Beta = (invGamma * st_matrix(st_local("Beta")))'
 		d = cols(Beta); k = rows(Beta)
 		br = vec(Beta)
@@ -2129,9 +2257,9 @@ void cmpSaveSomeResults() {
 
 		dbr_db = J(rows(dBeta_dB), 0, 0)
 		for (eq=d; eq; eq--)
-			dbr_db = dBeta_dGamma[, GammaInd[cmp_selectindex(GammaInd[,1]:==eq),2] :+ (eq-1)*d         ], dbr_db        
+			dbr_db = dBeta_dGamma[, GammaInd[cmp_selectindex(GammaInd[,2]:==eq),1] :+ (eq-1)*d         ], dbr_db        
 		for (eq=d; eq; eq--)
-			dbr_db = dBeta_dB    [, BetaInd [cmp_selectindex(BetaInd [,1]:==eq),2] :+ (eq-1)*rows(Beta)], dbr_db        
+			dbr_db = dBeta_dB    [, BetaInd [cmp_selectindex(BetaInd [,2]:==eq),1] :+ (eq-1)*rows(Beta)], dbr_db        
 
 		keep = cmp_selectindex(rowsum(dbr_db:!=0):>0)
 		br = br[keep]'
@@ -2141,24 +2269,25 @@ void cmpSaveSomeResults() {
 			colstripe = J(rows(Beta), 1, eqnames[eq]) \ colstripe
 		colstripe = (colstripe, J(d, 1, tokens(st_local("xvarsall"))'))[keep,]
 
-		if (_REs.NumCuts) {
-			br = br, eb[|cols(eb)-k_aux_nongamma+1 \ cols(eb)-k_aux_nongamma+_REs.NumCuts|]
-			colstripe = colstripe \ st_matrixcolstripe("e(b)")[|cols(eb)-k_aux_nongamma+1, . \ cols(eb)-k_aux_nongamma+_REs.NumCuts,.|]
-			dbr_db = blockdiag(dbr_db, I(_REs.NumCuts))
+		if (mod->NumCuts) {
+			br = br, eb[|cols(eb)-k_aux_nongamma+1 \ cols(eb)-k_aux_nongamma+mod->NumCuts|]
+			colstripe = colstripe \ st_matrixcolstripe("e(b)")[|cols(eb)-k_aux_nongamma+1, . \ cols(eb)-k_aux_nongamma+mod->NumCuts,.|]
+			dbr_db = blockdiag(dbr_db, I(mod->NumCuts))
 		}		
 
 		NumEff = J(0, d, 0)
-		for (l=1; l<=_L; l++) {
-			RE = &(_REs[l])
+		for (l=1; l<=L; l++) {
+			RE = &((*REs)[l])
 			REInd = st_matrix("cmpREInd"+strofreal(l))
 			k = colmax(REInd[,2])
 			dOmega_dSig = (invGamma # I(k))[, (REInd[,1]:-1)*k + REInd[,2]]'
-			st_matrix("e(Omega"+(l<_L?strofreal(l):"")+")", Omega = quadcross(dOmega_dSig, RE->Sig) * dOmega_dSig)
+			st_matrix("e(Omega"+(l<L?strofreal(l):"")+")", Omega = quadcross(dOmega_dSig, RE->Sig) * dOmega_dSig)
 			Rho = corr(Omega); rho = rows(Rho)>1? vech(Rho[|2,1 \ .,cols(Rho)-1|])' : J(1,0,0)
 			sig = sqrt(diagonal(Omega))'
-			dOmega_dSig = edittozero(pinv(editmissing(dSigdsigrhos(&_REs, sig, Omega, rho, Rho),0)),10) * QE2QSig(dOmega_dSig) * RE->D
+			dOmega_dSig = edittozero(pinv(editmissing(dSigdsigrhos(mod->SigXform, sig, Omega, rho, Rho),0)),10) * QE2QSig(dOmega_dSig) * dSigdsigrhos(mod->SigXform, RE->sig, RE->Sig, RE->rho, Rho) * RE->dSigdParams
+
 			keep = cmp_selectindex((((sig:!=.) :* (sig:>0)), (rho:!=.)))'
-			br = br, (_REs.SigXform? ln(sig), atanh(rho) : sig, rho)[keep]
+			br = br, (mod->SigXform? ln(sig), atanh(rho) : sig, rho)[keep]
 			_colstripe = _colstripe \ ((tokens(st_local("sigparams"+strofreal(l)))' \ tokens(st_local("rhoparams"+strofreal(l)))')[keep] , J(rows(keep), 1, "_cons"))
 			dbr_db = blockdiag(dbr_db, dOmega_dSig[keep,])
 			keep = colshape(rowsum(dOmega_dSig[|.,.\k*d,.|]:!=0):>0, k) // get retained sig params by eq
@@ -2173,8 +2302,8 @@ void cmpSaveSomeResults() {
 		colstripe = colstripe \ _colstripe
 		
 		NumCoefs = rows(BetaInd) - 1
-		BetaInd  = runningsum(colsum( BetaInd[|2,1\.,1|]#J(1,d,1) :== (1..d))')
-		GammaInd = runningsum(colsum(GammaInd[|2,1\.,1|]#J(1,d,1) :== (1..d))') :+ NumCoefs
+		BetaInd  = runningsum(colsum( BetaInd[|2,2\.,.|]#J(1,d,1) :== (1..d))')
+		GammaInd = runningsum(colsum(GammaInd[|2,2\.,.|]#J(1,d,1) :== (1..d))') :+ NumCoefs
 		BetaInd   = (0        \  BetaInd[|.\d-1|]):+1,  BetaInd
 		GammaInd  = (NumCoefs \ GammaInd[|.\d-1|]):+1, GammaInd
 		for (eq=1; eq<=d; eq++) {
@@ -2207,127 +2336,8 @@ void cmpSaveSomeResults() {
 	while ((thisToken = tokenget(t)) != "") {
 		
 	}
-}
+}*/
 
-function cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
-	real scalar i, d, l, GammaIndRow, cut, trunc, lnsigAccross lnsigWithin atanhrhoAccross atanhrhoWithin
-	real matrix Gamma, cmpGammaInd, cuts
-	real colvector truneqs, Lt, Ut, ind
-
-	REs = _REs // move to userinfo() once way developed to call initialzation code in cmp_lnL() before moptimize()
-	external struct RE colvector _REs; pointer (struct RE colvector) scalar REs
-
-	d           = moptimize_init_userinfo(M, 1)
-	cmpGammaInd = moptimize_init_userinfo(M, 2)
-	vNumCuts    = moptimize_init_userinfo(M, 3)
-	trunc       = moptimize_init_userinfo(M, 4)
-	trunceqs    = moptimize_init_userinfo(M, 5)
-	parse_L     = moptimize_init_userinfo(M, 6)
-
-	for (i=d; i; i--)
-		REs->theta[i].M = moptimize_util_xb(M, b, 1)
-
-	if (REs->HasGamma) {
-		for (i=1; i<=d; i++)
-			_editmissing(REs->theta[i].M, 0) // only time missing values would appear and be used is when multiplied by invGamma with 0's in corresponding entries
-		Gamma = J(d, d, 0)
-		GammaIndRow = 1
-		for (eq1=1; eq1<=d; eq1++)
-			while (cmpGammaInd[GammaIndRow,1] == eq1)
-				Gamma[cmpGammaInd[GammaIndRow++,2], eq1] = b[|moptimize_util_eq_indices(M, i++)|]
-	}
-
-	cuts = J(colmax(vNumCuts)+2, d, .)
-	for (eq=1; eq<=d; eq++)
-		if (vNumCuts[eq]) {
-			cuts[1,eq] = minfloat()
-
-			if (trunceqs[eq]) {
-				_st_view(Lt , ., st_global("cmp_Lt"+strofreal(eq))) // these should be stored in REs or userinfo
-				_st_view(Ut , ., st_global("cmp_Ut"+strofreal(eq)))
-				_st_view(ind, .,         "_cmp_ind"+strofreal(eq) )
-			}
-			for (cut=1; cut<=vNumCuts[eq]; cut++) {
-				cuts[cut+1,eq] = b[|moptimize_util_eq_indices(M, i++)|]
-				if (trunceqs[eq])
-					if (any(_cmp_ind :& ((Lt:<. :& cuts[cut+1,eq]:<Lt) :| cuts[cut+1,eq]:>Ut))) {
-						lnf = .
-						return
-					}
-			}
-		}
-
-	for (l=1; i<=parse_L; l++) {
-		tempname sig`l' atanhrho`l'
-		local sigs `sigs' `sig`l''
-		local atanhrhos `atanhrhos' `atanhrho`l''
-
-		if "${cmp_cov`l'}" == "exchangeable" {
-			mleval `lnsigAccross' = `b', eq(`++i') scalar
-			scalar `lnsigWithin' = `lnsigAccross'
-		}
-		forvalues eq=1/d {
-			if "${cmp_cov`l'_`eq'}"=="exchangeable" {
-				if "${cmp_cov`l'}" != "exchangeable" {
-					mleval `lnsigWithin' = `b', eq(`++i') scalar
-				}
-			}
-			forvalues c=1/`=cmp_NumEff[`l', `eq']' {
-				if  cmp_fixed_sigs`l'[1,`eq'] == . {
-					if inlist("${cmp_cov`l'_`eq'}", "independent", "unstructured") & "${cmp_cov`l'}" != "exchangeable" {
-						 mleval `lnsigWithin' = `b', eq(`++i') scalar
-					}
-				  if $cmpSigXform==0 & `lnsigWithin'==0 {
-						replace `lnf' = .
-						exit
-					}
-					mat `sig`l'' = nullmat(`sig`l''), `=cond($cmpSigXform, exp(`lnsigWithin'), `lnsigWithin')'
-				}
-				else mat `sig`l'' = nullmat(`sig`l''), cmp_fixed_sigs`l'[1,`eq']
-			}
-		}
-
-		if "${cmp_cov`l'}" == "exchangeable" & d > 1 {
-			mleval `atanhrhoAccross' = `b', eq(`++i') scalar
-		}
-		forvalues eq1=1/d {
-			if "${cmp_cov`l'_`eq1'}"=="independent" {
-				scalar `atanhrhoWithin' = 0
-			}
-			else if "${cmp_cov`l'_`eq1'}"=="exchangeable" & cmp_NumEff[`l', `eq1'] > 1 {
-				mleval `atanhrhoWithin' = `b', eq(`++i') scalar
-			}
-			forvalues c1=1/`=cmp_NumEff[`l', `eq1']' {
-				forvalues c2=`=`c1'+1'/`=cmp_NumEff[`l', `eq1']' {
-					if "${cmp_cov`l'_`eq1'}" == "unstructured" {
-						mleval `atanhrhoWithin' = `b', eq(`++i') scalar
-					}
-					mat `atanhrho`l'' = nullmat(`atanhrho`l''), `atanhrhoWithin'
-				}
-				forvalues eq2=`=`eq1'+1'/d {
-					forvalues c2=1/`=cmp_NumEff[`l', `eq2']' {
-						if cmp_fixed_rhos`l'[`eq2',`eq1'] == . {
-							if "${cmp_cov`l'}" == "unstructured" {
-								 mleval `atanhrhoAccross' = `b', eq(`++i') scalar
-							}
-							mat `atanhrho`l'' = nullmat(`atanhrho`l''), `atanhrhoAccross'
-						}
-						else mat `atanhrho`l'' = nullmat(`atanhrho`l''), cmp_fixed_rhos`l'[`eq2',`eq1']
-					}
-				}
-			}
-		}
-	}
-
-	if $parse_L > 1 {
-		tempname lnfi
-		scalar `lnfi' = . // create it in case cmp_lnL() doesn't, when it returns "."
-		mata cmp_lnL(`todo', "", "`*'")
-		qui replace `lnf' = `lnfi'/$cmpN
-	}
-	else mata cmp_lnL(`todo', "`lnf'", "`*'")
-}
-*/
 mata mlib create lcmp, dir("`c(sysdir_plus)'l") replace
 mata mlib add lcmp *(), dir("`c(sysdir_plus)'l")
 mata mlib index

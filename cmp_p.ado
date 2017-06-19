@@ -16,9 +16,8 @@
 
 cap program drop cmp_p
 program define cmp_p
-	version 10.0
-	cap version 11.0
-	syntax anything [if] [in], [EQuation(string) Outcome(string) RELevel(string) xb FIXEDonly NOOFFset e pr REsiduals lnl SCores Ystar(string) REDucedform CONDition(string) *]
+	version 11.0
+	syntax anything [if] [in], [EQuation(string) Outcome(string) /*FIXEDonly RELevel(string)*/ xb NOOFFset e pr REsiduals lnl SCores Ystar(string) REDucedform CONDition(string) *]
 	marksample touse, novarlist
 	local _pr `pr'
 	local _e `e'
@@ -34,10 +33,26 @@ program define cmp_p
 		exit 198
 	}
 
-	if "`scores'" != "" {
-		quietly `e(cmdline)' predict // run cmp front end to reconstruct necessary _cmp_* variables
-		Predict `anything' if `touse' & e(sample), scores eq(`equation') `offset' `reducedform' `options'
-		cmp_clear
+	tempname b
+	mat `b' = e(b)
+	if "`scores'"=="" mat `b' = `b'[1,1..`=e(k)-e(k_aux)']
+
+	_score_spec `anything', equation(`equation') b(`b')
+	if "`s(eqspec)'"=="#1" & `"`equation'`lnl'"'=="" & e(k_dv)>1 di as txt "(equation #1 assumed)"
+	local vartype: word 1 of `s(typlist)'
+	local _varlist `s(varlist)'
+	local _eqspec `s(eqspec)'
+
+	quietly if "`scores'`lnl'" != "" {
+		if e(L) > 1 {
+			di as error "Observation-level likelihoods and scores not defined for random effects/coefficient models."
+			exit 111
+		}
+		if "`lnl'"!="" local _varlist: word 1 of `_varlist'
+		foreach var of newlist `_varlist' {
+			gen `vartype' `var' = . in 1
+		}
+		`e(cmdline)' predict(if `touse', `scores'`lnl'(`_varlist') eq(`:subinstr local _eqspec "#" "", all'))
 		exit
 	}
 
@@ -54,16 +69,6 @@ program define cmp_p
 	tempvar xb
 	local _options `options'
 	
-	tempname b
-	mat `b' = e(b)
-	mat `b' = `b'[1,1..`=e(k)-e(k_aux)']
-
-	_score_spec `anything', equation(`equation') b(`b')
-	if "`s(eqspec)'"=="#1" & `"`equation'`lnl'"'=="" & e(k_dv)>1 di as txt "(equation #1 assumed)"
-	local vartype: word 1 of `s(typlist)'
-	local _varlist `s(varlist)'
-	local _eqspec `s(eqspec)'
-
 	if `"`pr'`e'`ystar'"'!="" {
 		if `: word count `pr'`e'`ystar'' != 2 {
 			di as err "{cmd:pr}, {cmd:e}, and {cmd:ystar} require two arguments, without commas."
@@ -101,49 +106,6 @@ program define cmp_p
 			Predict double `condxb' if `touse', eq(`s(eqspec)') `reducedform'
 			scalar `condsig' = sqrt(`Sigma'[`condeq',`condeq'])
 		}
-	}
-	
-	if "`lnl'" != "" {
-		if e(L) > 1 {
-			di as error "Observation-level likelihoods not defined for random effects/coefficient models. e(ll) holds the overall log-likelihood (`e(ll)')."
-			exit 111
-		}
-
-		_stubstar2names `anything', nvars(1)
-		local vartype `s(typlist)'
-		local varname `s(varlist)'
-		quietly {
-			gen `vartype' `varname' = .
-			`e(cmdline)' predict // run cmp front end to reconstruct necessary _cmp_* variables
-			tempname hold
-			_est hold `hold', copy
-			local model `e(model)'
-			ml model `:subinstr local model ": . =" ": _cmp_ind1 =", all' if e(sample) & `touse', collinear missing
-			_est unhold `hold'
-			if e(user) == "cmp_lf" {
-				tempvar t
-				_stubstar2names `t'*, nvars(`e(k_eq)')
-				tokenize `s(varlist)'
-				forvalues i=1/`e(k_eq)' {
-					Predict double ``i'' if e(sample) & `touse', eq(#`i') `reducedform'
-				}
-				cmp_lf `varname' `*'
-			}
-			else {
-				tempname b
-				mat `b' = e(b)
-				if e(user) == "cmp_lf1" {
-					cmp_lf1 0 `b' `varname'
-				}
-				else {
-					tempname t
-					cmp_d1 0 `b' `t'
-					replace `varname' = _cmp_lnfi if e(sample) & `touse'
-				}
-			}
-			cmp_clear
-		}
-		exit
 	}
 	
 	if `"`_options'`pr'`residuals'`ystar'`e'"' == "" di as txt "(option xb assumed; fitted values)"
