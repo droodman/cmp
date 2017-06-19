@@ -22,10 +22,10 @@ Conditional mixed process estimator with multilevel random effects and coefficie
 		{opt qui:etly}
 		{opt nolr:test}
 		{opt init(vector)} {opt from(vector)} {opt noest:imate} {break} {opt cov:ariance}({it:covopt} [{it:covopt} ...])
-		{break}{cmdab:intp:oints(}# [# ...]{cmd:)} {cmdab:intm:ethod(}{cmdab:g:hermite} | {cmdab:mva:ghermite} {cmd:,} [{cmdab:tol:erance(}#{cmd:)} {cmdab:iter:ate(}#{cmd:)}]{cmd:)}
+		{break}{cmdab:intp:oints(}# [# ...]{cmd:)} {cmdab:intm:ethod(}[{cmdab:g:hermite} | {cmdab:mva:ghermite}] {cmd:,} [{cmdab:tol:erance(}#{cmd:)} {cmdab:iter:ate(}#{cmd:)}]{cmd:)}
 		{break}{cmdab:red:raws(}# [# ...]{cmd:)},
-		[{opt type(halton | hammersley | ghalton | random)} {opt anti:thetics} {opt scr:amble} {opt st:eps(#)}]{cmd:)}
-		{break}{cmdab:ghkd:raws(}[#]{cmd: , }[{opt type(halton | hammersley | ghalton | random)} {opt anti:thetics} {opt scr:amble}]{cmd:)}
+		[{opt type(halton | hammersley | ghalton | random)} {opt anti:thetics} {opt st:eps(#)} {opt scr:amble}[{opt (sqrt | negsqrt | fl)}]{cmd:)}
+		{break}{cmdab:ghkd:raws(}[#]{cmd: , }[{opt type(halton | hammersley | ghalton | random)} {opt anti:thetics} {opt scr:amble}[{opt (sqrt | negsqrt | fl)}]]{cmd:)}
 		{break}{opt nodr:op} {opt inter:active} 
 		{opt struc:tural} {opt rev:erse} {opt ps:ampling(# #)}
 		{opt result:sform(structural | reduced)}
@@ -368,7 +368,7 @@ Geweke, Hajivassiliou, and Keane (GHK). (Greene 2011; Cappellari and Jenkins 200
 through the separately available Mata function {stata findit ghk2:ghk2()}, which must be installed for {cmd:cmp} to work. 
 Modeled on the built-in {help mf_ghk:ghk()} and {help mf_ghkfast:ghkfast()}, {stata findit ghk2:ghk2()} gives users choices about the length and nature of the 
 sequences generated for the simulation,
-which choices {cmd:cmp} largely passes on through the optional {cmdab:ghkd:raws()} option, which includes {cmd:type()}, {cmdab:anti:thetics}, {cmdab:scr:amble} 
+which choices {cmd:cmp} largely passes on through the optional {cmdab:ghkd:raws()} option, which includes {cmd:type()}, {cmdab:anti:thetics}, {cmdab:scr:amble()} 
 suboptions. See {help cmp##options:options}
 below for more.
 
@@ -551,37 +551,41 @@ problems--with more than one random effect or coefficient within or accross equa
 one-dimensional case, a precision level of {it:k} means that polynomial integrands (which do not arise in {cmd:cmp}) would be exactly estimated if they have degree {it:2k-1} or 
 less (Heiss and Winschel 2008). The option should list one number (#) for each level of the model above the base (e.g., two numbers in a three-level model).
 
-{phang}{cmdab:intm:ethod(}{cmdab:g:hermite} | {cmdab:mva:ghermite} {cmd:,} [{cmdab:tol:erance(}#{cmd:)} {cmdab:iter:ate(}#{cmd:)}]{cmd:)} is also relevant only for quadrature-based 
+{phang}{cmdab:intm:ethod(}[{cmdab:g:hermite} | {cmdab:mva:ghermite}] {cmd:,} [{cmdab:tol:erance(}#{cmd:)} {cmdab:iter:ate(}#{cmd:)}]{cmd:)} is also relevant only for quadrature-based 
 modelling of random effects and coefficients. {cmd:ghermite} specifies
 classic, non-adaptive Gauss-Hermite quadrature, which is extremely fast, but can be unreliable especially when groups have many observations or subgroups (Rabe-Hesketh, Skrondal, and 
-Pickles 2002). {cmd:mvaghermite}, the default, specifies adaptive quadrature using the method developed by Naylor and Smith and applied in Stata by Rabe-Hesketh, Skrondal, and 
+Pickles 2002). {cmd:mvaghermite}, the default, specifies adaptive quadrature using the method developed by Naylor and Smith and first applied in Stata by Rabe-Hesketh, Skrondal, and 
 Pickles in {stata findit gllamm:gllamm}. The {cmdab:tol:erance(}#{cmd:)} option sets the tolerance for determining convergence of adaptation; the default is 
-1e-8. {cmdab:iter:ate(}#{cmd:)} sets the the maximum number of iterations that are allowed before giving up on convergence; its default is 1001.
+1e-3. (Before cmp version 8.0.0, the default was 1e-8, but it was found that increasing the tolerance saved time while hardly affecting 
+results.)  {cmdab:iter:ate(}#{cmd:)} sets the the maximum number of iterations that are allowed before giving up on convergence; its default is 1001.
 
-{phang}{cmdab:red:raws(}# [# ...] , [{opt type(halton | hammersley | ghalton | random)} {opt anti:thetics} {opt scr:amble} {opt st:eps(#)}]{cmd:)} is
+{phang}{cmdab:red:raws(}# [# ...] , [{opt type(halton | hammersley | ghalton | random)} {opt anti:thetics} {opt st:eps(#)} {opt scr:amble(sqrt | negsqrt | fl)}]{cmd:)} is
 relevant for random coefficient/effects models, and triggers simulation- rather than quadrature-based modelling. The option 
 should begin with one number (#) for each level of the model above the base (e.g., two numbers
 in a three-level model); these specify the number of draws per observation from the simulated distributions of the random effects. The optional 
 {opt type()} suboption sets the sequence type; the default is halton. The optional {opt anti:thetics} suboption doubles the number of draws
-at all levels by including antithetics. For more on these concepts, see See Drukker and Gates (2006). The optional {opt scr:amble} option invokes the square-root
-scrambler for Halton and Hammersley sequences. (See Kolenikov 2012. This scrambler has no effect for primes 2 and 3.) The optional {opt st:eps(#)} 
+at all levels by including antithetics. For more on these concepts, see See Drukker and Gates (2006). The optional {opt st:eps(#)} 
 suboption sets the number of times to fit the model as the number of draws
 at each level is geometrically increased to the specified final values. Under this option, the preliminary runs all use the Newton-Raphson search algorithm
 and {help ml:ml}'s {cmd:nonrtolerance tolerance(0.1)} options in order to accept coarse fits. This stepping is meant 
-only to increase speed by using fewer draws until the search is close to the maximum..
+only to increase speed by using fewer draws until the search is close to the maximum. The optional {opt scr:amble()} option "scrambles"
+the digit sequences to reduce cross-sequence correlations (Kolenikov 2012). The square-root scrambler {opt scramble(sqrt)} multiplies each digit in the
+sequence for prime {it:p} by floor(sqrt(p)), modulo p. {opt scramble(negsqrt)} multiples by the negative square root. {opt scramble(fl)} multplies
+by the number specific to {it:p} recommended by Faure and Lemieux (2009). {opt scramble(sqrt)} and {opt scramble(lr)} have no effect for models in with
+at most two random effect/coefficient components because for primes 2 and 3, their multipliers are 1.
 
 {phang}{opt lf} makes {cmd:cmp} use its lf-method evaluator instead of its d2-method one (for Stata 10 or earlier) or lf1-method one (Stata 11 or
 later). This forces {cmd:cmp} to compute first derivatives of the likelihood numerically instead of analytically, which substantially
 slows estimation but occassionally improves convergence.
 
-{phang}{cmdab:ghkd:raws(}[#]{cmd: , }[{opt type(halton | hammersley | ghalton | random)} {opt anti:thetics} {opt scr:amble} ]{cmd:)} governs the draws used in GHK simulation of 
+{phang}{cmdab:ghkd:raws(}[#]{cmd: , }[{opt type(halton | hammersley | ghalton | random)} {opt anti:thetics} {opt scr:amble(sqrt | negsqrt | fl)} ]{cmd:)} governs the draws used in GHK simulation of 
 higher-dimensional cumulative multivariate normal distributions. It is similar to the {opt red:raws} option. However, it takes at most one number;
 if it, or the entire option, is omitted, the number of draws is set rather arbitrarily to twice the square root of the number of observations 
 for which the simulation is needed. (Simulated maximum likelihood is consistent as long as the number of draws rises with the square root of the 
 number of observations. In practice, a higher number of observations often reduces the number of draws per observation needed
 for reliable results. Train 2009, p. 252.) As in the {cmdab:red:raws()} option, the optional {opt type(string)} suboption specifies the type of sequence in 
 the GHK simulation, {cmd:halton} being the default;
-{opt anti:thetics} requests antithetic draws; and {opt scr:amble} applies the square-root scrambler. 
+{opt anti:thetics} requests antithetic draws; and {opt scr:amble()} applies a scrambler. 
 
 {phang}{opt nodr:op} prevents the dropping of regressors from equations in which they receive missing standard errors in initial single-equation 
 fits. It also prevents the removal of collinear variables.
@@ -879,7 +883,7 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 {phang}. {stata "cmp (air:choice1=t*1) (train: choice2=income t*2) (bus: choice3=income t*3) (car: choice4=income t*4), ind((6 6 6 6)) constr(1/6) nodrop struct tech(dfp) ghkd(200)"}{p_end}
 
 {phang}. {stata webuse wlsrank}{p_end}
-{phang}. {stata asroprobit rank high low if noties, casevars(female score) case(id) alternatives(jobchar) reverse}{p_end}
+{phang}. {stata asroprobit rank high low, casevars(female score) case(id) alternatives(jobchar) reverse}{p_end}
 {phang}. {stata reshape wide rank high low, i(id) j(jobchar)}{p_end}
 {phang}. {stata constraint 1 [esteem]high1=[variety]high2}{p_end}
 {phang}. {stata constraint 2 [esteem]high1=[autonomy]high3}{p_end}
@@ -887,7 +891,7 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 {phang}. {stata constraint 4 [esteem]low1=[variety]low2}{p_end}
 {phang}. {stata constraint 5 [esteem]low1=[autonomy]low3}{p_end}
 {phang}. {stata constraint 6 [esteem]low1=[security]low4}{p_end}
-{phang}. {stata "cmp (esteem:rank1=high1 low1)(variety:rank2=female score high2 low2)(autonomy:rank3=female score high3 low3)(security:rank4=female score high4 low4) if noties,ind((9 9 9 9)) tech(dfp) ghkd(200, type(hammersley)) rev constr(1/6)"}
+{phang}. {stata "cmp (esteem:rank1=high1 low1)(variety:rank2=female score high2 low2)(autonomy:rank3=female score high3 low3)(security:rank4=female score high4 low4),ind((9 9 9 9)) tech(dfp) ghkd(200, type(hammersley)) rev constr(1/6)"}
 {p_end}
 
 {pstd}{hilite:* Heckman selection models}
@@ -946,23 +950,20 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 {pstd}{hilite:* Hierarchical/random effects models}
 
 {phang}. {stata webuse union}{p_end}
-{phang}. {stata gen double south_year = south * year}{p_end}
-{phang}. {stata "xtprobit union age grade not_smsa south year south_year"}{p_end}
-{phang}. {stata "gsem (union <- age grade not_smsa south year south_year M[idcode]@1), probit intp(12)"}{p_end}
-{phang}. {stata "cmp (union = age grade not_smsa south year south_year || idcode:), ind($cmp_probit) nolr"}{p_end}
+{phang}. {stata "xtprobit union age grade not_smsa south year south#c.year"}{p_end}
+{phang}. {stata "gsem (union <- age grade not_smsa south year south#c.year M[idcode]@1), probit intp(12)"}{p_end}
+{phang}. {stata "cmp (union = age grade not_smsa south year south#c.year || idcode:), ind($cmp_probit) nolr qui"}{p_end}
 
 {phang}. {stata webuse nlswork3}{p_end}
-{phang}. {stata gen double south_year = south * year}{p_end}
-{phang}. {stata xttobit ln_wage union age grade not_smsa south year south_year, ul(1.9)}{p_end}
-{phang}. {stata "gsem (ln_wage <- union age grade not_smsa south year south_year M[idcode]@1), family(gaussian, rcensored(1.9)) intp(12)"}{p_end}
+{phang}. {stata xttobit ln_wage union age grade not_smsa south year south#c.year, ul(1.9)}{p_end}
+{phang}. {stata "gsem (ln_wage <- union age grade not_smsa south year south#c.year M[idcode]@1), family(gaussian, rcensored(1.9)) intp(12)"}{p_end}
 {phang}. {stata replace ln_wage = 1.9 if ln_wage > 1.9}{p_end}
-{phang}. {stata `"cmp (ln_wage = union age grade not_smsa south year south_year || idcode:), ind("cond(ln_wage<1.899999, $cmp_cont, $cmp_right)") nolr"'}{p_end}
+{phang}. {stata `"cmp (ln_wage = union age grade not_smsa south year south#c.year || idcode:), ind("cond(ln_wage<1.899999, $cmp_cont, $cmp_right)") nolr qui"'}{p_end}
 
 {phang}. {stata webuse nlswork5}{p_end}
-{phang}. {stata gen double south_year = south * year}{p_end}
-{phang}. {stata xtintreg ln_wage1 ln_wage2 union age grade south year south_year occ_code}{p_end}
-{phang}. {stata "gsem (ln_wage1 <- union age grade south year south_year occ_code M[idcode]@1), family(gaussian, udepvar(ln_wage2)) intp(12)"}{p_end}
-{phang}. {stata "cmp (ln_wage1 ln_wage2 = union age grade south year south_year occ_code || idcode:), ind($cmp_int) nolr"}{p_end}
+{phang}. {stata xtintreg ln_wage1 ln_wage2 union age grade south year south#c.year occ_code}{p_end}
+{phang}. {stata "gsem (ln_wage1 <- union age grade south year south#c.year occ_code M[idcode]@1), family(gaussian, udepvar(ln_wage2)) intp(12)"}{p_end}
+{phang}. {stata "cmp (ln_wage1 ln_wage2 = union age grade south year south#c.year occ_code || idcode:), ind($cmp_int) nolr qui"}{p_end}
 
 {phang}. {stata webuse bangladesh}{p_end}
 {phang}. {stata "xtmelogit c_use urban age child* || district: urban, cov(unstruct)"}{p_end}
@@ -971,13 +972,19 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 
 {phang}. {stata webuse productivity}{p_end}
 {phang}. {stata "xtmixed gsp private emp hwy water other unemp || region: || state:"}{p_end}
-{phang}. {stata "cmp (gsp = private emp hwy water other unemp || region: || state:), nolr ind($cmp_cont) redraws(47 47) tech(dfp)"}{p_end}
+{phang}. {stata "cmp (gsp = private emp hwy water other unemp || region: || state:), nolr ind($cmp_cont) redraws(47 47) tech(dfp) qui"}{p_end}
 
 {pstd}These examples go beyond standard commands (other than {help gsem}):
 
 {phang}. {stata webuse laborsup}{p_end}
 
-{phang}{cmd:* Regress an unbounded, continuous variable on an instrumented, binary one. 2SLS is consistent but less efficient.}{p_end}
+
+{phang}{hilite:* Trivariate seemingly unrelated ordered probit}{p_end}
+{phang}. {stata gen byte kids2 = kids + int(uniform()*3)}{p_end}
+{phang}. {stata gen byte kids3 = kids + int(uniform()*3)}{p_end}
+{phang}. {stata cmp (kids=fem_educ) (kids2=fem_educ) (kids3=fem_educ), ind($cmp_oprobit $cmp_oprobit $cmp_oprobit) nolr qui}{p_end}
+
+{phang}{hilite:* Regress an unbounded, continuous variable on an instrumented, binary one. 2SLS is consistent but less efficient.}{p_end}
 {phang}. {stata cmp (other_inc = fem_work) (fem_work = kids), ind($cmp_cont $cmp_probit) qui robust}{p_end}
 {phang}. {stata ivreg other_inc (fem_work = kids), robust}{p_end}
 
@@ -991,12 +998,11 @@ illustrate how {cmd:cmp} works (colored text is clickable):
  
 {phang}{hilite:* Multinomial probit with heterogeneous preferences (random effects by individual)}{p_end}
 {phang}. {stata "use http://fmwww.bc.edu/repec/bocode/j/jspmix.dta"}{p_end}
-{phang}. {stata "cmp (tby = sex, iia || scy3:), ind($cmp_mprobit) nolr tech(bhhh)"}{p_end}
+{phang}. {stata "cmp (tby = sex, iia || scy3:), ind($cmp_mprobit) nolr"}{p_end}
 
 {phang}{hilite:* Random effects probit dependent on latent first stage}{p_end}
 {phang}. {stata webuse union}{p_end}
-{phang}. {stata gen double south_year = south * year}{p_end}
-{phang}. {stata "cmp (union = age not_smsa black# || idcode:) (black = south year south_year), ind($cmp_probit $cmp_probit) nolr"}{p_end}
+{phang}. {stata "cmp (union = age not_smsa black# || idcode:) (black = south year south#c.year), ind($cmp_probit $cmp_probit) nolr"}{p_end}
 
 {marker predict_egs}{...}
 {pstd}These illustrate subtleties of {help predict:predict} after {cmd:cmp}:
@@ -1033,6 +1039,7 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 {p 4 8 2}Cappellari, L., and S. Jenkins. 2003. Multivariate probit regression using simulated maximum likelihood.
 {it:Stata Journal} 3(3): 278-94.{p_end}
 {p 4 8 2}Drukker, D.M., and R. Gates. 2006. Generating Halton sequences using Mata. {it:Stata Journal} 6(2): 214-28. {browse "http://www.stata-journal.com/article.html?article=st0103"}{p_end}
+{p 4 8 2}Faure, H., and C. Lemieux. 2009. Generalized Halton Sequences in 2008: A Comparative Study. {it:ACM Transactions on Modeling and Computer Simulation } 19(4): 1-31.{p_end}
 {p 4 8 2}Gates, R. 2006. A Mata Geweke-Hajivassiliou-Keane multivariate normal simulator. {it:Stata Journal} 6(2): 190-213. {browse "http://www.stata-journal.com/article.html?article=st0102"}{p_end}
 {p 4 8 2}Gould, W., J. Pitblado, and W. Sribney. 2006. Maximum Likelihood Estimation with Stata. 3rd ed. College Station: Stata Press.{p_end}
 {p 4 8 2}Greene, W.H. 2002. {it:Econometric Analysis}, 5th ed. Prentice-Hall.{p_end}
