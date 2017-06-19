@@ -633,7 +633,7 @@ program define _cmp
 			}
 
 			forvalues eq1=1/$cmp_d {
-				mata __GammaInds[`eq1'] = &st_matrix("cmpGammaInd")[_selectindex(st_matrix("cmpGammaInd")[,1]:==`eq1'),2]
+				mata __GammaInds[`eq1'] = &st_matrix("cmpGammaInd")[cmp_selectindex(st_matrix("cmpGammaInd")[,1]:==`eq1'),2]
 				forvalues eq2=1/$cmp_d {
 					if `eq1' != `eq2' & `GammaId'[`eq1',`eq2'] {
 						count if _cmp_ind`eq1' & _cmp_ind`eq2'==0
@@ -659,8 +659,8 @@ program define _cmp
 			mat cmpEqs[`eq', `l'] = "`id'"=="_n" | cmp_fixed_sigs`l'[1,`eq']>0  // don't simulate REs with variance=0
 		}
 	}
-	mata _Eqs=J($parse_L, 1, NULL); for (l=$parse_L; l; l--) _Eqs[l]=&_selectindex(st_matrix("cmpEqs")[,l]'); _GammaEqs = _Eqs
-	if $cmpHasGamma mata for (l=$parse_L; l; l--) _GammaEqs[l]=&_selectindex((st_matrix("`GammaId'")*st_matrix("cmpEqs")[,l])')
+	mata _Eqs=J($parse_L, 1, NULL); for (l=$parse_L; l; l--) _Eqs[l]=&cmp_selectindex(st_matrix("cmpEqs")[,l]'); _GammaEqs = _Eqs
+	if $cmpHasGamma mata for (l=$parse_L; l; l--) _GammaEqs[l]=&cmp_selectindex((st_matrix("`GammaId'")*st_matrix("cmpEqs")[,l])')
 
 	mat cmp_NumEff = J($parse_L, $cmp_d, 0)
 	forvalues l=1/$parse_L {
