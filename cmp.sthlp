@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 7.0.2 25 August 2016}{...}
+{* *! version 8.0.0 25 August 2016}{...}
 {cmd:help cmp}
 {hline}{...}
 
@@ -112,7 +112,11 @@ may be numbers or variables; {it:a} missing ({it:a} {ul:>} {cmd:.}) means minus 
 
 {pstd}{cmd:cmp} shares features of all estimation commands; see help {help estcom}.
 
-{title:UPDATE}
+{title:UPDATES}
+
+{pstd} Version 8.0.0 of {cmd:cmp}, released in mid-2017, includes changes that can slightly affect results in hierarchical models. The previous version, 7.1.0, is available as a
+{browse "http://github.com/droodman/cmp/tree/09ce0ec1fe765a8c585208004b848758763a1cfe":Gtihub archive}, and can be directly installed, in Stata 13 or later, via
+{net "describe cmp, from(https://raw.githubusercontent.com/droodman/cmp/09ce0ec1fe765a8c585208004b848758763a1cfe)":net describe cmp, from(https://raw.githubusercontent.com/droodman/cmp/09ce0ec1fe765a8c585208004b848758763a1cfe)}.
 
 {pstd}Major features have been added to {cmd:cmp} since Roodman (2011), and are documented only here. They include:
 
