@@ -202,7 +202,7 @@ real matrix insert(real matrix X, real scalar i, real rowvector newrow)
 // Given a col, apply forward Guassian elimination using first row that is non-zero in that col, then delete the row.
 /* real matrix eliminate(real matrix X, real scalar c) {
 	real matrix RetVal, r
-	r = min(_selectindex(X[,c]:!=0)')
+	r = min(cmp_selectindex(X[,c]:!=0)')
 	if (r < .) {
 		RetVal = r>1? X[|.,.\r-1,.|] : J(0, cols(X), 0)
 		return (r==rows(X) & r>0? RetVal : RetVal \ X[|r+1,.\.,.|] - (X[r,]/X[r,c] # J(rows(X)-r,1,1)) :* X[|r+1,c \ .,c|])
@@ -233,7 +233,7 @@ void PasteAndAdvance(real matrix A, real scalar i, real matrix B) {
 
 // given a vector of 0's and 1's, return indices of the 1's, like selectindex() function added in Stata 13
 // if v = 0 (so can't tell if row or col vector), returns rowvector J(1, 0, 0) 
-real vector _selectindex(real vector v) {
+real vector cmp_selectindex(real vector v) {
 	real scalar rows; real vector retval
 	rows = rows(v)
 	retval = select(rows>1? 1::rows : 1..cols(v), v)
@@ -1281,7 +1281,7 @@ void cmp_lnL(real scalar todo, string scalar lf, | string rowvector ScoreVars) {
 				RE->N = RE->id[base->N]
 				RE->one2N = RE->N<10000? 1::RE->N : .
 				RE->J_N_1_0 = J(RE->N, 1, 0)
-				RE->REInds = _selectindex(tokens(st_global("cmp_rc"+strofreal(l))) :== "_cons")
+				RE->REInds = cmp_selectindex(tokens(st_global("cmp_rc"+strofreal(l))) :== "_cons")
 				RE->X = RE->RCInds = smatrix(RE->NEq)
 
 				RE->HasRC = 0
@@ -1411,23 +1411,23 @@ void cmp_lnL(real scalar todo, string scalar lf, | string rowvector ScoreVars) {
 		while (t = max(remaining)) { // build linked list of subviews onto data, each a set of rows with same indicator combination
 			next = v; (v = &(subview()))->next = next  // add new subview to linked list
 			remaining = remaining :* !(v->subsample = rowmin(indicators :== (v->TheseInds = indicators[t,])))
-			v->SubsampleInds = _selectindex(v->subsample)
+			v->SubsampleInds = cmp_selectindex(v->subsample)
 			if (!strlen(lf)) st_select(v->lnL, base->lnL, v->subsample)
 			v->theta = v->tau = smatrix(d)
 			v->QE = diag(2*(v->TheseInds:==3 :| v->TheseInds:==8 :| v->TheseInds:==10) :- 1)
 			v->N = colsum(v->subsample)
 			v->one2N = v->N<10000? 1::v->N : .
-			v->d_uncens = cols(v->uncens = _selectindex(v->TheseInds:==1))
+			v->d_uncens = cols(v->uncens = cmp_selectindex(v->TheseInds:==1))
 			v->halfDmatrix = 0.5 * Dmatrix(v->d_uncens)
-			v->d_oprobit = d_oprobit = cols(v->oprobit = _selectindex(v->TheseInds:==5))
-			v->d_trunc = cols(v->trunc = _selectindex(REs->trunceqs))
-			v->d_cens = cols(v->cens = _selectindex(v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<REs->mprobit_ind_base :| v->TheseInds:>=REs->roprobit_ind_base)))
-			v->censnonfrac           = _selectindex(v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<REs->mprobit_ind_base :| v->TheseInds:>=REs->roprobit_ind_base) :& v->TheseInds:!=10)
-			v->d_frac = cols(v->frac = _selectindex(v->TheseInds:==10))
+			v->d_oprobit = d_oprobit = cols(v->oprobit = cmp_selectindex(v->TheseInds:==5))
+			v->d_trunc = cols(v->trunc = cmp_selectindex(REs->trunceqs))
+			v->d_cens = cols(v->cens = cmp_selectindex(v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<REs->mprobit_ind_base :| v->TheseInds:>=REs->roprobit_ind_base)))
+			v->censnonfrac           = cmp_selectindex(v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<REs->mprobit_ind_base :| v->TheseInds:>=REs->roprobit_ind_base) :& v->TheseInds:!=10)
+			v->d_frac = cols(v->frac = cmp_selectindex(v->TheseInds:==10))
 			REs->d_cens = max((REs->d_cens, v->d_cens))
-			v->dCensNonrobase = cols(v->cens_nonrobase = _selectindex(_nonbase_cases :& (v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<REs->mprobit_ind_base :| v->TheseInds:>=REs->roprobit_ind_base))))
+			v->dCensNonrobase = cols(v->cens_nonrobase = cmp_selectindex(_nonbase_cases :& (v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<REs->mprobit_ind_base :| v->TheseInds:>=REs->roprobit_ind_base))))
 			if (v->d_cens)
-				v->d_two_cens = cols(v->two_cens = _selectindex((v->TheseInds:==5 :| v->TheseInds:==7 :| (v->TheseInds:==2 :| v->TheseInds:==3 :| v->TheseInds:==4 :| v->TheseInds:==8) :& REs->trunceqs)[v->cens])) //indexes *within* list of censored eqs of doubly censored ones
+				v->d_two_cens = cols(v->two_cens = cmp_selectindex((v->TheseInds:==5 :| v->TheseInds:==7 :| (v->TheseInds:==2 :| v->TheseInds:==3 :| v->TheseInds:==4 :| v->TheseInds:==8) :& REs->trunceqs)[v->cens])) //indexes *within* list of censored eqs of doubly censored ones
 			else
 				v->d_two_cens = 0
 			
@@ -1481,12 +1481,12 @@ void cmp_lnL(real scalar todo, string scalar lf, | string rowvector ScoreVars) {
 				for (k=v->NumMprobitGroups; k; k--) {
 					start = _mprobit_group_inds[k, 1]; stop = _mprobit_group_inds[k, 2]
 
-					v->mprobit[k].d = d_mprobit = cols( mprobit = _selectindex(v->TheseInds :& one2d:>=start :& one2d:<=stop) ) - 1
+					v->mprobit[k].d = d_mprobit = cols( mprobit = cmp_selectindex(v->TheseInds :& one2d:>=start :& one2d:<=stop) ) - 1
 
 					if (d_mprobit>0) {
 						v->mprobit[k].out = v->TheseInds[start] - REs->mprobit_ind_base // eq of chosen alternative
-						v->mprobit[k].res = _selectindex((v->TheseInds :& one2d:>start  :& one2d:<=stop)[v->cens]) // index in v->ECens for relative differencing results
-						v->mprobit[k].in =  _selectindex( v->TheseInds :& one2d:>=start :& one2d:<=stop :& one2d:!=v->mprobit[k].out) // eqs of rejected alternatives
+						v->mprobit[k].res = cmp_selectindex((v->TheseInds :& one2d:>start  :& one2d:<=stop)[v->cens]) // index in v->ECens for relative differencing results
+						v->mprobit[k].in =  cmp_selectindex( v->TheseInds :& one2d:>=start :& one2d:<=stop :& one2d:!=v->mprobit[k].out) // eqs of rejected alternatives
 						(v->QE)[mprobit,mprobit] = J(d_mprobit+1, 1, 0), insert(-I(d_mprobit), v->mprobit[k].out-start+1, J(1, d_mprobit, 1))
 					}
 				}
@@ -1504,7 +1504,7 @@ void cmp_lnL(real scalar todo, string scalar lf, | string rowvector ScoreVars) {
 				v->d2_cens = v->d_cens * (v->d_cens + 1)*.5
 
 				for (k=v->NumRoprobitGroups; k; k--)
-					if (cols(this_roprobit=*(roprobit[k] = &_selectindex(v->TheseInds :& one2d:>=_roprobit_group_inds[k,1] :& one2d:<=_roprobit_group_inds[k,2]))))
+					if (cols(this_roprobit=*(roprobit[k] = &cmp_selectindex(v->TheseInds :& one2d:>=_roprobit_group_inds[k,1] :& one2d:<=_roprobit_group_inds[k,2]))))
 						v->N_perm = v->N_perm * (rows(*(perms[k] = &PermuteTies(_reverse? v->TheseInds[this_roprobit] : -v->TheseInds[this_roprobit]))))
 				
 				v->roprobit_QE = v->roprobit_Q_Sig = J(i=v->N_perm, 1, NULL)
@@ -2129,11 +2129,11 @@ void cmpSaveSomeResults() {
 
 		dbr_db = J(rows(dBeta_dB), 0, 0)
 		for (eq=d; eq; eq--)
-			dbr_db = dBeta_dGamma[, GammaInd[_selectindex(GammaInd[,1]:==eq),2] :+ (eq-1)*d         ], dbr_db        
+			dbr_db = dBeta_dGamma[, GammaInd[cmp_selectindex(GammaInd[,1]:==eq),2] :+ (eq-1)*d         ], dbr_db        
 		for (eq=d; eq; eq--)
-			dbr_db = dBeta_dB    [, BetaInd [_selectindex(BetaInd [,1]:==eq),2] :+ (eq-1)*rows(Beta)], dbr_db        
+			dbr_db = dBeta_dB    [, BetaInd [cmp_selectindex(BetaInd [,1]:==eq),2] :+ (eq-1)*rows(Beta)], dbr_db        
 
-		keep = _selectindex(rowsum(dbr_db:!=0):>0)
+		keep = cmp_selectindex(rowsum(dbr_db:!=0):>0)
 		br = br[keep]'
 		dbr_db = dbr_db[keep,]
 		eqnames = tokens(st_global("cmp_eq"))
@@ -2157,14 +2157,14 @@ void cmpSaveSomeResults() {
 			Rho = corr(Omega); rho = rows(Rho)>1? vech(Rho[|2,1 \ .,cols(Rho)-1|])' : J(1,0,0)
 			sig = sqrt(diagonal(Omega))'
 			dOmega_dSig = edittozero(pinv(editmissing(dSigdsigrhos(&_REs, sig, Omega, rho, Rho),0)),10) * QE2QSig(dOmega_dSig) * RE->D
-			keep = _selectindex((((sig:!=.) :* (sig:>0)), (rho:!=.)))'
+			keep = cmp_selectindex((((sig:!=.) :* (sig:>0)), (rho:!=.)))'
 			br = br, (_REs.SigXform? ln(sig), atanh(rho) : sig, rho)[keep]
 			_colstripe = _colstripe \ ((tokens(st_local("sigparams"+strofreal(l)))' \ tokens(st_local("rhoparams"+strofreal(l)))')[keep] , J(rows(keep), 1, "_cons"))
 			dbr_db = blockdiag(dbr_db, dOmega_dSig[keep,])
 			keep = colshape(rowsum(dOmega_dSig[|.,.\k*d,.|]:!=0):>0, k) // get retained sig params by eq
 			NumEff = NumEff \ rowsum(keep)'
 			for (j=d; j; j--)
-				st_global("e(EffNames_reducedform"+strofreal(l)+"_"+strofreal(j)+")", invtokens(tokens(st_local("cmp_rcu"+strofreal(l)))[_selectindex(keep[j,])]))
+				st_global("e(EffNames_reducedform"+strofreal(l)+"_"+strofreal(j)+")", invtokens(tokens(st_local("cmp_rcu"+strofreal(l)))[cmp_selectindex(keep[j,])]))
 			st_matrix("e(fixed_sigs_reducedform"+strofreal(l)+")", J(1, d, .)) 
 			st_matrix("e(fixed_rhos_reducedform"+strofreal(l)+")", J(d, d, .)) 
 		}
