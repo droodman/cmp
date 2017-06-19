@@ -2,3 +2,4 @@ v 3
 
 d GitHub repository for archiving and developing cmp, by David Roodman
 
+p cmp
