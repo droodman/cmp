@@ -1,4 +1,4 @@
-*! cmp 6.8.0 5 March 2015
+*! cmp 7.0.0 19 June 2017
 *! Copyright David Roodman 2007-13. May be distributed free.
 cap program drop cmp_clear
 program define cmp_clear

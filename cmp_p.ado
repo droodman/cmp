@@ -1,4 +1,4 @@
-*! cmp 7.0.0 27 June 2016
+*! cmp 8.0.0 19 June 2017
 *! Copyright (C) 2007-16 David Roodman
 
 * This program is free software: you can redistribute it and/or modify

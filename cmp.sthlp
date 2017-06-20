@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 8.0.0 25 August 2016}{...}
+{* *! version 8.0.0 19 June 2017}{...}
 {cmd:help cmp}
 {hline}{...}
 
@@ -354,7 +354,7 @@ search method often works best).
 To trigger simulation, include the {cmdab:red:raws()} option. This sets the number of draws per observation
 at each level,
 the type of sequence (Halton, Hammersley, generalized Halton, pseudorandom), whether antithetics are also drawn, and whether, in the Halton and Hammersley caes,
-sequences should be scrambled using the square-root scrambler. (See Gates 2006 for more on all these concepts except scrambling, for which see Kolenikov 2012.)
+whether and how the sequences should be scrambled. (See Gates 2006 for more on all these concepts except scrambling, for which see Kolenikov 2012.)
 For (generalized) Halton and Hammersley sequences, it is preferable to make the number of draws prime, to insure more variable coverage of the
 distribution from observation to observation, making coverage more uniform overall. Increasing the 
 number of draws increases precision at the expense of time. In a bid for speed {cmd:cmp} can begin by estimating
@@ -1042,7 +1042,7 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 {p 4 8 2}Cappellari, L., and S. Jenkins. 2003. Multivariate probit regression using simulated maximum likelihood.
 {it:Stata Journal} 3(3): 278-94.{p_end}
 {p 4 8 2}Drukker, D.M., and R. Gates. 2006. Generating Halton sequences using Mata. {it:Stata Journal} 6(2): 214-28. {browse "http://www.stata-journal.com/article.html?article=st0103"}{p_end}
-{p 4 8 2}Faure, H., and C. Lemieux. 2009. Generalized Halton Sequences in 2008: A Comparative Study. {it:ACM Transactions on Modeling and Computer Simulation } 19(4): 1-31.{p_end}
+{p 4 8 2}Faure, H., and C. Lemieux. 2009. Generalized Halton Sequences in 2008: A Comparative Study. {it:ACM Transactions on Modeling and Computer Simulation } 19(4): article 15.{p_end}
 {p 4 8 2}Gates, R. 2006. A Mata Geweke-Hajivassiliou-Keane multivariate normal simulator. {it:Stata Journal} 6(2): 190-213. {browse "http://www.stata-journal.com/article.html?article=st0102"}{p_end}
 {p 4 8 2}Gould, W., J. Pitblado, and W. Sribney. 2006. Maximum Likelihood Estimation with Stata. 3rd ed. College Station: Stata Press.{p_end}
 {p 4 8 2}Greene, W.H. 2002. {it:Econometric Analysis}, 5th ed. Prentice-Hall.{p_end}
