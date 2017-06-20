@@ -782,6 +782,7 @@ program define _cmp
 	if r(N)==0 cmp_error 2000 "No observations."
 
 	local method_spec lf`="`lf'"==""' cmp_lnL()
+	mata _mod.set_todo("`lf'"=="")
 
 	if "`predict'" != "" {
 		forvalues l=1/$parse_L {
@@ -878,14 +879,13 @@ program define _cmp
 		mata _mod.set_todo("`scores'"!=""); _mod.cmp_init()
 		_est unhold `hold'
 		mata _lnf=_S=_H=.
+		mata moptimize_init_userinfo($ML_M, 1, &_mod)
 		mata (void) cmp_lnL($ML_M, "`scores'"!="", st_matrix("e(b)"), _lnf, _S, _H)
 		if "`lnl'"!="" mata st_view(_H, ., "`lnl'"   , st_global("ML_samp")); _H[,] = _lnf
 		  else         mata st_view(_H, ., "`scores'", st_global("ML_samp")); _H[,] = _S[,"`equation'"==""?.:strtoreal(tokens("`equation'"))]
 		cmp_clear
 		exit
 	}
-
-	mata _mod.set_todo(substr("`method_spec'",1,3)=="lf1")
 
 	tempname b cmpInitFull
 	// Fit individual models before mis-specifed and constant-only ones in case perfect probit predictors shrink some eq samples

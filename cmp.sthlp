@@ -135,7 +135,7 @@ all models except multinomial and rank-ordered probit.
 even if the resulting equation system is simultaneous rather than recursive.
 
 {p 4 6 0}
-* Multilevel random effects and coefficients can now be modelled, using simulation or (adaptive) quadrature. These 
+* Multilevel random effects and coefficients can now be modeled, using simulation or (adaptive) quadrature. These 
 can be correlated within and across equations. For such multidimensional effects, quadrature is done on "sparse grids" for efficiency (Heiss and Winschel 2008). 
 
 {title:Donate?}
@@ -156,7 +156,7 @@ collectively simultaneous. The various terms in that description can be defined 
 single-equation models can be fit too.
 
 {p 4 6 0}
-* "Multi-level" means that random coefficients and effects (intercepts) can be modelled at
+* "Multi-level" means that random coefficients and effects (intercepts) can be modeled at
 various levels in hierarchical fashion, the classic example being a model of education outcomes with unobserved school and class effects. Since the models
 can also be multi-equation, random effects at a given level are allowed by default to be correlated across equations. E.g., school and class 
 effects may be correlated across outcomes such as math and readings scores. Effects at different levels, however, are assumed uncorrelated
@@ -841,7 +841,7 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 {phang}. {stata cmp (anykids = ) (fem_work = ), ind($cmp_probit $cmp_probit) nolr qui}{p_end}
 
 {phang}. {stata ivprobit fem_work fem_educ kids (other_inc = male_educ), first}{p_end}
-{phang}. {stata margins, predict(pr) dydx(*)}{p_end}
+{phang}. {stata "version 13: margins, predict(pr) dydx(*)"}{p_end}
 {phang}. {stata cmp (fem_work = other_inc fem_educ kids) (other_inc = fem_educ kids male_educ), ind($cmp_probit $cmp_cont)}{p_end}
 {phang}. {stata margins, predict(pr eq(#1)) dydx(*) force}{p_end}
 
@@ -971,12 +971,11 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 
 {phang}. {stata webuse bangladesh}{p_end}
 {phang}. {stata "xtmelogit c_use urban age child* || district: urban, cov(unstruct)"}{p_end}
-{phang}. {stata "gsem (c_use <- urban urban#Murban[district] age child* M[district]@1), probit cov(Murban[district]*M[district])"}{p_end}
 {phang}. {stata "cmp (c_use = urban age child* || district: urban), ind($cmp_probit) nolr qui"}{p_end}
 
 {phang}. {stata webuse productivity}{p_end}
 {phang}. {stata "xtmixed gsp private emp hwy water other unemp || region: || state:"}{p_end}
-{phang}. {stata "cmp (gsp = private emp hwy water other unemp || region: || state:), nolr ind($cmp_cont) redraws(47 47) tech(dfp) qui"}{p_end}
+{phang}. {stata "cmp (gsp = private emp hwy water other unemp || region: || state:), nolr ind($cmp_cont) qui"}{p_end}
 
 {pstd}These examples go beyond standard commands (other than {help gsem}):
 
@@ -1071,12 +1070,12 @@ to labor supply. {it:Econometrica} 54(3): 679-85.{p_end}
 {title:Author}
 
 {p 4}David Roodman{p_end}
-{p 4}droodman@gmail.com{p_end}
+{p 4}david@davidroodman.com{p_end}
 
 {title:Acknowledgements}
 
 {pstd}Thanks to Kit Baum, David Drukker, Arne Hole, Stanislaw Kolenikov, and Mead Over for comments, and to Florian Heiss and Viktor Winschel for permission to adapt
-their sparse grid generation Mata code.
+their sparse grid Mata code.
 
 {title:Also see}
 

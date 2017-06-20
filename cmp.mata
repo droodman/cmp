@@ -1875,10 +1875,10 @@ void cmp_model::cmp_init() {
 
 		if (Quadrature)
 			if (RE->d <= 2)
-				printf("{res}Random effects/coefficients%s modeled with Gauss-Hermite quadrature.", LevelName)
+				printf("{res}Random effects/coefficients%s modeled with Gauss-Hermite quadrature.\n", LevelName)
 			else {
 				printf("{res}Random effects/coefficients%s modeled with sparse-grid quadrature.\n", LevelName)
-				printf("Precision equivalent to that of one-dimensional quadrature with %f integration points.", NumREDraws[l+1])
+				printf("Precision equivalent to that of one-dimensional quadrature with %f integration points.\n", NumREDraws[l+1])
 			}
 		else {
 			printf("{res}Random effects/coefficients%s simulated.\n", LevelName)
