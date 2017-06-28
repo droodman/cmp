@@ -1,4 +1,4 @@
-*! cmp 8.0.0 19 June 2017
+*! cmp 8.0.1 28 June 2017
 *! Copyright (C) 2007-17 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -951,7 +951,7 @@ program define _cmp
 		qui InitSearch if `touse' `=cond("`subpop'"!="","& `subpop'","")', `drop' auxparams(`auxparams') mlopts(`mlopts')
 		mat `b' = r(b)
 		Estimate `method_spec' if `touse'  `=cond("`subpop'"!="","& `subpop'","")', init(`init') cmpinit(`b') `vce' auxparams(`auxparams') psampling(`psampling') resteps(`steps') ///
-			`constraints' _constraints(`_constraints' `initconstraints') `autoconstrain' `mlopts' `technique' `quietly' redraws(`redraws') paramsdisplay(`r(ParamsDisplay)') `interactive'
+			`constraints' _constraints(`_constraints' `initconstraints') `autoconstrain' mlopts(`mlopts') `technique' `quietly' redraws(`redraws') paramsdisplay(`r(ParamsDisplay)') `interactive'
 		if _rc==0 {
 			tempname vsmp
 			mat `vsmp' = e(V)
@@ -965,11 +965,11 @@ program define _cmp
 		mata _mod.set_GammaInd(J(0,0,0))
 
 		di as res _n "Fitting " plural($cmp_d>1, "constant") "-only model for LR test of overall model fit."
-		qui InitSearch if `touse'  `=cond("`subpop'"!="","& `subpop'","")' `wgtexp', `svy' 1only  auxparams(`auxparams') mlopts(`mlopts')
+		qui InitSearch if `touse' `=cond("`subpop'"!="","& `subpop'","")' `wgtexp', `svy' 1only  auxparams(`auxparams') mlopts(`mlopts')
 		local 1onlyinitconstraints `r(initconstraints)'
 		mat `b' = r(b)
-		qui Estimate `method_spec' if `touse' `wgtexp', cmpinit(`b') `constraints' _constraints(`_constraints' `1onlyinitconstraints') `autoconstrain' psampling(`psampling') resteps(`steps') ///
-		                `svy' subpop(`subpop') `mlopts' `technique' auxparams(`r(auxparams)') 1only `quietly' redraws(`redraws') paramsdisplay(`r(ParamsDisplay)') `interactive'
+		Estimate `method_spec' if `touse' `wgtexp', cmpinit(`b') `constraints' _constraints(`_constraints' `1onlyinitconstraints') `autoconstrain' psampling(`psampling') resteps(`steps') ///
+		                `svy' subpop(`subpop') modopts(`modopts') mlopts(`mlopts') `technique' auxparams(`r(auxparams)') 1only `quietly' redraws(`redraws') paramsdisplay(`r(ParamsDisplay)') `interactive'
 		if _rc==0 local lf0opt lf0(`e(rank)' `e(ll)')
 
 		global cmpHasGamma `HasGamma'
@@ -1017,7 +1017,7 @@ program define _cmp
 
 	di as res _n "Fitting full model."
 
-	cmp_full_model `method_spec' if `touse' `wgtexp', `vce' `lf0opt' modopts(`modopts') mlopts(`mlopts') `technique'  paramsdisplay(`ParamsDisplay') xvarsall(`XVarsAll') ///
+	cmp_full_model `method_spec' if `touse' `wgtexp', `vce' `lf0opt' modopts(`modopts') mlopts(`mlopts') `technique' paramsdisplay(`ParamsDisplay') xvarsall(`XVarsAll') ///
 		`constraints' _constraints(`_constraints' `initconstraints') init(`init') cmpinit(`cmpInitFull') `svy' subpop(`subpop') psampling(`psampling') ///
 		`quietly' auxparams(`auxparams') cmdline(`"`cmdline'"') resteps(`steps') redraws(`redraws') intpoints(`intpoints') ///
 		vsmp(`vsmp') meff(`meff') ghkanti(`ghkanti') ghkdraws(`ghkdraws') ghktype(`ghktype') diparmopt(`diparmopt') `interactive'
@@ -1570,7 +1570,7 @@ program Estimate, eclass
 		local u 1
 	}
 	else {
-		count if `if'
+		qui count if `if'
 		local N = r(N)
 		tokenize `psampling'
 		local psampling_cutoff = cond(`1'>=1, `1'/`N', `1')
@@ -1606,7 +1606,7 @@ program Estimate, eclass
 			}
 
 			local _if if (`if') `=cond("`psampling'" != "", "& (`psampling_cutoff'>=1 | `u'<=.001+`psampling_cutoff')", "")'
-			local mlmodelcmd `quietly' ml model `model' `=cond(`final',"[`weight'`exp'] `_if', `options'", "`awgtexp' `_if',")' ///
+			local mlmodelcmd `quietly' ml model `model' `=cond(`final',"[`weight'`exp']", "`awgtexp'")' `_if', ///
 				`svy' `subpop' constraints(`constraints') nocnsnotes nopreserve missing collinear `modopts' technique(`this_technique')
 			local mlmaxcmd `quietly' ml max, search(off) `this_mlopts' nooutput
 			`mlmodelcmd' `initopt'
@@ -1644,7 +1644,7 @@ program Estimate, eclass
 				if "`quietly'"=="" noi version 11: ml di
 				mat `_init' = e(b)
 			}
-		} //resteps loop
+		} // resteps loop
 
 		local psampling_cutoff = `psampling_cutoff' * `psampling_rate'
 		if `psampling_cutoff' < `psampling_rate' {
@@ -2485,6 +2485,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.0.1 Fixed 8.0.0 mishandling of ml maximization options
 * 8.0.0 Switched to pure-Mata evaluator function. Now requires Stata 11 or newer.
 * 7.1.0 Added fractional probit model. Fixed bugs when combining rank-ordered probits with other models.
 * 7.0.5 Avoid pre-computation of some potentially large matrices unless needed for gamma models.
