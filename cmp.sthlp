@@ -43,8 +43,6 @@ Conditional mixed process estimator with multilevel random effects and coefficie
 {phang}
 where {it:covopt} is one of
 
-
-
 {phang2}
 {cmdab:un:structured | }{cmdab:ex:changeable | }{cmdab:ind:ependent}
 
