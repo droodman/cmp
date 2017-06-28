@@ -595,7 +595,7 @@ fits. It also prevents the removal of collinear variables.
 {phang}{opt cov:ariance}({it:covopt} [{it:covopt} ...]) offers a shorthand for constraining the {it:cross-equation} correlation structure of the errors at each 
 level--shorthand, that is, compared to using {help constraint:constraint}. There should be one {it:covopt} for each level in the model, ordered from highest to lowest, the
 lowest being observation-level. Each {it:covopt} can be {cmdab:un:structured}, {cmdab:ex:changeable}, or {cmdab:ind:ependent}. {cmdab:un:structured}, the default, imposes no 
-constraint. {cmdab:ex:changeable} specifies that all correlations between random effects, coefficients, or residual errors in different equations, within a given level are the same;
+constraint. {cmdab:ex:changeable} specifies that all correlations between random effects, coefficients, or residual errors in different equations, within a given level, are the same;
 and likewise for all the variances of all these areas. {cmdab:ind:ependent} sets all cross-equation correlations at a given level to zero. Above the base level, the default {cmdab:un:structured}, 
 while theoretically meaningful, may make the model infeasible. Try fitting with (for a two-level example) {cmd:cov(indep unstruct)}. Separately, the {it:re_equation}
 syntax documented above also includes a {opt cov:ariance()} option. With the same choices and defintitions, it controls variances and covariances {it:within} a given equation at a given level.
