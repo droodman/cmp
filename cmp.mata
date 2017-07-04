@@ -1698,9 +1698,6 @@ void cmp_lnL(transmorphic M, real scalar todo, real rowvector b, real colvector 
 
 
 
-
-
-
 void cmp_model::cmp_init() {
 	real scalar i, l
 	pointer(struct RE scalar) scalar RE
