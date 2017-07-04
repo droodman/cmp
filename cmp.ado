@@ -1,4 +1,4 @@
-*! cmp 8.0.2 4 July 2017
+*! cmp 8.0.3 4 July 2017
 *! Copyright (C) 2007-17 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -2487,6 +2487,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.0.3 Changes to cmp.pkg and stata.toc only, on GitHub
 * 8.0.2 Workaround for Stata 15 bug: prevent varabbrev from affecting _b[] and _se[] references in printing output. Fixed crash in adaptive quadrature models without "nolrtest".
 * 8.0.1 Fixed 8.0.0 mishandling of ml maximization options
 * 8.0.0 Switched to pure-Mata evaluator function. Now requires Stata 11 or newer.
