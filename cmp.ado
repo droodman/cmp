@@ -968,7 +968,7 @@ program define _cmp
 		qui InitSearch if `touse' `=cond("`subpop'"!="","& `subpop'","")' `wgtexp', `svy' 1only  auxparams(`auxparams') mlopts(`mlopts')
 		local 1onlyinitconstraints `r(initconstraints)'
 		mat `b' = r(b)
-		Estimate `method_spec' if `touse' `wgtexp', cmpinit(`b') `constraints' _constraints(`_constraints' `1onlyinitconstraints') `autoconstrain' psampling(`psampling') resteps(`steps') ///
+		qui Estimate `method_spec' if `touse' `wgtexp', cmpinit(`b') `constraints' _constraints(`_constraints' `1onlyinitconstraints') `autoconstrain' psampling(`psampling') resteps(`steps') ///
 		                `svy' subpop(`subpop') modopts(`modopts') mlopts(`mlopts') `technique' auxparams(`r(auxparams)') 1only `quietly' redraws(`redraws') paramsdisplay(`r(ParamsDisplay)') `interactive'
 		if _rc==0 local lf0opt lf0(`e(rank)' `e(ll)')
 
@@ -2487,7 +2487,7 @@ program define cmp_error
 end
 
 * Version history
-* 8.0.2 Workaround for Stata 15 bug: prevent varabbrev from affecting _b[] and _se[] references in printing output
+* 8.0.2 Workaround for Stata 15 bug: prevent varabbrev from affecting _b[] and _se[] references in printing output. Fixed crash in adaptive quadrature models without "nolrtest".
 * 8.0.1 Fixed 8.0.0 mishandling of ml maximization options
 * 8.0.0 Switched to pure-Mata evaluator function. Now requires Stata 11 or newer.
 * 7.1.0 Added fractional probit model. Fixed bugs when combining rank-ordered probits with other models.

@@ -1,4 +1,4 @@
-/* cmp 8.0.0 19 June 2017
+/* cmp 8.0.2 4 July 2017
    Copyright (C) 2007-17 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -210,8 +210,12 @@ void cmp_model::set_yVars (string scalar t) yVars = tokens(t)
 void cmp_model::set_yLVars(string scalar t) yLVars = tokens(t)
 void cmp_model::set_LtVars(string scalar t) LtVars = tokens(t)
 void cmp_model::set_UtVars(string scalar t) UtVars = tokens(t)
-void cmp_model::set_WillAdapt(real scalar t) WillAdapt  = t
 void cmp_model::set_AdaptNow(real scalar t) Adapted = AdaptivePhaseThisEst = t
+
+void cmp_model::set_WillAdapt(real scalar t) {
+	WillAdapt  = t
+	Adapted = AdaptivePhaseThisEst = AdaptNextTime = 0
+}
 
 void cmp_model::set_GammaI(real matrix t) { // infinite loop if d is not set
 	real scalar i
@@ -1181,10 +1185,6 @@ void cmp_model::_st_view(real matrix V, real scalar missing, string rowvector va
 	if (vars != ".")
 		st_view(V, ., vars, st_global("ML_samp"))
 }
-
-
-
-
 
 
 
