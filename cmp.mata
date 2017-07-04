@@ -1,4 +1,4 @@
-/* cmp 8.0.3 4 July 2017
+/* cmp 8.0.4 4 July 2017
    Copyright (C) 2007-17 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -215,6 +215,7 @@ void cmp_model::set_AdaptNow(real scalar t) Adapted = AdaptivePhaseThisEst = t
 void cmp_model::set_WillAdapt(real scalar t) {
 	WillAdapt  = t
 	Adapted = AdaptivePhaseThisEst = AdaptNextTime = 0
+	Lastb = J(1,0,0)
 }
 
 void cmp_model::set_GammaI(real matrix t) { // infinite loop if d is not set

@@ -1,4 +1,4 @@
-*! cmp 8.0.3 4 July 2017
+*! cmp 8.0.4 4 July 2017
 *! Copyright (C) 2007-17 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -1606,7 +1606,7 @@ program Estimate, eclass
 			}
 
 			local _if if (`if') `=cond("`psampling'" != "", "& (`psampling_cutoff'>=1 | `u'<=.001+`psampling_cutoff')", "")'
-			local mlmodelcmd `quietly' ml model `model' `=cond(`final',"[`weight'`exp']", "`awgtexp'")' `_if', ///
+			local mlmodelcmd `quietly' ml model `model' `=cond(`final',"[`weight'`exp'] `_if', `options'", "`awgtexp' `_if',")' ///
 				`svy' `subpop' constraints(`constraints') nocnsnotes nopreserve missing collinear `modopts' technique(`this_technique')
 			local mlmaxcmd `quietly' ml max, search(off) `this_mlopts' nooutput
 			`mlmodelcmd' `initopt'
