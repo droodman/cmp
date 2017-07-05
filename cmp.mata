@@ -1197,7 +1197,6 @@ void cmp_model::_st_view(real matrix V, real scalar missing, string rowvector va
 
 
 
-
 // main evaluator routine
 void cmp_lnL(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
 	real matrix Rho, t, L_g, invGamma, C, dOmega_dSig
