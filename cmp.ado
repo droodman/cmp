@@ -1,4 +1,4 @@
-*! cmp 8.0.4 4 July 2017
+*! cmp 8.0.5 29 August 2017
 *! Copyright (C) 2007-17 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -408,6 +408,8 @@ program define _cmp
 			else {
 				global cmp_truncreg`cmp_eqno' 0
 				mat cmp_trunceqs = nullmat(cmp_trunceqs), 0
+				global cmp_Lt`cmp_eqno' .
+				global cmp_Ut`cmp_eqno' .
 			}
 
 			global cmp_eq`cmp_eqno' = cond("${parse_eq`parse_eqno'}"=="eq`parse_eqno'", subinstr("`: word 1 of ${parse_y`parse_eqno'}'", ".", "", .), "${parse_eq`parse_eqno'}")
@@ -2487,6 +2489,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.0.5 Fixed crash in multi-equation models with only some eqs truncated
 * 8.0.4 Fixed another bug causing crash in quadrature models with nolrtest. Restored broken LR test.
 * 8.0.3 Changes to cmp.pkg and stata.toc only, on GitHub
 * 8.0.2 Workaround for Stata 15 bug: prevent varabbrev from affecting _b[] and _se[] references in printing output. Fixed crash in adaptive quadrature models without nolrtest.
