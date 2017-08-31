@@ -1,4 +1,4 @@
-*! cmp 8.0.5 29 August 2017
+*! cmp 8.0.6 31 August 2017
 *! Copyright (C) 2007-17 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -131,7 +131,7 @@ program define _cmp
 		if `"`s(subpop)'"' != "" {
 			cap confirm var `s(subpop)'
 			if _rc {
-				tempname subpop
+				tempvar subpop
 				qui gen byte `subpop' = `s(subpop)' & `touse'
 			}
 			else local subpop `s(subpop)'
@@ -619,7 +619,6 @@ program define _cmp
 		}
 
 		replace `touse' = `touse' & `_touse'
-
 		global cmp_d `cmp_eqno'
 		forvalues eq=1/$cmp_d {
 			global cmp_eq $cmp_eq ${cmp_eq`eq'}
@@ -631,6 +630,11 @@ program define _cmp
 		}
 		mata _mod.set_d($cmp_d); _mod.set_L($parse_L); _mod.set_MaxCuts($cmp_max_cuts)
 		mata _mod.set_yVars("$cmp_y"); _mod.set_UtVars("$cmp_Ut"); _mod.set_LtVars("$cmp_Lt"); _mod.set_yLVars("$cmp_yL"); _mod.set_indVars("$cmp_ind")
+
+		drop `_touse'
+		egen byte `_touse' = rowmax($cmp_ind) if `touse'
+		replace `touse' = 0 if `_touse'==0 | `_touse'==. // drop obs for which all outcomes unobserved
+		drop `_touse'
 
 		global cmpHasGamma 0
 		tempname Gamma GammaINobs GammaI GammaId
@@ -2092,7 +2096,7 @@ program InitSearch, rclass
 										}
 										else {
 											if `c1'==1 & `c2'==1  {
-												di as res _n "Samples for `level_l'equations `eq1' and `eq2' do not overlap. Removing associated correlation paramter(s) from model."
+												di as res _n "Samples for `level_l'equations `eq1' and `eq2' do not overlap. Removing associated correlation parameter(s) from model."
 												mat cmp_fixed_rhos`l'[`eq2',`eq1'] = 0
 											}
 											local t /`param'
@@ -2489,6 +2493,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.0.6 Fixed crash when all included eqs have unobserved outcomes
 * 8.0.5 Fixed crash in multi-equation models with only some eqs truncated
 * 8.0.4 Fixed another bug causing crash in quadrature models with nolrtest. Restored broken LR test.
 * 8.0.3 Changes to cmp.pkg and stata.toc only, on GitHub
