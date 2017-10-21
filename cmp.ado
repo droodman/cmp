@@ -1,4 +1,4 @@
-*! cmp 8.0.6 31 August 2017
+*! cmp 8.0.7 21 October 2017
 *! Copyright (C) 2007-17 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -127,14 +127,17 @@ program define _cmp
 		svymarkout `touse'
 		svyopts modopts svydiopts options, `s(options)'
 		local meff `s(meff)'
-
-		if `"`s(subpop)'"' != "" {
-			cap confirm var `s(subpop)'
+		local 0, `modopts'
+		local _options `options'
+		syntax, [subpop(string) *]
+		local modopts `options'
+		local options `_options'
+		if `"`subpop'"' != "" {
+			cap confirm var `subpop'
 			if _rc {
 				tempvar subpop
 				qui gen byte `subpop' = `s(subpop)' & `touse'
 			}
-			else local subpop `s(subpop)'
 		}
 	}
 	else local options `s(options)'
@@ -956,7 +959,7 @@ program define _cmp
 		di as res _n "Fitting misspecified model."
 		qui InitSearch if `touse' `=cond("`subpop'"!="","& `subpop'","")', `drop' auxparams(`auxparams') mlopts(`mlopts')
 		mat `b' = r(b)
-		Estimate `method_spec' if `touse'  `=cond("`subpop'"!="","& `subpop'","")', init(`init') cmpinit(`b') `vce' auxparams(`auxparams') psampling(`psampling') resteps(`steps') ///
+		Estimate `method_spec' if `touse' `=cond("`subpop'"!="","& `subpop'","")', init(`init') cmpinit(`b') `vce' auxparams(`auxparams') psampling(`psampling') resteps(`steps') ///
 			`constraints' _constraints(`_constraints' `initconstraints') `autoconstrain' mlopts(`mlopts') `technique' `quietly' redraws(`redraws') paramsdisplay(`r(ParamsDisplay)') `interactive'
 		if _rc==0 {
 			tempname vsmp
@@ -2493,6 +2496,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.0.7 Fixed 6.9.1 causing crash on subpop()
 * 8.0.6 Fixed crash when all included eqs have unobserved outcomes
 * 8.0.5 Fixed crash in multi-equation models with only some eqs truncated
 * 8.0.4 Fixed another bug causing crash in quadrature models with nolrtest. Restored broken LR test.
@@ -2515,7 +2519,7 @@ end
 *       Set GHK draw set width = max # of censored dimensions, not number of equations. Fixed 6.8.5 bug in labelling mprobit equations when outcome present in depvar but not realized in estimation sample
 * 6.9.4 Fixed crash when GHK needed, at least one eq is oprobit/intreg and at least one eq is not (default lower bound in F -> . for minus infinity, not 0)
 * 6.9.3 Fixed crash on "[]" as weight clause
-* 6.9.2 Fixed crash parsing intemethod(ghermite); crash on results display when adaptive quad never works for some groups; contraint-dropping bug introduced in 6.8.8; failure to drop atanhrho's at all levels in hierarchical models
+* 6.9.2 Fixed crash parsing intmethod(ghermite); crash on results display when adaptive quad never works for some groups; contraint-dropping bug introduced in 6.8.8; failure to drop atanhrho's at all levels in hierarchical models
 * 6.9.1 Added support for if clause in subpop()
 * 6.9.0 Fixed bugs causing crash on svy option and obscuring properties of cmp
 * 6.8.9 Fixed small 6.8.8 bugs
