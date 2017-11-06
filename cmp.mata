@@ -552,8 +552,8 @@ pointer (real matrix) rowvector SpGr(real scalar dim, real scalar k) {
 		// combine identical nodes, summing weights
 		if (rows(nodes) > 1) {
 			sortvec = order(nodes, 1..dim)
-			_collate(nodes,   sortvec)
-			_collate(weights, sortvec)
+			nodes = nodes[sortvec,]
+			weights = weights[sortvec]
 			keep = rowmax(nodes[|.,.\rows(nodes)-1,.|] :!= nodes[|2,.\.,.|]) \ 1
 			weights = select(quadrunningsum(weights), keep)
 			weights = weights - (0 \ weights[|.\rows(weights)-1|])
