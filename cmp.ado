@@ -1,4 +1,4 @@
-*! cmp 8.0.7 21 October 2017
+*! cmp 8.0.8 6 November 2017
 *! Copyright (C) 2007-17 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -2496,6 +2496,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.0.8 Added reference to $ML_samp in one call of st_data(), preventing crash in hierarchical models not fit to all data
 * 8.0.7 Fixed 6.9.1 causing crash on subpop()
 * 8.0.6 Fixed crash when all included eqs have unobserved outcomes
 * 8.0.5 Fixed crash in multi-equation models with only some eqs truncated

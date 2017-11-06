@@ -1855,7 +1855,7 @@ void cmp_model::cmp_init() {
 				RE->REEqs = RE->REEqs, j
 			if (strlen(varnames = st_global("cmp_rc"+strofreal(l)+"_"+strofreal(RE->Eqs[j])))) {
 				RE->HasRC = 1
-				RE->X[j].M = st_data(., varnames)
+				RE->X[j].M = st_data(., varnames, st_global("ML_samp"))
 				stop = start + cols(tokens(varnames))
 				RE->RCInds[j].M = start..stop-1
 				start = stop + HasRE
