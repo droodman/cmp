@@ -538,7 +538,7 @@ program define _cmp
 
 			cap assert ${cmp_y`cmp_eqno'}==. & _cmp_ind`cmp_eqno'!=$cmp_int if `touse', `fast'
 			if _rc==0 global cmp_y`cmp_eqno' .
-			qui replace _cmp_ind`cmp_eqno' = 0 if `touse' & ${cmp_y`cmp_eqno'}==. & _cmp_ind`cmp_eqno'!=$cmp_int
+			qui replace _cmp_ind`cmp_eqno' = 0 if `touse' & mi(${cmp_y`cmp_eqno'}) & _cmp_ind`cmp_eqno'!=$cmp_int
 
 			forvalues i=`cmp_eqno'/`=`cmp_eqno'+`NAlts'*(`asprobit_eq'==0)' { // do once unless expanding non-as mprobit eq
 
@@ -593,7 +593,7 @@ program define _cmp
 
 				global cmp_id`i' ${parse_id`parse_eqno'}
 
-				replace _cmp_ind`i' = $cmp_probity1 if `touse' & _cmp_ind`i'==$cmp_probit & ${cmp_y`i'} // to streamline likelihood computation split probit samples into y=0 and y!=0
+				replace _cmp_ind`i' = $cmp_probity1 if `touse' & _cmp_ind`i'==$cmp_probit & `:word 1 of ${cmp_y`i'}' // to streamline likelihood computation split probit samples into y=0 and y!=0
 
 				forvalues l=1/`=$parse_L-1' {
 					if cmp_fixed_sigs`l'[1,`i'] { // suppress RC and RE lists if this is a base case without structural, so sigs=0
@@ -1009,8 +1009,8 @@ program define _cmp
 			global cmp_xc`eq' `cmp_xc`eq''
 		}
 
-		replace _cmp_ind`cmp_eqno' = $cmp_probit   if `touse' & _cmp_ind`cmp_eqno' == $cmp_frac & ${cmp_y`cmp_eqno'}==0 // for speed, model frac probit boundary values as probit
-		replace _cmp_ind`cmp_eqno' = $cmp_probity1 if `touse' & _cmp_ind`cmp_eqno' == $cmp_frac & ${cmp_y`cmp_eqno'}==1
+		replace _cmp_ind`cmp_eqno' = $cmp_probit   if `touse' & _cmp_ind`cmp_eqno' == $cmp_frac & `:word 1 of ${cmp_y`cmp_eqno'}'==0 // for speed, model frac probit boundary values as probit
+		replace _cmp_ind`cmp_eqno' = $cmp_probity1 if `touse' & _cmp_ind`cmp_eqno' == $cmp_frac & `:word 1 of ${cmp_y`cmp_eqno'}'==1
 	}
 
 	if $parse_L==1 & $cmpSigXform {

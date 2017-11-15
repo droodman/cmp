@@ -113,7 +113,7 @@ may be numbers or variables; {it:a} missing ({it:a} {ul:>} {cmd:.}) means minus 
 {title:UPDATES}
 
 {pstd} Version 8.0.0 of {cmd:cmp}, released in mid-2017, includes changes that can slightly affect results in hierarchical models. The previous version, 7.1.0, is available as a
-{browse "http://github.com/droodman/cmp/tree/09ce0ec1fe765a8c585208004b848758763a1cfe":Gtihub archive}, and can be directly installed, in Stata 13 or later, via
+{browse "http://github.com/droodman/cmp/tree/09ce0ec1fe765a8c585208004b848758763a1cfe":Github archive}, and can be directly installed, in Stata 13 or later, via
 {net "from https://raw.github.com/droodman/cmp/v7.1.0":net from https://raw.github.com/droodman/cmp/v7.1.0}.
 
 {pstd}Major features have been added to {cmd:cmp} since Roodman (2011), and are documented only here. They include:
