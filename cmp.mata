@@ -1976,7 +1976,7 @@ void cmp_model::cmp_init() {
 		v->d_trunc = cols(v->trunc = cmp_selectindex(trunceqs))
 		v->d_cens = cols(v->cens = cmp_selectindex(v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<mprobit_ind_base :| v->TheseInds:>=roprobit_ind_base)))
 		v->censnonfrac           = cmp_selectindex(v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<mprobit_ind_base :| v->TheseInds:>=roprobit_ind_base) :& v->TheseInds:!=10)
-		v->d_frac = cols(v->frac = cmp_selectindex(v->TheseInds:==10))
+		v->d_frac = cols(v->frac = cmp_selectindex(v->TheseInds[v->cens]:==10))
 		d_cens = max((d_cens, v->d_cens))
 		v->dCensNonrobase = cols(v->cens_nonrobase = cmp_selectindex(NonbaseCases :& (v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<mprobit_ind_base :| v->TheseInds:>=roprobit_ind_base))))
 		if (v->d_cens)
@@ -2006,7 +2006,7 @@ void cmp_model::cmp_init() {
 			if (sum(trunceqs))
 				v->Et = v->Ft = J(v->N, v->d_trunc, .)
 		}
-		
+
 		if (v->d_frac) {
 			v->FracCombs = 2*mod(floor(J(1,v->d_frac,0::2^v->d_frac-1):/2:^(v->d_frac-1..0)),2):-1 // matrix whose rows count from 0 to 2^v->d_frac-1 in +/-1 binary, one digit/column
 			v->yProd = v->frac_QE = v->frac_QSig = smatrix(v->NFracCombs = rows(v->FracCombs))
@@ -2018,7 +2018,7 @@ void cmp_model::cmp_init() {
 
 				v->yProd[i].M = J(v->N, 1, 1)
 				for (j=v->d_frac; j; j--) // make all the combinations of products of frac prob y's and 1-y's
-					v->yProd[i].M = v->yProd[i].M :* (v->FracCombs[i,j]==1? y[v->frac[j]].M[v->SubsampleInds] : 1:-y[v->frac[j]].M[v->SubsampleInds])
+					v->yProd[i].M = v->yProd[i].M :* (v->FracCombs[i,j]==1? y[v->cens[v->frac[j]]].M[v->SubsampleInds] : 1:-y[v->cens[v->frac[j]]].M[v->SubsampleInds])
 			}
 		} else
 			v->NFracCombs = 1
