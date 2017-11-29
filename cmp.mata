@@ -1,4 +1,4 @@
-/* cmp 8.0.4 4 July 2017
+/* cmp 8.1.0 29 November 2017
    Copyright (C) 2007-17 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -1976,7 +1976,7 @@ void cmp_model::cmp_init() {
 		v->d_trunc = cols(v->trunc = cmp_selectindex(trunceqs))
 		v->d_cens = cols(v->cens = cmp_selectindex(v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<mprobit_ind_base :| v->TheseInds:>=roprobit_ind_base)))
 		v->censnonfrac           = cmp_selectindex(v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<mprobit_ind_base :| v->TheseInds:>=roprobit_ind_base) :& v->TheseInds:!=10)
-		v->d_frac = cols(v->frac = cmp_selectindex(v->TheseInds[v->cens]:==10))
+		v->d_frac = cols(v->frac = cols(v->cens)? cmp_selectindex(v->TheseInds[v->cens]:==10) : J(1,0,0))
 		d_cens = max((d_cens, v->d_cens))
 		v->dCensNonrobase = cols(v->cens_nonrobase = cmp_selectindex(NonbaseCases :& (v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<mprobit_ind_base :| v->TheseInds:>=roprobit_ind_base))))
 		if (v->d_cens)
