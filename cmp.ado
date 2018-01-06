@@ -1,5 +1,5 @@
-*! cmp 8.1.0 29 November 2017
-*! Copyright (C) 2007-17 David Roodman 
+*! cmp 8.1.1 6 January 2018
+*! Copyright (C) 2007-18 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -1269,9 +1269,9 @@ program define cmp_full_model, eclass
 	version 11
 	syntax anything if/ [pw fw aw iw], [auxparams(string) vsmp(string) meff(string) paramsdisplay(string) xvarsall(string) ///
 					ghkanti(string) ghkdraws(string) ghktype(string) diparmopt(string) cmdline(string) ///
-					redraws(string) resteps(string) retype(string) reanti(string) intpoints(string) *]
+					redraws(string) resteps(string) retype(string) reanti(string) intpoints(string) svy *]
 
-	Estimate `anything' if `if' [`weight'`exp'], auxparams(`auxparams') paramsdisplay(`paramsdisplay') resteps(`resteps') redraws(`redraws') `options'
+	Estimate `anything' if `if' [`weight'`exp'], auxparams(`auxparams') paramsdisplay(`paramsdisplay') resteps(`resteps') redraws(`redraws') `svy' `options'
 
 	if _rc==0 {
 		if "`meff'" != "" _svy_mkmeff `vsmp'
@@ -1379,7 +1379,12 @@ program define cmp_full_model, eclass
 			}
 		}
 
-		if "$parse_wexpL"!="" ereturn local wexp `"$parse_wexpL"' // careful not to zap e(wexp) because it may have been set by svy option
+		if "`svy'" != "" { // compensate for bug in Stata 14, 15 in which ml model, svy puts references to temp var in these macros
+			ereturn local wvar: char _dta[_svy_wvar]
+			ereturn local wexp `"= `e(wvar)'"'
+		}
+		else ereturn local wexp `"$parse_wexpL"'
+
 		forvalues eq=1/$cmp_d {
 			qui count if e(sample) & _cmp_ind`eq'
 			ereturn scalar N`eq' = r(N)
@@ -2496,6 +2501,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.1.1 Compensated for Stata 14, 15 bug in which ml model, svy leaves behind reference to temp var in e(wexp), e(wvar)
 * 8.1.0 Fixed 8.0.9 crash in fully uncensored models
 * 8.0.9 Fixed bug in models mixing fractional probits with non-censored models, or varying which fractional probit eqs are included
 * 8.0.8 Added reference to $ML_samp in one call of st_data(), preventing crash in hierarchical models not fit to all data
