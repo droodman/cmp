@@ -1,5 +1,5 @@
-/* cmp 8.1.0 29 November 2017
-   Copyright (C) 2007-17 David Roodman
+/* cmp 8.1.2 24 January 2018
+   Copyright (C) 2007-18 David Roodman
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -109,8 +109,8 @@ struct RE { // info associated with given level of model. Top level also holds v
 	real matrix dSigdParams // derivative of sig, vech(rho) vector w.r.t. vector of actual sig, rho parameters, reflecting "exchangeable" and "independent" options
 	real scalar N // number of groups at this level
 	real colvector one2N, J_N_1_0
-	real matrix IDRanges // N x 1, id ranges for each group in data set, as returned by panelsetup()
-	real colvector IDRangesGroup // N x 1, max id for each group's subgroups in the next level down
+	real matrix IDRanges // id ranges for each group in data set, as returned by panelsetup()
+	real matrix IDRangesGroup // N x 1, id ranges for each group's subgroups in the next level down
 	real matrix id // group id var
 	real rowvector sig, rho // vector of error variances only, and atanhrho's
 	real scalar covAcross // cross- and within-eq covariance type: unstructured, exchangeable, independent; indexed by *included* equations at this level
@@ -162,11 +162,11 @@ class cmp_model {
 	real matrix indicators
 	real matrix S0 // empty, pre-allocated matrix to build score matrix S
 	struct scores scalar Scores // column indices in S corresponding to different parameter groups
-	string rowvector indVars, yVars, LtVars, UtVars, yLVars
+	string rowvector indVars, LtVars, UtVars, yLVars
 	real rowvector ThisDraw
 
 	void new(), cmp_init(), BuildXU(), BuildTotalEffects(), _st_view(), 
-				set_reverse(), set_SigXform(), set_QuadTol(), set_QuadIter(), set_ghkType(), set_MaxCuts(), set_indVars(), set_yVars(), set_LtVars(), set_UtVars(), set_yLVars(), 
+				set_reverse(), set_SigXform(), set_QuadTol(), set_QuadIter(), set_ghkType(), set_MaxCuts(), set_indVars(), set_LtVars(), set_UtVars(), set_yLVars(), 
 				set_ghkAnti(), set_ghkDraws(), set_ghkScramble(), set_Quadrature(), set_d(), set_L(), set_todo(),
 				set_REAnti(), set_REType(), set_REScramble(), set_Eqs(), set_GammaI(), set_NumEff(), set_NumMprobitGroups(), set_NumRoprobitGroups(),
 				set_MprobitGroupInds(), set_RoprobitGroupInds(), set_NonbaseCases(), set_vNumCuts(), set_trunceqs(), set_intregeqs(), set_NumREDraws(), set_GammaInd(),
@@ -206,12 +206,10 @@ void cmp_model::set_vNumCuts(real colvector t) NumCuts=sum(vNumCuts = t)
 void cmp_model::set_trunceqs(real rowvector t) trunceqs = t
 void cmp_model::set_intregeqs(real rowvector t) intregeqs = t
 void cmp_model::set_indVars(string scalar t) indVars = tokens(t)
-void cmp_model::set_yVars (string scalar t) yVars = tokens(t)
 void cmp_model::set_yLVars(string scalar t) yLVars = tokens(t)
 void cmp_model::set_LtVars(string scalar t) LtVars = tokens(t)
 void cmp_model::set_UtVars(string scalar t) UtVars = tokens(t)
 void cmp_model::set_AdaptNow(real scalar t) Adapted = AdaptivePhaseThisEst = t
-
 void cmp_model::set_WillAdapt(real scalar t) {
 	WillAdapt  = t
 	Adapted = AdaptivePhaseThisEst = AdaptNextTime = 0
@@ -1197,6 +1195,8 @@ void cmp_model::_st_view(real matrix V, real scalar missing, string rowvector va
 
 
 
+
+
 // main evaluator routine
 void cmp_lnL(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
 	real matrix Rho, t, L_g, invGamma, C, dOmega_dSig
@@ -1691,22 +1691,42 @@ void cmp_lnL(transmorphic M, real scalar todo, real rowvector b, real colvector 
 	}
 }
 
+void cmp_gf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
+	real matrix _S, IDRanges, subscripts; real scalar i, n, K, d; pointer(class cmp_model scalar) scalar mod; pointer (struct RE scalar) scalar REs
+	pragma unset _S
 
+	cmp_lnL(M, todo, b, lnf, _S, H)
 
+	mod = moptimize_init_userinfo(M, 1)
+	lnf = *(mod->REs->plnL)
 
+	if (todo) {
+		IDRanges = mod->REs->IDRanges
+		K = moptimize_util_eq_indices(M, n=moptimize_init_eq_n(M))[2,2] // numbers of eqs (inluding auxilieary parameters); number of parameters
+		d = mod->base->d
+		REs = mod->REs
+		S = J(rows(lnf), K, 0)
+		for (i=1;i<=d;i++) {
+			(subscripts = moptimize_util_eq_indices(M,i))[2,1] = .
+			S[|subscripts|] = rows(REs->Weights)? panelsum(_S[,i] :* moptimize_util_indepvars(M, i), REs->Weights, IDRanges) :
+			                                      panelsum(_S[,i] :* moptimize_util_indepvars(M, i),               IDRanges)
+		}
+		if (n > d) { // any aux params?
+			subscripts[1,2] = subscripts[2,2] + 1
+			subscripts[2,2] = .
+			S[|subscripts|] = panelsum(_S[|.,mod->base->d+1\.,.|], IDRanges)
+		}
+	}
+}
 
-
-
-
-void cmp_model::cmp_init() {
-	real scalar i, l
-	pointer(struct RE scalar) scalar RE
-	real scalar ghk_nobs, eq1, eq2, c, m, j, r, k, d_oprobit, d_mprobit, d_roprobit, start, stop, PrimeIndex, Hammersley, NDraws, HasRE, cols, d2
+void cmp_model::cmp_init(transmorphic M) {
+	real scalar i, l, ghk_nobs, eq1, eq2, c, m, j, r, k, d_oprobit, d_mprobit, d_roprobit, start, stop, PrimeIndex, Hammersley, NDraws, HasRE, cols, d2
 	real matrix Yi, U
 	real colvector remaining, S
 	real rowvector mprobit, Primes, t, one2d
-	pointer(struct subview scalar) scalar v, next
 	string scalar varnames, LevelName
+	pointer(struct subview scalar) scalar v, next
+	pointer(struct RE scalar) scalar RE
 	pointer(real matrix) rowvector QuadData
 	pragma unset Yi
 
@@ -1751,7 +1771,7 @@ void cmp_model::cmp_init() {
 	Theta = J(base->N,d,0)
 
 	for (i=d; i; i--) {
-		_st_view(y   [i].M, ., yVars[i])
+		y[i].M = moptimize_util_depvar(M, i)
 		if (trunceqs[i]) {
 			_st_view(Lt[i].M, ., LtVars[i])
 			_st_view(Ut[i].M, ., UtVars[i])
@@ -1945,7 +1965,7 @@ void cmp_model::cmp_init() {
 		for (l=L; l; l--)
 			if (st_global("parse_wexp"+strofreal(l)) != "") {
 				RE = &((*REs)[l])
-				_st_view(RE->Weights, ., "_cmp_weight"+strofreal(l))
+				RE->Weights = st_data(., "_cmp_weight"+strofreal(l), st_global("ML_samp")) // can't be a view because panelsum() doesn't accept weights in views
 				if (l < L) RE->Weights = RE->Weights[RE->IDRanges[,1]] // get one instance of each group's weight
 				if (anyof(("pweight", "aweight"), st_global("parse_wtype"+strofreal(l)))) // normalize pweights, aweights to sum to # of groups
 					if (l == 1)

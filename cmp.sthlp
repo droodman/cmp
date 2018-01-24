@@ -952,20 +952,20 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 {pstd}{hilite:* Hierarchical/random effects models}
 
 {phang}. {stata webuse union}{p_end}
-{phang}. {stata "xtprobit union age grade not_smsa south year south#c.year"}{p_end}
-{phang}. {stata "gsem (union <- age grade not_smsa south year south#c.year M[idcode]@1), probit intp(12)"}{p_end}
-{phang}. {stata "cmp (union = age grade not_smsa south year south#c.year || idcode:), ind($cmp_probit) nolr qui"}{p_end}
+{phang}. {stata "xtprobit union age grade not_smsa south south#c.year"}{p_end}
+{phang}. {stata "gsem (union <- age grade not_smsa south south#c.year M[idcode]@1), probit intp(12)"}{p_end}
+{phang}. {stata "cmp (union = age grade not_smsa south south#c.year || idcode:), ind($cmp_probit) nolr qui"}{p_end}
 
 {phang}. {stata webuse nlswork3}{p_end}
-{phang}. {stata xttobit ln_wage union age grade not_smsa south year south#c.year, ul(1.9)}{p_end}
-{phang}. {stata "gsem (ln_wage <- union age grade not_smsa south year south#c.year M[idcode]@1), family(gaussian, rcensored(1.9)) intp(12)"}{p_end}
+{phang}. {stata xttobit ln_wage union age grade not_smsa south south#c.year, ul(1.9)}{p_end}
+{phang}. {stata "gsem (ln_wage <- union age grade not_smsa south south#c.year M[idcode]@1), family(gaussian, rcensored(1.9)) intp(12)"}{p_end}
 {phang}. {stata replace ln_wage = 1.9 if ln_wage > 1.9}{p_end}
-{phang}. {stata `"cmp (ln_wage = union age grade not_smsa south year south#c.year || idcode:), ind("cond(ln_wage<1.899999, $cmp_cont, $cmp_right)") nolr qui"'}{p_end}
+{phang}. {stata `"cmp (ln_wage = union age grade not_smsa south south#c.year || idcode:), ind("cond(ln_wage<1.899999, $cmp_cont, $cmp_right)") nolr qui"'}{p_end}
 
 {phang}. {stata webuse nlswork5}{p_end}
-{phang}. {stata xtintreg ln_wage1 ln_wage2 union age grade south year south#c.year occ_code}{p_end}
-{phang}. {stata "gsem (ln_wage1 <- union age grade south year south#c.year occ_code M[idcode]@1), family(gaussian, udepvar(ln_wage2)) intp(12)"}{p_end}
-{phang}. {stata "cmp (ln_wage1 ln_wage2 = union age grade south year south#c.year occ_code || idcode:), ind($cmp_int) nolr qui"}{p_end}
+{phang}. {stata xtintreg ln_wage1 ln_wage2 union age grade south south#c.year occ_code}{p_end}
+{phang}. {stata "gsem (ln_wage1 <- union age grade south south#c.year occ_code M[idcode]@1), family(gaussian, udepvar(ln_wage2)) intp(12)"}{p_end}
+{phang}. {stata "cmp (ln_wage1 ln_wage2 = union age grade south south#c.year occ_code || idcode:), ind($cmp_int) nolr qui"}{p_end}
 
 {phang}. {stata webuse bangladesh}{p_end}
 {phang}. {stata "xtmelogit c_use urban age child* || district: urban, cov(unstruct)"}{p_end}
@@ -1003,7 +1003,7 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 
 {phang}{hilite:* Random effects probit dependent on latent first stage}{p_end}
 {phang}. {stata webuse union}{p_end}
-{phang}. {stata "cmp (union = age not_smsa black# || idcode:) (black = south year south#c.year), ind($cmp_probit $cmp_probit) nolr"}{p_end}
+{phang}. {stata "cmp (union = age not_smsa black# || idcode:) (black = south#c.year), ind($cmp_probit $cmp_probit) nolr"}{p_end}
 
 {marker predict_egs}{...}
 {pstd}These illustrate subtleties of {help predict:predict} after {cmd:cmp}:

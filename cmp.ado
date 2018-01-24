@@ -1,4 +1,4 @@
-*! cmp 8.1.1 6 January 2018
+*! cmp 8.1.2 24 January 2018
 *! Copyright (C) 2007-18 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -166,8 +166,8 @@ program define _cmp
 			if `t' global cmp_IntMethod = `t' - 1
 				else cmp_error 198 `"The {cmdab:intm:ethod()} option, if included, should be "ghermite" or "mvaghermite"."'
 			
-			if `"`vce'"'=="" local vce oim
-			if `"`technique'"'=="" {
+			if `"`vce'`svy'"'=="" local vce oim
+			if `"`technique'`svy'"'=="" {
 				local technique bhhh
 				di as res _n "For quadrature, defaulting to technique(bhhh) for speed."
 			}
@@ -625,14 +625,13 @@ program define _cmp
 		global cmp_d `cmp_eqno'
 		forvalues eq=1/$cmp_d {
 			global cmp_eq $cmp_eq ${cmp_eq`eq'}
-			global cmp_y $cmp_y ${cmp_y`eq'}
 			global cmp_Lt $cmp_Lt ${cmp_Lt`eq'}
 			global cmp_Ut $cmp_Ut ${cmp_Ut`eq'}
 			global cmp_yL $cmp_yL ${cmp_y`eq'_L}
 			global cmp_ind $cmp_ind _cmp_ind`eq'
 		}
 		mata _mod.set_d($cmp_d); _mod.set_L($parse_L); _mod.set_MaxCuts($cmp_max_cuts)
-		mata _mod.set_yVars("$cmp_y"); _mod.set_UtVars("$cmp_Ut"); _mod.set_LtVars("$cmp_Lt"); _mod.set_yLVars("$cmp_yL"); _mod.set_indVars("$cmp_ind")
+		mata _mod.set_UtVars("$cmp_Ut"); _mod.set_LtVars("$cmp_Lt"); _mod.set_yLVars("$cmp_yL"); _mod.set_indVars("$cmp_ind")
 
 		drop `_touse'
 		egen byte `_touse' = rowmax($cmp_ind) if `touse'
@@ -790,7 +789,6 @@ program define _cmp
 	qui count if `touse'
 	if r(N)==0 cmp_error 2000 "No observations."
 
-	local method_spec lf`="`lf'"==""' cmp_lnL()
 	mata _mod.set_todo("`lf'"=="")
 
 	if "`predict'" != "" {
@@ -885,7 +883,7 @@ program define _cmp
 		_est hold `hold', copy restore
 		local model `e(model)'
 		version 11: ml model `:subinstr local model ": . =" ": _cmp_ind1 =", all' if e(sample) & `if', collinear missing
-		mata _mod.set_todo("`scores'"!=""); _mod.cmp_init()
+		mata _mod.set_todo("`scores'"!=""); _mod.cmp_init($ML_M)
 		_est unhold `hold'
 		mata _lnf=_S=_H=.
 		mata moptimize_init_userinfo($ML_M, 1, &_mod)
@@ -959,7 +957,7 @@ program define _cmp
 		di as res _n "Fitting misspecified model."
 		qui InitSearch if `touse' `=cond("`subpop'"!="","& `subpop'","")', `drop' auxparams(`auxparams') mlopts(`mlopts')
 		mat `b' = r(b)
-		Estimate `method_spec' if `touse' `=cond("`subpop'"!="","& `subpop'","")', init(`init') cmpinit(`b') `vce' auxparams(`auxparams') psampling(`psampling') resteps(`steps') ///
+		Estimate if `touse' `=cond("`subpop'"!="","& `subpop'","")', init(`init') cmpinit(`b') `vce' auxparams(`auxparams') psampling(`psampling') resteps(`steps') ///
 			`constraints' _constraints(`_constraints' `initconstraints') `autoconstrain' mlopts(`mlopts') `technique' `quietly' redraws(`redraws') paramsdisplay(`r(ParamsDisplay)') `interactive'
 		if _rc==0 {
 			tempname vsmp
@@ -977,7 +975,7 @@ program define _cmp
 		qui InitSearch if `touse' `=cond("`subpop'"!="","& `subpop'","")' `wgtexp', `svy' 1only  auxparams(`auxparams') mlopts(`mlopts')
 		local 1onlyinitconstraints `r(initconstraints)'
 		mat `b' = r(b)
-		qui Estimate `method_spec' if `touse' `wgtexp', cmpinit(`b') `constraints' _constraints(`_constraints' `1onlyinitconstraints') `autoconstrain' psampling(`psampling') resteps(`steps') ///
+		qui Estimate if `touse' `wgtexp', cmpinit(`b') `constraints' _constraints(`_constraints' `1onlyinitconstraints') `autoconstrain' psampling(`psampling') resteps(`steps') ///
 		                `svy' subpop(`subpop') modopts(`modopts') mlopts(`mlopts') `technique' auxparams(`r(auxparams)') 1only `quietly' redraws(`redraws') paramsdisplay(`r(ParamsDisplay)') `interactive'
 		if _rc==0 local lf0opt lf0(`e(rank)' `e(ll)')
 
@@ -1026,7 +1024,7 @@ program define _cmp
 
 	di as res _n "Fitting full model."
 
-	cmp_full_model `method_spec' if `touse' `wgtexp', `vce' `lf0opt' modopts(`modopts') mlopts(`mlopts') `technique' paramsdisplay(`ParamsDisplay') xvarsall(`XVarsAll') ///
+	cmp_full_model if `touse' `wgtexp', `vce' `lf0opt' modopts(`modopts') mlopts(`mlopts') `technique' paramsdisplay(`ParamsDisplay') xvarsall(`XVarsAll') ///
 		`constraints' _constraints(`_constraints' `initconstraints') init(`init') cmpinit(`cmpInitFull') `svy' subpop(`subpop') psampling(`psampling') ///
 		`quietly' auxparams(`auxparams') cmdline(`"`cmdline'"') resteps(`steps') redraws(`redraws') intpoints(`intpoints') ///
 		vsmp(`vsmp') meff(`meff') ghkanti(`ghkanti') ghkdraws(`ghkdraws') ghktype(`ghktype') diparmopt(`diparmopt') `interactive'
@@ -1267,11 +1265,11 @@ end
 cap program drop cmp_full_model
 program define cmp_full_model, eclass
 	version 11
-	syntax anything if/ [pw fw aw iw], [auxparams(string) vsmp(string) meff(string) paramsdisplay(string) xvarsall(string) ///
+	syntax if/ [pw fw aw iw], [auxparams(string) vsmp(string) meff(string) paramsdisplay(string) xvarsall(string) ///
 					ghkanti(string) ghkdraws(string) ghktype(string) diparmopt(string) cmdline(string) ///
 					redraws(string) resteps(string) retype(string) reanti(string) intpoints(string) svy *]
 
-	Estimate `anything' if `if' [`weight'`exp'], auxparams(`auxparams') paramsdisplay(`paramsdisplay') resteps(`resteps') redraws(`redraws') `svy' `options'
+	Estimate if `if' [`weight'`exp'], auxparams(`auxparams') paramsdisplay(`paramsdisplay') resteps(`resteps') redraws(`redraws') `svy' `options'
 
 	if _rc==0 {
 		if "`meff'" != "" _svy_mkmeff `vsmp'
@@ -1440,8 +1438,10 @@ end
 cap program drop Estimate
 program Estimate, eclass
 	version 11.0
-	syntax anything(name=method_spec) if/ [fw aw pw iw], [auxparams(string) psampling(string) svy subpop(passthru) autoconstrain paramsdisplay(string) ///
+	syntax if/ [fw aw pw iw], [auxparams(string) psampling(string) svy subpop(passthru) autoconstrain paramsdisplay(string) ///
 		modopts(string) mlopts(string) init(string) cmpinit(string) constraints(string) _constraints(string) technique(string) 1only quietly resteps(string) redraws(string) interactive *]
+
+	local method_spec = cond($parse_L>1 & "`1only'"=="" & "`svy'"!="", "gf1 cmp_gf1()", `"lf`="`lf'"==""' cmp_lnL()"')
 
 	if "`weight'" != "" local awgtexp [aw`exp']
 	tempname _init
@@ -1626,8 +1626,10 @@ program Estimate, eclass
 			`mlmodelcmd' `initopt'
 			mata moptimize_init_userinfo($ML_M, 1, &_mod)
 
-			mata _mod.cmp_init()
-			capture noisily `mlmaxcmd'
+			if $parse_L>1 & "`1only'"=="" & "`svy'"!="" mata moptimize_init_by($ML_M, "_cmp_id1")
+
+			mata _mod.cmp_init($ML_M)
+			capture noisily `mlmaxcmd' // Estimate!
 
 			if _rc==1400 {
 				di as res "Restarting search with parameters all 0."
@@ -1885,7 +1887,7 @@ program InitSearch, rclass
 						tempname e
 						predict `e' if e(sample), resid
 						svyset
-						sum `e' [iw `r(wexp)'] if e(sample)
+						sum `e' `=cond(`"`r(wexp)'"'!="", `"[iw `r(wexp)']"', "")' if e(sample)
 						scalar `sig' = r(sd)
 					}
 				mat `V' = e(V)
@@ -1905,7 +1907,7 @@ program InitSearch, rclass
 						tempname e
 						predict `e' if e(sample), resid
 						svyset
-						sum `e' [iw `r(wexp)'] if e(sample)
+						sum `e' `=cond(`"`r(wexp)'"'!="", `"[iw `r(wexp)']"', "")' if e(sample)
 						scalar `sig' = ln(r(sd))
 					}
 				mat `V' = e(V)
@@ -2501,6 +2503,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.1.2 Fixed svy hierarchical model crashes, partly by writing gf1 wrapper for lf1 evaluator. Stopped default of bhhh for such models because of moptimize() bug for svy/gf1.
 * 8.1.1 Compensated for Stata 14, 15 bug in which ml model, svy leaves behind reference to temp var in e(wexp), e(wvar)
 * 8.1.0 Fixed 8.0.9 crash in fully uncensored models
 * 8.0.9 Fixed bug in models mixing fractional probits with non-censored models, or varying which fractional probit eqs are included
