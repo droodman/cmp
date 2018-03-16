@@ -1,4 +1,4 @@
-*! cmp 8.1.2 24 January 2018
+*! cmp 8.2.0 29 January 2018
 *! Copyright (C) 2007-18 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -203,7 +203,9 @@ program define _cmp
 		local scramble
 	}
 	if 0`ghkdraws' mata CheckPrime(`ghkdraws')
-	mata _mod.set_ghkType("`ghktype'"); _mod.set_ghkAnti("`antithetics'"!="" | "`ghkanti'"!=""'); _mod.set_ghkDraws(0`ghkdraws'); _mod.set_ghkScramble("`scramble'")
+	local ghkanti = "`antithetics'`ghkanti'"!=""
+	mata _mod.set_ghkType("`ghktype'"); _mod.set_ghkAnti(`ghkanti'); _mod.set_ghkDraws(0`ghkdraws'); _mod.set_ghkScramble("`scramble'")
+	local ghkscramble `scramble'
 
 	if `"`covariance'"' == "" {
 		forvalues l=1/$parse_L {
@@ -887,7 +889,7 @@ program define _cmp
 		_est unhold `hold'
 		mata _lnf=_S=_H=.
 		mata moptimize_init_userinfo($ML_M, 1, &_mod)
-		mata (void) cmp_lnL($ML_M, "`scores'"!="", st_matrix("e(b)"), _lnf, _S, _H)
+		mata (void) cmp_lf1($ML_M, "`scores'"!="", st_matrix("e(b)"), _lnf, _S, _H)
 		if "`lnl'"!="" mata st_view(_H, ., "`lnl'"   , st_global("ML_samp")); _H[,] = _lnf
 		  else         mata st_view(_H, ., "`scores'", st_global("ML_samp")); _H[,] = _S[,"`equation'"==""?.:strtoreal(tokens("`equation'"))]
 		cmp_clear
@@ -1027,10 +1029,10 @@ program define _cmp
 	cmp_full_model if `touse' `wgtexp', `vce' `lf0opt' modopts(`modopts') mlopts(`mlopts') `technique' paramsdisplay(`ParamsDisplay') xvarsall(`XVarsAll') ///
 		`constraints' _constraints(`_constraints' `initconstraints') init(`init') cmpinit(`cmpInitFull') `svy' subpop(`subpop') psampling(`psampling') ///
 		`quietly' auxparams(`auxparams') cmdline(`"`cmdline'"') resteps(`steps') redraws(`redraws') intpoints(`intpoints') ///
-		vsmp(`vsmp') meff(`meff') ghkanti(`ghkanti') ghkdraws(`ghkdraws') ghktype(`ghktype') diparmopt(`diparmopt') `interactive'
+		vsmp(`vsmp') meff(`meff') ghkanti(`ghkanti') ghkdraws(`ghkdraws') ghktype(`ghktype') ghkscramble(`ghkscramble') diparmopt(`diparmopt') `interactive'
 
 	constraint drop `_constraints' `initconstraints' `1onlyinitconstraints'
-
+	
 	if e(cmd)=="cmp" Display, `diopts'
 end
 
@@ -1266,7 +1268,7 @@ cap program drop cmp_full_model
 program define cmp_full_model, eclass
 	version 11
 	syntax if/ [pw fw aw iw], [auxparams(string) vsmp(string) meff(string) paramsdisplay(string) xvarsall(string) ///
-					ghkanti(string) ghkdraws(string) ghktype(string) diparmopt(string) cmdline(string) ///
+					ghkanti(string) ghkdraws(string) ghktype(string) ghkscramble(string) diparmopt(string) cmdline(string) ///
 					redraws(string) resteps(string) retype(string) reanti(string) intpoints(string) svy *]
 
 	Estimate if `if' [`weight'`exp'], auxparams(`auxparams') paramsdisplay(`paramsdisplay') resteps(`resteps') redraws(`redraws') `svy' `options'
@@ -1410,10 +1412,13 @@ program define cmp_full_model, eclass
 		}
 	
 		ereturn scalar num_scores = $cmp_num_scores
+set trace on
 		foreach macro in diparmopt ghkanti ghkdraws ghktype retype reanti intpoints {
 			ereturn local `macro' ``macro''
 		}
+set trace off
 		if `resteps' > 1 ereturn local resteps `resteps'
+		ereturn local ghkscramble `ghkscramble'
 		ereturn local depvar $parse_y
 		ereturn local indicators = `"`indicators'"'
 		ereturn local eqnames $cmp_eq `:subinstr local auxparams "/" "", all'
@@ -1441,8 +1446,6 @@ program Estimate, eclass
 	syntax if/ [fw aw pw iw], [auxparams(string) psampling(string) svy subpop(passthru) autoconstrain paramsdisplay(string) ///
 		modopts(string) mlopts(string) init(string) cmpinit(string) constraints(string) _constraints(string) technique(string) 1only quietly resteps(string) redraws(string) interactive *]
 
-	local method_spec = cond($parse_L>1 & "`1only'"=="" & "`svy'"!="", "gf1 cmp_gf1()", `"lf`="`lf'"==""' cmp_lnL()"')
-
 	if "`weight'" != "" local awgtexp [aw`exp']
 	tempname _init
 	if "`init'" == "" local _init `cmpinit'
@@ -1463,7 +1466,7 @@ program Estimate, eclass
 		local model `model', ${cmp_xc`eq'} offset(${cmp_xo`eq'}) exposure(${cmp_xe`eq'}))
 	}
 	if "`1only'"=="" local model `model' $cmp_gammaparams
-	local model `method_spec' `model' `auxparams'
+	local model `model' `auxparams'
 	local modeldisplay: subinstr local model ": `ind1' =" ": . =", all
 
 	if "`constraints'" != "" {
@@ -1593,6 +1596,9 @@ program Estimate, eclass
 		gen `u' = uniform() if `if'
 	}
 
+	if "`svy'"==""  | "`1only'"=="" local method_lf lf`="`lf'"==""' cmp_lf1()
+	if $parse_L > 1 & "`1only'"=="" local method_gf gf1             cmp_gf1()
+
 	while `psampling_cutoff' < `psampling_rate' {
 		if "`psampling'" != "" {
 			if `psampling_cutoff' < 1 di as res _n "Fitting on approximately " %1.0f `psampling_cutoff'*`N' " observations (approximately " %1.0f `psampling_cutoff'*100 "% of the sample)."
@@ -1609,66 +1615,69 @@ program Estimate, eclass
 
 			mata _mod.set_NumREDraws(ceil(_NumREDraws))
 
-			local final = `psampling_cutoff'>=1 & `restep'==`resteps'
-			if `final' {
-				local this_mlopts `mlopts'
-				local this_technique `technique'
-			}
-			else {
-				local this_mlopts nonrtolerance tolerance(0.1)
-				local this_technique = cond($cmp_IntMethod, "bhhh", "nr")
-			}
-
 			local _if if (`if') `=cond("`psampling'" != "", "& (`psampling_cutoff'>=1 | `u'<=.001+`psampling_cutoff')", "")'
-			local mlmodelcmd `quietly' ml model `model' `=cond(`final',"[`weight'`exp'] `_if', `options'", "`awgtexp' `_if',")' ///
-				`svy' `subpop' constraints(`constraints') nocnsnotes nopreserve missing collinear `modopts' technique(`this_technique')
-			local mlmaxcmd `quietly' ml max, search(off) `this_mlopts' nooutput
-			`mlmodelcmd' `initopt'
-			mata moptimize_init_userinfo($ML_M, 1, &_mod)
 
-			if $parse_L>1 & "`1only'"=="" & "`svy'"!="" mata moptimize_init_by($ML_M, "_cmp_id1")
+			foreach method_spec in "`method_lf'" "`method_gf'" {
+				if "`method_spec'"!="" {	
+					local final = `psampling_cutoff'>=1 & `restep'==`resteps' & inlist("`method_gf'", "", "`method_spec'")
+					if `final' {
+						local this_mlopts `mlopts'
+						local this_technique `technique'
+						local modeldisplay `method_spec' `modeldisplay'
+					}
+					else {
+						local this_mlopts nonrtolerance tolerance(0.001)
+						local this_technique = cond($cmp_IntMethod, "bhhh", "nr")
+					}
 
-			mata _mod.cmp_init($ML_M)
-			capture noisily `mlmaxcmd' // Estimate!
+					local mlmodelcmd `quietly' ml model `method_spec' `model' `=cond(`final',"[`weight'`exp'] `_if', `options'", "`awgtexp' `_if',")' ///
+						`svy' `subpop' constraints(`constraints') nocnsnotes nopreserve missing collinear `modopts' technique(`this_technique')
+					local mlmaxcmd `quietly' ml max, search(off) `this_mlopts' nooutput
+					`mlmodelcmd' `initopt'
+					mata moptimize_init_userinfo($ML_M, 1, &_mod)
+					if "`method_spec'"=="`method_gf'" mata moptimize_init_by($ML_M, "_cmp_id1")
+					if "`method_spec'"=="`method_lf'" | ("`method_lf'"=="" & "`method_spec'"=="`method_gf'")  mata _mod.cmp_init($ML_M) // don't re-init if moving from lf1 to gf1 fit for hierarchical model
+						else {
+	* mata _mod.cmp_init($ML_M)
+							di as res _n "Refining estimates."
+							if $cmp_IntMethod mata _mod.AdaptivePhaseThisEst = 1 // violating abstraction
+						}
 
-			if _rc==1400 {
-				di as res "Restarting search with parameters all 0."
-				tempname zeroes
-				mat `zeroes' = J(1, `=colsof(`_init')', 0)
-				`mlmodelcmd' init(`zeroes', copy)
-				capture noisiliy `mlmaxcmd'
-			}
-			if _rc==1 {
-				if "`interactive'"=="" cmp_clear
-				error 1
-			}
-			if _rc continue
+					capture noisily `mlmaxcmd' // Estimate!
 
-			ereturn local marginsok Pr XB default
-			cap _ms_op_info e(b)
-			if _rc==0 & r(fvops) {
-				if 0$cmpAnyOprobit {
-					ereturn repost, buildfvinfo ADDCONS
-					ereturn local marginsprop `e(marginsprop)' addcons
+					if _rc==1400 {
+						di as res "Restarting search with parameters all 0."
+						tempname zeroes
+						mat `zeroes' = J(1, `=colsof(`_init')', 0)
+						`mlmodelcmd' init(`zeroes', copy)
+						capture noisiliy `mlmaxcmd'
+					}
+
+					if _rc==1 {
+						if "`interactive'"=="" cmp_clear
+						error 1
+					}
+
+					if !`final'	mat `_init' = e(b)
 				}
-				else ereturn repost, buildfvinfo
-			}
-
-			cap local _a // reset _rc to 0
-
-			if `restep' < `resteps' {
-				if "`quietly'"=="" noi version 11: ml di
-				mat `_init' = e(b)
-			}
+			} // two-step lf1/gf1 loop for hierarchical models
+			if !`final' & "`quietly'"=="" noi version 11: ml di
 		} // resteps loop
 
 		local psampling_cutoff = `psampling_cutoff' * `psampling_rate'
-		if `psampling_cutoff' < `psampling_rate' {
-			noi version 11: ml di
-			mat `_init' = e(b)
-		}
 	} // psampling loop
 	
+	cap local _a // reset _rc to 0
+	ereturn local marginsok Pr XB default
+	cap _ms_op_info e(b)
+	if _rc==0 & r(fvops) {
+		if 0$cmpAnyOprobit {
+			ereturn repost, buildfvinfo ADDCONS
+			ereturn local marginsprop `e(marginsprop)' addcons
+		}
+		else ereturn repost, buildfvinfo
+	}
+
 	ereturn scalar k_gamma = $cmpHasGamma
 	ereturn scalar k_aux = `:word count `auxparams'' + e(k_gamma)
 	ereturn scalar k_eq = $cmp_d + e(k_aux)
@@ -2402,7 +2411,7 @@ program Display, eclass
 
 			mat `fixed_sigs' = e(fixed_sigs`e(L)')
 			mat `fixed_rhos' = e(fixed_rhos`e(L)')
-			di "Level: " as res "Residuals" _col(37) as txt "{c |}"
+			di "Level: " as res "Observations" _col(37) as txt "{c |}"
 			di " Standard " plural(e(k_dv), "deviation") _col(37) "{c |} " as res  _c
 			if "`:word `e(L)' of `e(covariance)''" == "exchangeable" {
 				local paramname /`ln'sigEx
@@ -2503,6 +2512,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.2.0 Created pseudo-gf2 evaluator for faster svy/multilevel modeling
 * 8.1.2 Fixed svy hierarchical model crashes, partly by writing gf1 wrapper for lf1 evaluator. Stopped default of bhhh for such models because of moptimize() bug for svy/gf1.
 * 8.1.1 Compensated for Stata 14, 15 bug in which ml model, svy leaves behind reference to temp var in e(wexp), e(wvar)
 * 8.1.0 Fixed 8.0.9 crash in fully uncensored models

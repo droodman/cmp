@@ -1,4 +1,4 @@
-/* cmp 8.1.2 24 January 2018
+/* cmp 8.2.0 29 January 2018
    Copyright (C) 2007-18 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -122,7 +122,7 @@ struct RE { // info associated with given level of model. Top level also holds v
 	real scalar lnNumREDraws
 	real scalar lnLlimits
 	real matrix lnLByDraw // lnLByDraw acculumulates sums of them at next level up, by draw
-	pointer (real matrix) scalar plnL // lnL holds latest likelihoods at this level, points to cmp_lnL lnf return arg at top level
+	pointer (real matrix) scalar plnL // lnL holds latest likelihoods at this level, points to 1e-6 lnf return arg at top level
 	real colvector QuadW, QuadX // quadrature weights
 	struct smatrix colvector QuadMean, QuadSD // by group, estimated RE/RC mean and variance, for adaptive quadrature
 	real rowvector lnnormaldenQuadX
@@ -164,6 +164,8 @@ class cmp_model {
 	struct scores scalar Scores // column indices in S corresponding to different parameter groups
 	string rowvector indVars, LtVars, UtVars, yLVars
 	real rowvector ThisDraw
+	real scalar addh, signh // for computing 2nd derivatives in pseudo-gf2, indicates which equation to add a small amount to, and with what sign. addh=0 = none.
+	real scalar h // if computing 2nd derivatives most recent h used
 
 	void new(), cmp_init(), BuildXU(), BuildTotalEffects(), _st_view(), 
 				set_reverse(), set_SigXform(), set_QuadTol(), set_QuadIter(), set_ghkType(), set_MaxCuts(), set_indVars(), set_LtVars(), set_UtVars(), set_yLVars(), 
@@ -176,7 +178,7 @@ class cmp_model {
 void cmp_model::new() {
 	mprobit_ind_base  = 20
 	roprobit_ind_base = 40
-	Adapted = AdaptivePhaseThisEst = WillAdapt = AdaptNextTime = HasGamma = ghkScramble = REScramble = 0
+	Adapted = AdaptivePhaseThisEst = WillAdapt = AdaptNextTime = HasGamma = ghkScramble = REScramble = addh = 0
 }
 
 void cmp_model::set_d       (real scalar t) d  = t
@@ -210,6 +212,7 @@ void cmp_model::set_yLVars(string scalar t) yLVars = tokens(t)
 void cmp_model::set_LtVars(string scalar t) LtVars = tokens(t)
 void cmp_model::set_UtVars(string scalar t) UtVars = tokens(t)
 void cmp_model::set_AdaptNow(real scalar t) Adapted = AdaptivePhaseThisEst = t
+
 void cmp_model::set_WillAdapt(real scalar t) {
 	WillAdapt  = t
 	Adapted = AdaptivePhaseThisEst = AdaptNextTime = 0
@@ -311,7 +314,7 @@ real matrix dSigdsigrhos(real scalar SigXform, real rowvector sig, real matrix S
 }
 
 // insert row vector into a matrix at specified row
-real matrix insert(real matrix X, real scalar i, real rowvector newrow)
+real matrix cmp_insert(real matrix X, real scalar i, real rowvector newrow)
 	return (i==1? newrow\X : (i==rows(X)+1? X\newrow : X[|.,.\i-1,.|] \ newrow \ X[|i,.\.,.|]))
 
 // Given a col, apply forward Guassian elimination using first row that is non-zero in that col, then delete the row.
@@ -433,10 +436,10 @@ real colvector binormalGenz(real colvector x1, real colvector x2, real scalar r,
 			W =  0.4717533638651177D-01,  0.1069393259953183D+00,  0.1600783285433464D+00,  0.2031674267230659D+00,  0.2334925365383547D+00,  0.2491470458134029D+00	
 		} else {
 			X = -0.9931285991850949D+00, -0.9639719272779138D+00, -0.9122344282513259D+00, -0.8391169718222188D+00, -0.7463319064601508D+00,
-				-0.6360536807265150D+00, -0.5108670019508271D+00, -0.3737060887154196D+00, -0.2277858511416451D+00, -0.7652652113349733D-01
+			    -0.6360536807265150D+00, -0.5108670019508271D+00, -0.3737060887154196D+00, -0.2277858511416451D+00, -0.7652652113349733D-01
 
 			W =  0.1761400713915212D-01,  0.4060142980038694D-01,  0.6267204833410906D-01,  0.8327674157670475D-01,  0.1019301198172404D+00,
-				 0.1181945319615184D+00,  0.1316886384491766D+00,  0.1420961093183821D+00,  0.1491729864726037D+00,  0.1527533871307259D+00
+			     0.1181945319615184D+00,  0.1316886384491766D+00,  0.1420961093183821D+00,  0.1491729864726037D+00,  0.1527533871307259D+00
 		}
 		X = 1:-X, 1:+X
 		W = W, W
@@ -462,10 +465,10 @@ real colvector binormalGenz(real colvector x1, real colvector x2, real scalar r,
 	HK = x1 :* *px2 * 0.5
 	if (absr < 1) {
 		X = -0.9931285991850949D+00, -0.9639719272779138D+00, -0.9122344282513259D+00, -0.8391169718222188D+00, -0.7463319064601508D+00,
-			-0.6360536807265150D+00, -0.5108670019508271D+00, -0.3737060887154196D+00, -0.2277858511416451D+00, -0.7652652113349733D-01
+		    -0.6360536807265150D+00, -0.5108670019508271D+00, -0.3737060887154196D+00, -0.2277858511416451D+00, -0.7652652113349733D-01
 
 		W =  0.1761400713915212D-01,  0.4060142980038694D-01,  0.6267204833410906D-01,  0.8327674157670475D-01,  0.1019301198172404D+00,
-			 0.1181945319615184D+00,  0.1316886384491766D+00,  0.1420961093183821D+00,  0.1491729864726037D+00,  0.1527533871307259D+00
+		     0.1181945319615184D+00,  0.1316886384491766D+00,  0.1420961093183821D+00,  0.1491729864726037D+00,  0.1527533871307259D+00
 		X = 1:-X, 1:+X
 		W = W, W
 
@@ -1194,11 +1197,8 @@ void cmp_model::_st_view(real matrix V, real scalar missing, string rowvector va
 
 
 
-
-
-
 // main evaluator routine
-void cmp_lnL(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
+void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
 	real matrix Rho, t, L_g, invGamma, C, dOmega_dSig
 	real scalar e, c, i, j, k, l, m, _l, r, d, L, tEq, EUncensEq, ECensEq, FCensEq, NewIter, eq, eq1, eq2, c1, c2, cut, lnsigWithin, lnsigAccross, atanhrhoAccross, atanhrhoWithin, Iter
 	real colvector shift, lnLmin, lnLmax, lnL, out
@@ -1220,7 +1220,17 @@ void cmp_lnL(transmorphic M, real scalar todo, real rowvector b, real colvector 
 
 	for (i=1; i<=d; i++) {
 		REs->theta[i].M = moptimize_util_xb(M, b, i)
+		if (i==mod->addh) {
+			if (mod->signh==1) mod->h = (abs(mean(REs->theta[i].M :/ (mod->indicators[,i]:>0))) + 1e-6) * 1e-6 // if sign=1, compute new h for manual estimation of derivative; ignores weights...
+			REs->theta[i].M = REs->theta[i].M :+ mod->signh*mod->h
+		}
 		if (rows(REs->theta[i].M)==1) REs->theta[i].M = J(base->N, 1, REs->theta[i].M)
+	}
+
+	if (mod->addh > d) {
+		t =  moptimize_util_eq_indices(M, mod->addh)[1,2]
+		if (mod->signh==1) mod->h = (abs(b[t]) + 1e-6) * 1e-6
+		b[t] = b[t] + mod->signh*mod->h
 	}
 
 	for (j=1; j<=rows(mod->GammaInd); j++)
@@ -1679,7 +1689,7 @@ void cmp_lnL(transmorphic M, real scalar todo, real rowvector b, real colvector 
 		}
 	} while (l) // exit when adding one more draw causes carrying all the way accross the draw counters, back to 1, 1, 1...
 
-	if (L > 1) {
+	if (L > 1 & mod->addh==0) {
 		lnf = quadsum(rows(REs->Weights)? REs->Weights:* *(REs->plnL) : *(REs->plnL), 1)
 		if (mod->AdaptivePhaseThisEst & NewIter) {
 			if (mod->AdaptivePhaseThisEst = mreldif(mod->LastlnLThisIter, mod->LastlnLLastIter) >= 1e-6)
@@ -1692,17 +1702,17 @@ void cmp_lnL(transmorphic M, real scalar todo, real rowvector b, real colvector 
 }
 
 void cmp_gf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
-	real matrix _S, IDRanges, subscripts; real scalar i, n, K, d; pointer(class cmp_model scalar) scalar mod; pointer (struct RE scalar) scalar REs
-	pragma unset _S
-
-	cmp_lnL(M, todo, b, lnf, _S, H)
+	real matrix _S, __S, _H, Hrow, IDRanges, subscripts; real colvector _lnf; real rowvector _b; real scalar i, n, K, d; pointer(class cmp_model scalar) scalar mod; pointer (struct RE scalar) scalar REs
+	pragma unset _S; pragma unset _H; pragma unset __S; pragma unset _lnf; pragma unset _b
 
 	mod = moptimize_init_userinfo(M, 1)
-	lnf = *(mod->REs->plnL)
+	mod->addh = 0
+	cmp_lf1(M, todo, b, lnf, _S, H)
 
+	lnf = *(mod->REs->plnL)
 	if (todo) {
 		IDRanges = mod->REs->IDRanges
-		K = moptimize_util_eq_indices(M, n=moptimize_init_eq_n(M))[2,2] // numbers of eqs (inluding auxilieary parameters); number of parameters
+		K = cols(b); n=moptimize_init_eq_n(M) // numbers of eqs (inluding auxilieary parameters); number of parameters
 		d = mod->base->d
 		REs = mod->REs
 		S = J(rows(lnf), K, 0)
@@ -1715,6 +1725,33 @@ void cmp_gf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 			subscripts[1,2] = subscripts[2,2] + 1
 			subscripts[2,2] = .
 			S[|subscripts|] = panelsum(_S[|.,mod->base->d+1\.,.|], IDRanges)
+		}
+		
+		if (todo > 1) {
+			H = J(0, K, 0)
+			for (mod->addh=n; mod->addh > d; mod->addh--) {
+				mod->signh =  1; cmp_lf1(M, todo, _b=b, _lnf,  _S, _H)
+				mod->signh = -1; cmp_lf1(M, todo, _b=b, _lnf, __S, _H)
+				_S = (_S - __S) / (2*mod->h)
+				Hrow = J(1,0,0)
+				for (i=mod->addh;i>d;i--)
+					Hrow = moptimize_util_sum(M, _S[,i]), Hrow
+				for (;i;i--)
+					Hrow = moptimize_util_vecsum(M, i, _S[,i], 1), Hrow
+				H = (Hrow, J(rows(Hrow), cols(H)-cols(Hrow), .)) \ H
+			}
+			for (; mod->addh; mod->addh--) {
+				mod->signh =  1; cmp_lf1(M, todo, _b=b, _lnf,  _S, _H)
+				mod->signh = -1; cmp_lf1(M, todo, _b=b, _lnf, __S, _H)
+				_S = (_S - __S) / (2*mod->h)
+				subscripts = moptimize_util_eq_indices(M,mod->addh); Hrow = J(subscripts[2,2]-subscripts[1,2]+1,0,0)
+				for (i=mod->addh;i>d;i--)
+					Hrow = moptimize_util_vecsum(M, i, _S[,mod->addh], 1), Hrow
+				for (;i;i--)
+					Hrow = moptimize_util_matsum(M, mod->addh, i, _S[,mod->addh], 1), Hrow
+				H = (Hrow, J(rows(Hrow), cols(H)-cols(Hrow), .)) \ H
+			}
+			_makesymmetric(H)
 		}
 	}
 }
@@ -2069,7 +2106,7 @@ void cmp_model::cmp_init(transmorphic M) {
 				v->mprobit[k].out = v->TheseInds[start] - mprobit_ind_base // eq of chosen alternative
 				v->mprobit[k].res = cmp_selectindex((v->TheseInds :& one2d:>start  :& one2d:<=stop)[v->cens]) // index in v->ECens for relative differencing results
 				v->mprobit[k].in =  cmp_selectindex( v->TheseInds :& one2d:>=start :& one2d:<=stop :& one2d:!=v->mprobit[k].out) // eqs of rejected alternatives
-				(v->QE)[mprobit,mprobit] = J(d_mprobit+1, 1, 0), insert(-I(d_mprobit), v->mprobit[k].out-start+1, J(1, d_mprobit, 1))
+				(v->QE)[mprobit,mprobit] = J(d_mprobit+1, 1, 0), cmp_insert(-I(d_mprobit), v->mprobit[k].out-start+1, J(1, d_mprobit, 1))
 			}
 		}
 
@@ -2231,6 +2268,9 @@ void cmpSaveSomeResults(pointer(class cmp_model scalar) scalar mod) {
 	pointer (struct RE scalar) scalar RE, REs; real scalar L, l, j, k_aux_nongamma; real matrix means, ses; string matrix colstripe, _colstripe
 
 	REs = mod->REs
+
+	st_matrix("e(MprobitGroupEqs)", mod->MprobitGroupInds)
+
 	if ((L =st_numscalar("e(L)")) == 1)
 		st_matrix("e(Sigma)", REs->Sig)
 	else {
