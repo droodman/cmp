@@ -1412,11 +1412,9 @@ program define cmp_full_model, eclass
 		}
 	
 		ereturn scalar num_scores = $cmp_num_scores
-set trace on
 		foreach macro in diparmopt ghkanti ghkdraws ghktype retype reanti intpoints {
 			ereturn local `macro' ``macro''
 		}
-set trace off
 		if `resteps' > 1 ereturn local resteps `resteps'
 		ereturn local ghkscramble `ghkscramble'
 		ereturn local depvar $parse_y
@@ -1596,7 +1594,7 @@ program Estimate, eclass
 		gen `u' = uniform() if `if'
 	}
 
-	if "`svy'"==""  | "`1only'"=="" local method_lf lf`="`lf'"==""' cmp_lf1()
+	if "`svy'"==""  | "`1only'"=="" local method_lf lf`="`lf'"==""' cmp_lf1() // use this line if trying to do lf and then refine with gf
 	if $parse_L > 1 & "`1only'"=="" local method_gf gf1             cmp_gf1()
 
 	while `psampling_cutoff' < `psampling_rate' {
