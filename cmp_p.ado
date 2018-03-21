@@ -153,13 +153,13 @@ program define cmp_p
 	for`=cond("`_eqspec'"=="", "values eq=1/`e(k_dv)'", "each eq in `_eqspec'")' {
 		local depvar: word `eq' of `e(depvar)'
 		if `"`pr'`residuals'`ystar'`e'"' == "" {
-			Predict `vartype' `_varlist' if `touse', `_options' eq(#`eq') `offset' `reducedform'
+			Predict `vartype' `1' if `touse', `_options' eq(#`eq') `offset' `reducedform'
 		}
 		else {
 			qui Predict double `xb' if `touse', `_options' eq(#`eq') `offset' `reducedform'
 			if "`residuals'" != "" {
-				gen `vartype' `_varlist' = `depvar' - `xb' if `touse'
-				label var `_varlist' Residuals
+				gen `vartype' `1' = `depvar' - `xb' if `touse'
+				label var `1' Residuals
 			}
 			else {
 				scalar `sig' = sqrt(`Sigma'[`eq',`eq'])
@@ -180,8 +180,8 @@ program define cmp_p
 						qui gen double `phiU' = cond(`U'>=., 0, normalden(`U'))    if `touse'
 						qui gen double `PhiL' = cond(`L'>=., 0, normal(   `L'))    if `touse'
 						qui gen double `PhiU' = cond(`U'>=., 1, normal(   `U'))    if `touse'
-						if `"`e'"'!="" gen `vartype' `_varlist' = `xb' - cond(`"`condition'"'=="", `sig', `rho'*`sig') * (`phiU'-`phiL')/(`PhiU'-`PhiL') if `touse'
-						else           gen `vartype' `_varlist' = (`PhiU'-`PhiL')*`xb'-`sig'*(`phiU'-`phiL')+cond((`ll')>=.,0,`PhiL'*(`ll'))+cond((`ul')>=.,0,(1-`PhiU')*(`ul')) if `touse'
+						if `"`e'"'!="" gen `vartype' `1' = `xb' - cond(`"`condition'"'=="", `sig', `rho'*`sig') * (`phiU'-`phiL')/(`PhiU'-`PhiL') if `touse'
+						else           gen `vartype' `1' = (`PhiU'-`PhiL')*`xb'-`sig'*(`phiU'-`phiL')+cond((`ll')>=.,0,`PhiL'*(`ll'))+cond((`ul')>=.,0,(1-`PhiU')*(`ul')) if `touse'
 						drop `L' `U' `phiL' `phiU' `PhiL' `PhiU'
 					}
 					else {
@@ -199,12 +199,12 @@ program define cmp_p
 						 binormal `L' `condL' - - `rho'  `binormalL_condL'       if `touse'
 
 						if `"`e'"'!="" {
-							gen `vartype' `_varlist' = `xb' - `sig'*(`xbinormalU_condU' - `xbinormalU_condL' - `xbinormalL_condU' + `xbinormalL_condL') ///
+							gen `vartype' `1' = `xb' - `sig'*(`xbinormalU_condU' - `xbinormalU_condL' - `xbinormalL_condU' + `xbinormalL_condL') ///
 																			                   /  ( `binormalU_condU' - `binormalU_condL' - `binormalL_condU' + `binormalL_condL') if `touse'
 						}
 						else {
 							qui gen double `denom' = cond(`condU'>=., 1, normal(`condU')) - cond(`condL'>=., 0, normal(`condL')) if `touse'
-							gen `vartype' `_varlist' = `xb' + `sig'*(`xbinormalU_condL' + `xbinormalL_condU' -`xbinormalU_condU' - `xbinormalL_condL' ///
+							gen `vartype' `1' = `xb' + `sig'*(`xbinormalU_condL' + `xbinormalL_condU' -`xbinormalU_condU' - `xbinormalL_condL' ///
 						                                    + `L' * (`binormalL_condU' - `binormalL_condL') ///
 																								+ `U' * (`denom' - `binormalU_condU' + `binormalU_condL')) ///
 																									/ `denom' if `touse'
@@ -212,18 +212,18 @@ program define cmp_p
 						}
 						drop `L' `U' `condU' `condL' `xbinormalL_condL' `xbinormalL_condU' `xbinormalU_condL' `xbinormalU_condU' `binormalL_condL' `binormalL_condU' `binormalU_condL' `binormalU_condU'
 					}
-					label var `_varlist' "E(`depvar'`=cond(`"`e'"'=="","*","")'`=cond(`lmissing' & `umissing', "", "|`=cond(`lmissing', "", "`ll'<")'`depvar'`=cond(`umissing', "", "<`ul'")'")')"
+					label var `1' "E(`depvar'`=cond(`"`e'"'=="","*","")'`=cond(`lmissing' & `umissing', "", "|`=cond(`lmissing', "", "`ll'<")'`depvar'`=cond(`umissing', "", "<`ul'")'")')"
 				}
 				else if "`pr'" != "" {
 					local num_cats = `num_cuts'[`eq',1] + 1
 					if `num_cats' > 1 {
 						if `"`outcome'"' == "" {
-							_stubstar2names `_varlist'_*, nvars(`num_cats') outcome
+							_stubstar2names `1'_*, nvars(`num_cats') outcome
 							forvalues outno=1/`num_cats' {
-								condpr `xb' `rho' `vartype' `_varlist'_`outno' if `touse', condll(`condll') condul(`condul') condxb(`condxb') condsig(`condsig') ///
+								condpr `xb' `rho' `vartype' `1'_`outno' if `touse', condll(`condll') condul(`condul') condxb(`condxb') condsig(`condsig') ///
 									ll(`=cond(`outno'>1, "[cut_`eq'_`=`outno'-1']_cons", ".")') ///
 									ul(`=cond(`outno'<=`num_cuts'[`eq',1], "[cut_`eq'_`outno']_cons", ".")') 
-								label var `_varlist'_`outno' "Pr(`depvar'=`=`cat'[`eq', `outno']')"
+								label var `1'_`outno' "Pr(`depvar'=`=`cat'[`eq', `outno']')"
 							}
 						}
 						else {
@@ -245,18 +245,18 @@ program define cmp_p
 								}
 								local outcome `i'
 							}
-							condpr `xb' `rho' `vartype' `_varlist' if `touse', condll(`condll') condul(`condul') condxb(`condxb') condsig(`condsig') ///
+							condpr `xb' `rho' `vartype' `1' if `touse', condll(`condll') condul(`condul') condxb(`condxb') condsig(`condsig') ///
 								ll(`=cond(`outcome'>1, "[cut_`eq'_`=`outcome'-1']_cons", ".")') ///
 								ul(`=cond(`outcome'<=`num_cuts'[`eq',1], "[cut_`eq'_`outcome']_cons", ".")')
-							label var `_varlist' "Pr(`depvar'=`=`cat'[`eq', `outcome']')"
+							label var `1' "Pr(`depvar'=`=`cat'[`eq', `outcome']')"
 						}
 					}
 					else if `"`outcome'"' == "" {
 						if `"`condition'"'=="" & `"`pr'"'=="0 ." {
-							gen `vartype' `_varlist' = normal(`xb')
-							label var `_varlist' "Pr(`depvar')"
+							gen `vartype' `1' = normal(`xb')
+							label var `1' "Pr(`depvar')"
 						}
-						else condpr `xb' `rho' `vartype' `_varlist' if `touse', ll(`ll') ul(`ul') condll(`condll') condul(`condul') condxb(`condxb') condsig(`condsig')
+						else condpr `xb' `rho' `vartype' `1' if `touse', ll(`ll') ul(`ul') condll(`condll') condul(`condul') condxb(`condxb') condsig(`condsig')
 					}
 					else {
 						di as err "Equation #`eq' is not ordered probit. outcome() is not allowed."

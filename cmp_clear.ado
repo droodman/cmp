@@ -16,7 +16,6 @@ program define cmp_clear
 	}
 	cap drop _mp_cmp*
 	cap drop _cmp_y*_*
-	cap drop _cmp_weight*
 	macro drop ml_*
 	macro drop parse_*
 	forvalues eq=1/0$cmp_d {
@@ -27,11 +26,11 @@ program define cmp_clear
 		cap label drop cmp_y`eq'_label
 		cap mat drop cmp_cat`eq'
 	}
-	foreach global in REDraws XVars HasGamma ParamsDisplay Obs1 N SigXform AnyOprobit {
+	foreach global in REDraws XVars HasGamma ParamsDisplay SigXform AnyOprobit {
 		macro drop cmp`global'
 	}
 	foreach global in d truncreg* intreg* y* gammaparams* tot_cuts max_cuts eq* x* mprobit_ind_base roprobit_ind_base num_mprobit_groups num_roprobit_groups ///
-			reverse rc* re* id* ind* L* Lt* Ut* cov* num_scores num_coefs k probity1 IntMethod {
+			reverse rc* re* id* ind* L* Lt* Ut* cov* num_scores num_coefs k probity1 IntMethod weight* {
 		macro drop cmp_`global'
 	}
 	foreach var in _X _Cns _t _p _Y _NumREDraws _mod _lnf _S _H {

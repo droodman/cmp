@@ -112,7 +112,7 @@ may be numbers or variables; {it:a} missing ({it:a} {ul:>} {cmd:.}) means minus 
 
 {title:UPDATES}
 
-{pstd} Version 8.0.0 of {cmd:cmp}, released in mid-2017, includes changes that can slightly affect results in hierarchical models. The previous version, 7.1.0, is available as a
+{pstd} Versions 8.0.0 and 8.20. of {cmd:cmp}, released in mid-2017 and early 2018, include changes that can somewhat affect results in hierarchical models. An older version, 7.1.0, is available as a
 {browse "http://github.com/droodman/cmp/tree/09ce0ec1fe765a8c585208004b848758763a1cfe":Github archive}, and can be directly installed, in Stata 13 or later, via
 "{net "from https://raw.github.com/droodman/cmp/v7.1.0":net from https://raw.github.com/droodman/cmp/v7.1.0}".
 
@@ -190,10 +190,10 @@ parameters are structural. In the latter, it is a limited-information (LIML) est
 
 {pstd}
 {cmd:cmp}'s modeling framework embraces those of the official Stata commands {help probit:probit}, {help ivprobit:ivprobit}, {help treatreg:treatreg}, 
-{help biprobit:biprobit}, {help tetrachoric:tetrachoric}, {help oprobit:oprobit}, {help mprobit:mprobit}, {help asmprobit:asmprobit}, {help asroprobit:asroprobit}, {help tobit:tobit}, {help ivtobit:ivtobit}, 
-{help cnreg:cnreg}, {help intreg:intreg}, {help truncreg:truncreg}, {help fracreg:fracreg}, {help heckman:heckman}, {help heckprob:heckprob}, {help heckoprobit:heckoprobit}, 
-{help xtreg:xtreg}, {help xtprobit:xtprobit}, {help xttobit:xttobit}, and {help xtinteg:xtintreg}; to lesser degrees {help regress:regress}, {help sureg:sureg}, {help reg3:reg3},
-and {help xtmelogit:xtmelogit}; and user-written {stata findit ssm:ssm}, {stata findit polychoric:polychoric}, {stata findit triprobit:triprobit}, 
+{help biprobit:biprobit}, {help tetrachoric:tetrachoric}, {help oprobit:oprobit}, {help mprobit:mprobit}, {help asmprobit:}, {help asroprobit:asroprobit}, {help tobit:tobit}, {help ivtobit:ivtobit}, 
+{help cnreg}, {help intreg}, {help truncreg}, {help fracreg}, {help heckman}, {help heckprob}, {help heckoprobit}, 
+{help xtreg:}, {help xtprobit}, {help xttobit}, {help xtinteg}, {help meintreg}, {help meoprobit}, and {help metobit}; to lesser degrees {help regress:regress}, {help sureg}, 
+and {help reg3}; and user-written {stata findit ssm:ssm}, {stata findit polychoric:polychoric}, {stata findit triprobit:triprobit}, 
 {stata findit mvprobit:mvprobit}, {stata findit bitobit:bitobit}, 
 {stata findit mvtobit:mvtobit}, {stata findit oheckman:oheckman}, {stata findit switch_probit:switch_probit}, {stata findit reoprob:reoprob}, 
 {stata findit cdsimeq:cdsimeq}, and {stata findit bioprobit:bioprobit}. It 
@@ -967,9 +967,9 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 {phang}. {stata "gsem (ln_wage1 <- union age grade south south#c.year occ_code M[idcode]@1), family(gaussian, udepvar(ln_wage2)) intp(12)"}{p_end}
 {phang}. {stata "cmp (ln_wage1 ln_wage2 = union age grade south south#c.year occ_code || idcode:), ind($cmp_int) nolr qui"}{p_end}
 
-{phang}. {stata webuse bangladesh}{p_end}
-{phang}. {stata "xtmelogit c_use urban age child* || district: urban, cov(unstruct)"}{p_end}
-{phang}. {stata "cmp (c_use = urban age child* || district: urban), ind($cmp_probit) nolr qui"}{p_end}
+{phang}. {stata webuse tvsfpors}{p_end}
+{phang}. {stata "meoprobit thk prethk cc#tv || school: || class:"}{p_end}
+{phang}. {stata "cmp (thk = prethk cc#tv || school: || class:), ind($cmp_oprobit) intpoints(7 7) nolr qui"}{p_end}
 
 {phang}. {stata webuse productivity}{p_end}
 {phang}. {stata "xtmixed gsp private emp hwy water other unemp || region: || state:"}{p_end}
@@ -999,7 +999,7 @@ illustrate how {cmd:cmp} works (colored text is clickable):
  
 {phang}{hilite:* Multinomial probit with heterogeneous preferences (random effects by individual)}{p_end}
 {phang}. {stata "use http://fmwww.bc.edu/repec/bocode/j/jspmix.dta"}{p_end}
-{phang}. {stata "cmp (tby = sex, iia || scy3:), ind($cmp_mprobit) nolr"}{p_end}
+{phang}. {stata "cmp (tby = sex, iia || scy3:), ind($cmp_mprobit) tech(dfp) nolr"}{p_end}
 
 {phang}{hilite:* Random effects probit dependent on latent first stage}{p_end}
 {phang}. {stata webuse union}{p_end}

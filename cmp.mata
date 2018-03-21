@@ -1699,9 +1699,13 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 		}
 		if (lnf < .) mod->LastlnLThisIter = lnf
 	}
+/*if (todo==0) {
+"todo, moptimize_util_xb(M, b, 2), REs->sig, (REs->theta.M)[1],lnf"
+ todo, moptimize_util_xb(M, b, 2), REs->sig, (REs->theta.M)[1],lnf
+}*/
 }
 
-void cmp_gf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
+void cmp_gf2(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
 	real matrix _S, __S, _H, Hrow, IDRanges, subscripts; real colvector _lnf; real rowvector _b; real scalar i, n, K, d; pointer(class cmp_model scalar) scalar mod; pointer (struct RE scalar) scalar REs
 	pragma unset _S; pragma unset _H; pragma unset __S; pragma unset _lnf; pragma unset _b
 
@@ -1709,49 +1713,50 @@ void cmp_gf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 	mod->addh = 0
 	cmp_lf1(M, todo, b, lnf, _S, H)
 
-	lnf = *(mod->REs->plnL)
-	if (todo) {
-		IDRanges = mod->REs->IDRanges
-		K = cols(b); n=moptimize_init_eq_n(M) // numbers of eqs (inluding auxilieary parameters); number of parameters
-		d = mod->base->d
-		REs = mod->REs
-		S = J(rows(lnf), K, 0)
-		for (i=1;i<=d;i++) {
-			(subscripts = moptimize_util_eq_indices(M,i))[2,1] = .
-			S[|subscripts|] = rows(REs->Weights)? panelsum(_S[,i] :* moptimize_util_indepvars(M, i), REs->Weights, IDRanges) :
-			                                      panelsum(_S[,i] :* moptimize_util_indepvars(M, i),               IDRanges)
-		}
-		if (n > d) { // any aux params?
-			subscripts[1,2] = subscripts[2,2] + 1
-			subscripts[2,2] = .
-			S[|subscripts|] = panelsum(_S[|.,mod->base->d+1\.,.|], IDRanges)
-		}
-		
-		if (todo > 1) {
-			H = J(0, K, 0)
-			for (mod->addh=n; mod->addh > d; mod->addh--) {
-				mod->signh =  1; cmp_lf1(M, todo, _b=b, _lnf,  _S, _H)
-				mod->signh = -1; cmp_lf1(M, todo, _b=b, _lnf, __S, _H)
-				_S = (_S - __S) / (2*mod->h)
-				Hrow = J(1,0,0)
-				for (i=mod->addh;i>d;i--)
-					Hrow = moptimize_util_sum(M, _S[,i]), Hrow
-				for (;i;i--)
-					Hrow = moptimize_util_vecsum(M, i, _S[,i], 1), Hrow
-				H = (Hrow, J(rows(Hrow), cols(H)-cols(Hrow), .)) \ H
+	if (!hasmissing(lnf)) {
+		lnf = *(mod->REs->plnL)
+		if (todo) {
+			IDRanges = mod->REs->IDRanges
+			K = cols(b); n=moptimize_init_eq_n(M) // numbers of eqs (inluding auxiliary parameters); number of parameters
+			d = mod->base->d
+			REs = mod->REs
+			S = J(rows(lnf), K, 0)
+			for (i=1;i<=d;i++) {
+				(subscripts = moptimize_util_eq_indices(M,i))[2,1] = .
+				S[|subscripts|] = cmp_panelsum(_S[,i] :* moptimize_util_indepvars(M, i), mod->WeightProduct, IDRanges)
 			}
-			for (; mod->addh; mod->addh--) {
-				mod->signh =  1; cmp_lf1(M, todo, _b=b, _lnf,  _S, _H)
-				mod->signh = -1; cmp_lf1(M, todo, _b=b, _lnf, __S, _H)
-				_S = (_S - __S) / (2*mod->h)
-				subscripts = moptimize_util_eq_indices(M,mod->addh); Hrow = J(subscripts[2,2]-subscripts[1,2]+1,0,0)
-				for (i=mod->addh;i>d;i--)
-					Hrow = moptimize_util_vecsum(M, i, _S[,mod->addh], 1), Hrow
-				for (;i;i--)
-					Hrow = moptimize_util_matsum(M, mod->addh, i, _S[,mod->addh], 1), Hrow
-				H = (Hrow, J(rows(Hrow), cols(H)-cols(Hrow), .)) \ H
+			if (n > d) { // any aux params?
+				subscripts[1,2] = subscripts[2,2] + 1
+				subscripts[2,2] = .
+				S[|subscripts|] = cmp_panelsum(_S[|.,mod->base->d+1\.,.|], mod->WeightProduct, IDRanges)
 			}
-			_makesymmetric(H)
+
+			if (todo > 1) {
+				H = J(0, K, 0)
+				for (mod->addh=n; mod->addh > d; mod->addh--) {
+					mod->signh =  1; cmp_lf1(M, todo, _b=b, _lnf,  _S, _H)
+					mod->signh = -1; cmp_lf1(M, todo, _b=b, _lnf, __S, _H)
+					_S = (_S - __S) / (2*mod->h)
+					Hrow = J(1,0,0)
+					for (i=mod->addh;i>d;i--)
+						Hrow = moptimize_util_sum(M, _S[,i]), Hrow
+					for (;i;i--)
+						Hrow = moptimize_util_vecsum(M, i, _S[,i], 1), Hrow
+					H = (Hrow, J(rows(Hrow), cols(H)-cols(Hrow), .)) \ H
+				}
+				for (; mod->addh; mod->addh--) {
+					mod->signh =  1; cmp_lf1(M, todo, _b=b, _lnf,  _S, _H)
+					mod->signh = -1; cmp_lf1(M, todo, _b=b, _lnf, __S, _H)
+					_S = (_S - __S) / (2*mod->h)
+					subscripts = moptimize_util_eq_indices(M,mod->addh); Hrow = J(subscripts[2,2]-subscripts[1,2]+1,0,0)
+					for (i=mod->addh;i>d;i--)
+						Hrow = moptimize_util_vecsum(M, i, _S[,mod->addh], 1), Hrow
+					for (;i;i--)
+						Hrow = moptimize_util_matsum(M, mod->addh, i, _S[,mod->addh], 1), Hrow
+					H = (Hrow, J(rows(Hrow), cols(H)-cols(Hrow), .)) \ H
+				}
+				_makesymmetric(H)
+			}
 		}
 	}
 }
@@ -1780,7 +1785,7 @@ void cmp_model::cmp_init(transmorphic M) {
 	if (HasGamma) {
 		dOmega_dGamma = smatrix(d,d)
 		Idd = I(d*d)
-		vLd = rowsum(Lmatrix(d) :*(1..2^d)) // X[vLd,] = L*X, but faster
+		vLd = rowsum(Lmatrix(d) :*(1..d*d)) // X[vLd,] = L*X, but faster
 		vKd = colsum(Kmatrix(d,d) :* (1::d*d))
 		vIKI = colsum((I(d) # Kmatrix(d,d) # I(d)) :*(1::d^4))
 	}
@@ -2002,7 +2007,7 @@ void cmp_model::cmp_init(transmorphic M) {
 		for (l=L; l; l--)
 			if (st_global("parse_wexp"+strofreal(l)) != "") {
 				RE = &((*REs)[l])
-				RE->Weights = st_data(., "_cmp_weight"+strofreal(l), st_global("ML_samp")) // can't be a view because panelsum() doesn't accept weights in views
+				RE->Weights = st_data(., st_global("cmp_weight"+strofreal(l)), st_global("ML_samp")) // can't be a view because panelsum() doesn't accept weights in views
 				if (l < L) RE->Weights = RE->Weights[RE->IDRanges[,1]] // get one instance of each group's weight
 				if (anyof(("pweight", "aweight"), st_global("parse_wtype"+strofreal(l)))) // normalize pweights, aweights to sum to # of groups
 					if (l == 1)
