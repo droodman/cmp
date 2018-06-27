@@ -18,7 +18,7 @@ mata
 mata clear
 mata set matastrict on
 mata set mataoptimize on
-mata set matalnum off
+mata set matalnum on
 
 struct smatrix {
 	real matrix M
@@ -164,8 +164,8 @@ class cmp_model {
 	struct scores scalar Scores // column indices in S corresponding to different parameter groups
 	string rowvector indVars, LtVars, UtVars, yLVars
 	real rowvector ThisDraw
-	real scalar addh, signh // for computing 2nd derivatives in pseudo-gf2, indicates which equation to add a small amount to, and with what sign. addh=0 = none.
 	real scalar h // if computing 2nd derivatives most recent h used
+	struct smatrix colvector X // NEq-vector of data matrices--needed only  in gfX() estimation, to expands scores to one per regressor
 
 	void new(), cmp_init(), BuildXU(), BuildTotalEffects(), _st_view(), 
 				set_reverse(), set_SigXform(), set_QuadTol(), set_QuadIter(), set_ghkType(), set_MaxCuts(), set_indVars(), set_LtVars(), set_UtVars(), set_yLVars(), 
@@ -178,7 +178,7 @@ class cmp_model {
 void cmp_model::new() {
 	mprobit_ind_base  = 20
 	roprobit_ind_base = 40
-	Adapted = AdaptivePhaseThisEst = WillAdapt = AdaptNextTime = HasGamma = ghkScramble = REScramble = addh = 0
+	Adapted = AdaptivePhaseThisEst = WillAdapt = AdaptNextTime = HasGamma = ghkScramble = REScramble = 0
 }
 
 void cmp_model::set_d       (real scalar t) d  = t
@@ -1197,8 +1197,10 @@ void cmp_model::_st_view(real matrix V, real scalar missing, string rowvector va
 
 
 
+
+
 // main evaluator routine
-void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
+void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H , | real scalar addh, real scalar signh) {
 	real matrix Rho, t, L_g, invGamma, C, dOmega_dSig
 	real scalar e, c, i, j, k, l, m, _l, r, d, L, tEq, EUncensEq, ECensEq, FCensEq, NewIter, eq, eq1, eq2, c1, c2, cut, lnsigWithin, lnsigAccross, atanhrhoAccross, atanhrhoWithin, Iter
 	real colvector shift, lnLmin, lnLmax, lnL, out
@@ -1220,17 +1222,17 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 
 	for (i=1; i<=d; i++) {
 		REs->theta[i].M = moptimize_util_xb(M, b, i)
-		if (i==mod->addh) {
-			if (mod->signh==1) mod->h = (abs(mean(REs->theta[i].M :/ (mod->indicators[,i]:>0))) + 1e-6) * 1e-6 // if sign=1, compute new h for manual estimation of derivative; ignores weights...
-			REs->theta[i].M = REs->theta[i].M :+ mod->signh*mod->h
+		if (i==addh) {
+			if (signh==1) mod->h = (abs(mean(REs->theta[i].M :/ (mod->indicators[,i]:>0))) + 1e-6) * 1e-6 // if sign=1, compute new h for manual estimation of derivative; ignores weights...
+			REs->theta[i].M = REs->theta[i].M :+ signh*mod->h
 		}
 		if (rows(REs->theta[i].M)==1) REs->theta[i].M = J(base->N, 1, REs->theta[i].M)
 	}
 
-	if (mod->addh > d) {
-		t =  moptimize_util_eq_indices(M, mod->addh)[1,2]
-		if (mod->signh==1) mod->h = (abs(b[t]) + 1e-6) * 1e-6
-		b[t] = b[t] + mod->signh*mod->h
+	if (addh != . & addh > d) {
+		t =  moptimize_util_eq_indices(M, addh)[1,2]
+		if (signh==1) mod->h = (abs(b[t]) + 1e-6) * 1e-6
+		b[t] = b[t] + signh*mod->h
 	}
 
 	for (j=1; j<=rows(mod->GammaInd); j++)
@@ -1689,7 +1691,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 		}
 	} while (l) // exit when adding one more draw causes carrying all the way accross the draw counters, back to 1, 1, 1...
 
-	if (L > 1 & mod->addh==0) {
+	if (L > 1 & addh==.) {
 		lnf = quadsum(rows(REs->Weights)? REs->Weights:* *(REs->plnL) : *(REs->plnL), 1)
 		if (mod->AdaptivePhaseThisEst & NewIter) {
 			if (mod->AdaptivePhaseThisEst = mreldif(mod->LastlnLThisIter, mod->LastlnLLastIter) >= 1e-6)
@@ -1706,11 +1708,10 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 }
 
 void cmp_gf2(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
-	real matrix _S, __S, _H, Hrow, IDRanges, subscripts; real colvector _lnf; real rowvector _b; real scalar i, n, K, d; pointer(class cmp_model scalar) scalar mod; pointer (struct RE scalar) scalar REs
+	real matrix _S, __S, _H, Hrow, IDRanges, subscripts; real colvector _lnf; real rowvector _b; real scalar addh, i, n, K, d; pointer(class cmp_model scalar) scalar mod; pointer (struct RE scalar) scalar REs
 	pragma unset _S; pragma unset _H; pragma unset __S; pragma unset _lnf; pragma unset _b
 
 	mod = moptimize_init_userinfo(M, 1)
-	mod->addh = 0
 	cmp_lf1(M, todo, b, lnf, _S, H)
 
 	if (!hasmissing(lnf)) {
@@ -1721,38 +1722,42 @@ void cmp_gf2(transmorphic M, real scalar todo, real rowvector b, real colvector 
 			d = mod->base->d
 			REs = mod->REs
 			S = J(rows(lnf), K, 0)
+			if (length(mod->X)==0) {
+				mod->X = smatrix(d)
+				for (i=d;i;i--)
+					mod->X[i].M = editmissing(moptimize_util_indepvars(M, i),0)
+			}
 			for (i=1;i<=d;i++) {
 				(subscripts = moptimize_util_eq_indices(M,i))[2,1] = .
-				S[|subscripts|] = cmp_panelsum(_S[,i] :* moptimize_util_indepvars(M, i), mod->WeightProduct, IDRanges)
+				S[|subscripts|] = cmp_panelsum(_S[,i] :* mod->X[i].M, mod->WeightProduct, IDRanges)
 			}
+
 			if (n > d) { // any aux params?
 				subscripts[1,2] = subscripts[2,2] + 1
 				subscripts[2,2] = .
-				S[|subscripts|] = cmp_panelsum(_S[|.,mod->base->d+1\.,.|], mod->WeightProduct, IDRanges)
+				S[|subscripts|] = cmp_panelsum(_S[|.,mod->base->d+1\.,.|]              , mod->WeightProduct, IDRanges)
 			}
 
 			if (todo > 1) {
 				H = J(0, K, 0)
-				for (mod->addh=n; mod->addh > d; mod->addh--) {
-					mod->signh =  1; cmp_lf1(M, todo, _b=b, _lnf,  _S, _H)
-					mod->signh = -1; cmp_lf1(M, todo, _b=b, _lnf, __S, _H)
+				for (addh=n; addh > d; addh--) {
+					cmp_lf1(M, todo, _b=b, _lnf,  _S, _H, addh,  1)
+					cmp_lf1(M, todo, _b=b, _lnf, __S, _H, addh, -1)
 					_S = (_S - __S) / (2*mod->h)
 					Hrow = J(1,0,0)
-					for (i=mod->addh;i>d;i--)
+					for (i=addh;i>d;i--)
 						Hrow = moptimize_util_sum(M, _S[,i]), Hrow
 					for (;i;i--)
 						Hrow = moptimize_util_vecsum(M, i, _S[,i], 1), Hrow
 					H = (Hrow, J(rows(Hrow), cols(H)-cols(Hrow), .)) \ H
 				}
-				for (; mod->addh; mod->addh--) {
-					mod->signh =  1; cmp_lf1(M, todo, _b=b, _lnf,  _S, _H)
-					mod->signh = -1; cmp_lf1(M, todo, _b=b, _lnf, __S, _H)
+				for (; addh; addh--) {
+					cmp_lf1(M, todo, _b=b, _lnf,  _S, _H, addh,  1)
+					cmp_lf1(M, todo, _b=b, _lnf, __S, _H, addh, -1)
 					_S = (_S - __S) / (2*mod->h)
-					subscripts = moptimize_util_eq_indices(M,mod->addh); Hrow = J(subscripts[2,2]-subscripts[1,2]+1,0,0)
-					for (i=mod->addh;i>d;i--)
-						Hrow = moptimize_util_vecsum(M, i, _S[,mod->addh], 1), Hrow
-					for (;i;i--)
-						Hrow = moptimize_util_matsum(M, mod->addh, i, _S[,mod->addh], 1), Hrow
+					subscripts = moptimize_util_eq_indices(M,addh); Hrow = J(subscripts[2,2]-subscripts[1,2]+1,0,0)
+					for (i=d;i;i--)
+						Hrow = moptimize_util_matsum(M, addh, i, _S[,i], 1), Hrow
 					H = (Hrow, J(rows(Hrow), cols(H)-cols(Hrow), .)) \ H
 				}
 				_makesymmetric(H)
@@ -1760,6 +1765,46 @@ void cmp_gf2(transmorphic M, real scalar todo, real rowvector b, real colvector 
 		}
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void cmp_model::cmp_init(transmorphic M) {
 	real scalar i, l, ghk_nobs, eq1, eq2, c, m, j, r, k, d_oprobit, d_mprobit, d_roprobit, start, stop, PrimeIndex, Hammersley, NDraws, HasRE, cols, d2
@@ -1917,7 +1962,7 @@ void cmp_model::cmp_init(transmorphic M) {
 				RE->REEqs = RE->REEqs, j
 			if (strlen(varnames = st_global("cmp_rc"+strofreal(l)+"_"+strofreal(RE->Eqs[j])))) {
 				RE->HasRC = 1
-				RE->X[j].M = st_data(., varnames, st_global("ML_samp"))
+				_editmissing(RE->X[j].M = st_data(., varnames, st_global("ML_samp")), 0) // missing values in X can occur if there's a random coefficient on a var used in one eq and not another, with a distinct sample
 				stop = start + cols(tokens(varnames))
 				RE->RCInds[j].M = start..stop-1
 				start = stop + HasRE
@@ -1934,7 +1979,7 @@ void cmp_model::cmp_init(transmorphic M) {
 
 		if (Quadrature)
 			if (RE->d <= 2)
-				printf("{res}Random effects/coefficients%s modeled with Gauss-Hermite quadrature.\n", LevelName)
+				printf("{res}Random effects/coefficients%s modeled with Gauss-Hermite quadrature with %f integration points.\n", LevelName, NumREDraws[l+1])
 			else {
 				printf("{res}Random effects/coefficients%s modeled with sparse-grid quadrature.\n", LevelName)
 				printf("Precision equivalent to that of one-dimensional quadrature with %f integration points.\n", NumREDraws[l+1])
@@ -1988,7 +2033,7 @@ void cmp_model::cmp_init(transmorphic M) {
 		RE->one2R = 1..(RE->R = NumREDraws[l+1])
 		RE->U = smatrix(RE->R)
 		RE->TotalEffect = smatrix(RE->R, cols(RE->GammaEqs))
-		RE->XU          = smatrix(RE->R, sum((RE->NEq..1) :* RE->NEff))
+ 		RE->XU          = smatrix(RE->R, sum((RE->NEq..1) :* RE->NEff))
 
 		S = ((1::RE->N) * NDraws)[RE->id]
 		for (r=NDraws; r; r--) {
@@ -2159,7 +2204,7 @@ void cmp_model::cmp_init(transmorphic M) {
 		if (todo) {
 			v->XU = ssmatrix(L-1)
 			for (l=L-1; l; l--)
-				v->XU[l].M = smatrix(rows(REs->XU), cols(REs->XU))
+				v->XU[l].M = smatrix(rows((*REs)[l].XU), cols((*REs)[l].XU))
 		}
 
 		if (todo) { // pre-compute stuff for scores
@@ -2282,7 +2327,7 @@ void cmpSaveSomeResults(pointer(class cmp_model scalar) scalar mod) {
 		for (l=L; l; l--) {
 			RE = &((*REs)[l])
 			st_matrix("e(Sigma"+(l<L?strofreal(l):"")+")", RE->Sig)
-			if (l<L & mod->Quadrature & mod->WillAdapt) {
+			if (l<L & mod->Quadrature & (mod->AdaptivePhaseThisEst | mod->Adapted)) { // means and ses don't exist if iter() option stopped search before adaptive phase
 				ses = means = J(RE->N, RE->d, 0)
 				for (j=RE->N; j; j--) {
 					means[j,] = RE->QuadMean[j].M

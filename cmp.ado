@@ -22,7 +22,7 @@ program define cmp, sortpreserve properties(user_score svyb svyj svyr mi fvaddco
 	cap noi _cmp `0'
 	if _rc {
 		local rc = _rc
-		if _rc>1 cmp_clear
+*		if _rc>1 cmp_clear
 		error `rc'
 	}
 end
@@ -175,7 +175,7 @@ program define _cmp
 				else cmp_error 198 `"The {cmdab:intm:ethod()} option, if included, should be "ghermite" or "mvaghermite"."'
 			
 			if `"`vce'`svy'`robust'`cluster'"'=="" local vce oim
-			if "`technique'"=="" & !("`svy'"!="" & date(c(born_date),"DMY")<d(30jan2018)) { // moptimize() would crash with BHHH & svy & gfX evaluators
+			if 0 & "`technique'"=="" & !("`svy'"!="" & date(c(born_date),"DMY")<d(30jan2018)) { // moptimize() would crash with BHHH & svy & gfX evaluators
 				local technique bhhh
 				di as res _n "For quadrature, defaulting to technique(bhhh) for speed."
 			}
@@ -796,7 +796,6 @@ program define _cmp
 
 		if "`svy'"!="" {
 			if "`: char _dta[_svy_wvar]'" != "" local wvar: char _dta[_svy_wvar]
-***
 			if "`wvar'" != "" {
 				local wgtexp  [pw = `wvar']
 				local awgtexp [aw = `wvar']
@@ -974,7 +973,7 @@ program define _cmp
 		di as res _n "Fitting misspecified model."
 		qui InitSearch if `touse' `=cond("`subpop'"!="","& `subpop'","")', `drop' auxparams(`auxparams') mlopts(`mlopts')
 		mat `b' = r(b)
-		Estimate if `touse' `=cond("`subpop'"!="","& `subpop'","")', init(`init') cmpinit(`b') `vce' auxparams(`auxparams') psampling(`psampling') resteps(`steps') ///
+		Estimate if `touse' `=cond("`subpop'"!="","& `subpop'","")', init(`init') cmpinit(`b') `vce' auxparams(`auxparams') psampling(`psampling') resteps(`steps') `lf' ///
 			`constraints' _constraints(`_constraints' `initconstraints') `autoconstrain' mlopts(`mlopts') `technique' `quietly' redraws(`redraws') paramsdisplay(`r(ParamsDisplay)') `interactive'
 		if _rc==0 {
 			tempname vsmp
@@ -992,7 +991,7 @@ program define _cmp
 		qui InitSearch if `touse' `=cond("`subpop'"!="","& `subpop'","")' `wgtexp', `svy' 1only  auxparams(`auxparams') mlopts(`mlopts')
 		local 1onlyinitconstraints `r(initconstraints)'
 		mat `b' = r(b)
-		qui Estimate if `touse' `wgtexp', cmpinit(`b') `constraints' _constraints(`_constraints' `1onlyinitconstraints') `autoconstrain' psampling(`psampling') resteps(`steps') ///
+		qui Estimate if `touse' `wgtexp', cmpinit(`b') `constraints' _constraints(`_constraints' `1onlyinitconstraints') `autoconstrain' psampling(`psampling') resteps(`steps') `lf' ///
 		                `svy' subpop(`subpop') modopts(`modopts') mlopts(`mlopts') `technique' auxparams(`r(auxparams)') 1only `quietly' redraws(`redraws') paramsdisplay(`r(ParamsDisplay)') `interactive'
 		if _rc==0 local lf0opt lf0(`e(rank)' `e(ll)')
 
@@ -1041,11 +1040,10 @@ program define _cmp
 
 	di as res _n "Fitting full model."
 
-	cmp_full_model if `touse' `wgtexp', `vce' `lf0opt' modopts(`modopts') mlopts(`mlopts') `technique' paramsdisplay(`ParamsDisplay') xvarsall(`XVarsAll') ///
+	cmp_full_model if `touse' `wgtexp', `vce' `lf0opt' modopts(`modopts') mlopts(`mlopts') `technique' `lf' paramsdisplay(`ParamsDisplay') xvarsall(`XVarsAll') ///
 		`constraints' _constraints(`_constraints' `initconstraints') init(`init') cmpinit(`cmpInitFull') `svy' subpop(`subpop') psampling(`psampling') ///
 		`quietly' auxparams(`auxparams') cmdline(`"`cmdline'"') resteps(`steps') redraws(`redraws') intpoints(`intpoints') ///
 		vsmp(`vsmp') meff(`meff') ghkanti(`ghkanti') ghkdraws(`ghkdraws') ghktype(`ghktype') ghkscramble(`ghkscramble') diparmopt(`diparmopt') `interactive'
-
 	constraint drop `_constraints' `initconstraints' `1onlyinitconstraints'
 	
 	if e(cmd)=="cmp" Display, `diopts'
@@ -1460,7 +1458,7 @@ cap program drop Estimate
 program Estimate, eclass
 	version 11.0
 	syntax if/ [fw aw pw iw], [auxparams(string) psampling(string) svy subpop(passthru) autoconstrain paramsdisplay(string) ///
-		modopts(string) mlopts(string) init(string) cmpinit(string) constraints(string) _constraints(string) technique(string) 1only quietly resteps(string) redraws(string) interactive *]
+		modopts(string) mlopts(string) init(string) cmpinit(string) constraints(string) _constraints(string) technique(string) 1only quietly resteps(string) redraws(string) interactive lf *]
 
 	if "`weight'" != "" local awgtexp [aw`exp']
 	tempname _init
@@ -1632,8 +1630,9 @@ program Estimate, eclass
 
 			local _if if (`if') `=cond("`psampling'" != "", "& (`psampling_cutoff'>=1 | `u'<=.001+`psampling_cutoff')", "")'
 
-			local method = cond(`gf', "gf`=1+`gf'' cmp_gf2()", `"lf`="`lf'"==""' cmp_lf1()"')
+			local method = cond(`gf' /*& "`svy'"!=""*/, "gf`="`lf'"==""' cmp_gf2()", `"lf`="`lf'"==""' cmp_lf1()"')
 
+local final 0
 			local final = `psampling_cutoff'>=1 & `restep'==`resteps'
 			if `final' {
 				local this_mlopts `mlopts'
@@ -1641,19 +1640,20 @@ program Estimate, eclass
 			}
 			else {
 				local this_mlopts nonrtolerance tolerance(0.001)
-				local this_technique = cond($cmp_IntMethod, "bhhh", "nr")
+*				local this_technique = cond($cmp_IntMethod, "bhhh", "nr")
+				local this_technique nr
 			}
 
 			local mlmodelcmd `model' `=cond(`final' & !`gf' & "`1only'"=="","[`weight'`exp'] `_if', `options'", "`awgtexp' `_if',")' ///
 				`svy' `subpop' constraints(`constraints') nocnsnotes nopreserve missing collinear `modopts' technique(`this_technique')
 			local mlmaxcmd `quietly' ml max, search(off) `this_mlopts' nooutput
+
 			`quietly' ml model `method' `mlmodelcmd' `initopt'
 			mata moptimize_init_userinfo($ML_M, 1, &_mod)
 			if `gf' mata moptimize_init_by($ML_M, "_cmp_id1")
-
 			mata _mod.cmp_init($ML_M)
-			capture noisily `mlmaxcmd' // Estimate!
 
+			capture noisily `mlmaxcmd' noclear // Estimate! XXXXXXXXXXX added noclear		
 			if _rc==1400 {
 				di as res "Restarting search with parameters all 0."
 				tempname zeroes
@@ -1666,7 +1666,7 @@ program Estimate, eclass
 				error 1
 			}
 			error _rc
-
+			
 			mat `_init' = e(b)
 
 			if !`final' & "`quietly'"=="" noi version 11: ml di
@@ -1675,7 +1675,7 @@ program Estimate, eclass
 		local psampling_cutoff = `psampling_cutoff' * `psampling_rate'
 	} // psampling loop
 	
-	if `gf' { // For hierarchical models, after fast pseudo-gf2 search, get correct VCV via honest gf1
+	if `gf' & "`lf'"=="" { // For hierarchical models, after fast pseudo-gf2 search, get correct VCV via honest gf1
 		tempname hold V V_modelbased
 		_estimates hold `hold'
 
