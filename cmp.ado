@@ -1,4 +1,4 @@
-*! cmp 8.2.0 28 June 2018
+*! cmp 8.2.1 28 June 2018
 *! Copyright (C) 2007-18 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -1635,7 +1635,7 @@ program Estimate, eclass
 			local final = `psampling_cutoff'>=1 & `restep'==`resteps'
 
 			if `final' {
-				local this_mlopts = cond(`gf' & "`svy'"=="", "tolerance(0.001)", "`mlopts'")
+				local this_mlopts = cond(`gf' & "`svy'"=="", "nonrtolerance tolerance(0.001)", "`mlopts'")
 				local this_technique `technique'
 			}
 			else {
@@ -2527,6 +2527,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.2.1 Fixed 8.2.0 bug: fully loosened convergence criteria before "refining" multilevel model search
 * 8.2.0 Created gf1 evaluator for proper multilevel modeling (Hessian not quite right under lf1 trick)
 *       Added predictions of multinomial probit probabilities
 *       Fixed bugs when RC on a var not in other eqs
