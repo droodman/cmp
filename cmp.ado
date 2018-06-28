@@ -2527,8 +2527,9 @@ program define cmp_error
 end
 
 * Version history
-* 8.2.0 Created pseudo-gf2 evaluator for faster svy/multilevel modeling
+* 8.2.0 Created gf1 evaluator for proper multilevel modeling (Hessian not quite right under lf1 trick)
 *       Added predictions of multinomial probit probabilities
+*       Fixed bugs when RC on a var not in other eqs
 * 8.1.2 Fixed svy hierarchical model crashes, partly by writing gf1 wrapper for lf1 evaluator. Stopped default of bhhh for such models because of moptimize() bug for svy/gf1.
 * 8.1.1 Compensated for Stata 14, 15 bug in which ml model, svy leaves behind reference to temp var in e(wexp), e(wvar)
 * 8.1.0 Fixed 8.0.9 crash in fully uncensored models
