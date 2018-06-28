@@ -1,4 +1,4 @@
-*! cmp 8.2.0 29 January 2018
+*! cmp 8.2.0 28 June 2018
 *! Copyright (C) 2007-18 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -22,7 +22,7 @@ program define cmp, sortpreserve properties(user_score svyb svyj svyr mi fvaddco
 	cap noi _cmp `0'
 	if _rc {
 		local rc = _rc
-*		if _rc>1 cmp_clear
+		if _rc>1 cmp_clear
 		error `rc'
 	}
 end
@@ -175,7 +175,7 @@ program define _cmp
 				else cmp_error 198 `"The {cmdab:intm:ethod()} option, if included, should be "ghermite" or "mvaghermite"."'
 			
 			if `"`vce'`svy'`robust'`cluster'"'=="" local vce oim
-			if 0 & "`technique'"=="" & !("`svy'"!="" & date(c(born_date),"DMY")<d(30jan2018)) { // moptimize() would crash with BHHH & svy & gfX evaluators
+			if "`technique'"=="" & !("`svy'"!="" & date(c(born_date),"DMY")<d(30jan2018)) { // moptimize() would crash with BHHH & svy & gfX evaluators
 				local technique bhhh
 				di as res _n "For quadrature, defaulting to technique(bhhh) for speed."
 			}
@@ -1630,30 +1630,29 @@ program Estimate, eclass
 
 			local _if if (`if') `=cond("`psampling'" != "", "& (`psampling_cutoff'>=1 | `u'<=.001+`psampling_cutoff')", "")'
 
-			local method = cond(`gf' /*& "`svy'"!=""*/, "gf`="`lf'"==""' cmp_gf2()", `"lf`="`lf'"==""' cmp_lf1()"')
+			local method = cond(`gf' & "`svy'"!="", "gf`="`lf'"==""' cmp_gf2()", `"lf`="`lf'"==""' cmp_lf1()"')
 
-local final 0
 			local final = `psampling_cutoff'>=1 & `restep'==`resteps'
+
 			if `final' {
-				local this_mlopts `mlopts'
+				local this_mlopts = cond(`gf' & "`svy'"=="", "tolerance(0.001)", "`mlopts'")
 				local this_technique `technique'
 			}
 			else {
 				local this_mlopts nonrtolerance tolerance(0.001)
-*				local this_technique = cond($cmp_IntMethod, "bhhh", "nr")
+				local this_technique = cond($cmp_IntMethod, "bhhh", "nr")
 				local this_technique nr
 			}
 
-			local mlmodelcmd `model' `=cond(`final' & !`gf' & "`1only'"=="","[`weight'`exp'] `_if', `options'", "`awgtexp' `_if',")' ///
+			local mlmodelcmd `model' `=cond(`final' & "`1only'"=="","[`weight'`exp'] `_if', `options'", "`awgtexp' `_if',")' ///
 				`svy' `subpop' constraints(`constraints') nocnsnotes nopreserve missing collinear `modopts' technique(`this_technique')
 			local mlmaxcmd `quietly' ml max, search(off) `this_mlopts' nooutput
 
 			`quietly' ml model `method' `mlmodelcmd' `initopt'
 			mata moptimize_init_userinfo($ML_M, 1, &_mod)
-			if `gf' mata moptimize_init_by($ML_M, "_cmp_id1")
 			mata _mod.cmp_init($ML_M)
 
-			capture noisily `mlmaxcmd' noclear // Estimate! XXXXXXXXXXX added noclear		
+			capture noisily `mlmaxcmd' noclear // Estimate!
 			if _rc==1400 {
 				di as res "Restarting search with parameters all 0."
 				tempname zeroes
@@ -1675,36 +1674,12 @@ local final 0
 		local psampling_cutoff = `psampling_cutoff' * `psampling_rate'
 	} // psampling loop
 	
-	if `gf' & "`lf'"=="" { // For hierarchical models, after fast pseudo-gf2 search, get correct VCV via honest gf1
-		tempname hold V V_modelbased
-		_estimates hold `hold'
-
-		local 0, `mlopts'
-		local _options `options'
-		syntax, [iterate(string) *]
-		local this_mlopts iter(0) `options'
-
-		local method gf1 cmp_gf2()
-
-		local mlmodelcmd `model' [`weight'`exp'] `_if', `_options' `svy' `subpop' constraints(`constraints') nocnsnotes nopreserve missing collinear `modopts' technique(nr)
-		local mlmaxcmd `quietly' ml max, search(off) `this_mlopts' nooutput
-		quietly ml model `method' `mlmodelcmd' `initopt'
-		mata moptimize_init_userinfo($ML_M, 1, &_mod)
+	if `gf' & "`svy'"=="" { // Non-svy hierarchical models, use fast lf1 search, which doesn't quite give right Hessian; get correct VCV via honest gf1
+		`quietly' di as res _n "Refining..." _c
+		mata moptimize_init_evaluator($ML_M, &cmp_gf2())
+		mata moptimize_init_evaluatortype($ML_M, "gf1")
 		mata moptimize_init_by($ML_M, "_cmp_id1")
-
-		capture `mlmaxcmd'
-		
-		mat `V' = e(V)
-		if "`e(V_modelbased)'"!="" mat `V_modelbased' = e(V_modelbased)
-		foreach macro in model vce vcetype ml_method clustvar wtype {
-			local `macro' `e(`macro')'
-		}
-		_estimates unhold `hold'
-		foreach macro in model vce vcetype ml_method clustvar wtype {
-			ereturn local `macro' ``macro''
-		}
-		ereturn repost V = `V'
-		cap ereturn matrix V_modelbased = `V_modelbased'
+		`quietly' ml max, search(off) `mlopts' nooutput
 	}
 
 	cap local _a // reset _rc to 0

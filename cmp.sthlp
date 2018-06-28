@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 8.0.0 19 June 2017}{...}
+{* *! version 8.2.0 28 June 2018}{...}
 {cmd:help cmp}
 {hline}{...}
 
@@ -702,7 +702,7 @@ variance is estimated:
 {synopt :{opt lnl}}observation-level log likelihood (in hierarchical models, averaged over groups){p_end}
 {synopt :{opt sc:ores}}derivative of the log likelihood with respect to xb or parameter{p_end}
 {synopt :{opt re:siduals}}residuals relative to linear prediction{p_end}
-{synopt :{cmd:pr}[{cmd:(}{it:a b}{cmd:)}]}probability of positive outcome (probit) or given outcome (ordered probit). Omitting {cmd:(}{it:a b}{cmd:)} defaults to {cmd:(0 .)}, meaning positive values{p_end}
+{synopt :{cmd:pr}[{cmd:(}{it:a b}{cmd:)}]}probability of positive outcome (probit) or given outcome (ordered probit) or outcome being chosen (multinomial probit). Omitting {cmd:(}{it:a b}{cmd:)} defaults to {cmd:(0 .)}, meaning positive values{p_end}
 {synopt :{cmd:e}[{cmd:(}{it:a b}{cmd:)}]}truncated expected value: E[y|{it:a}<y<{it:b}]. Omitting {cmd:(}{it:a b}{cmd:)} defaults to {cmd:(. .)}, meaning unbounded{p_end}
 {synopt :{cmd:ystar(}{it:a b}{cmd:)}}censored expected value: E(y*), y* = max({it:a}, min(y, {it:b})){p_end}
 {synopt :{cmdab:cond:ition(}{it:c d} [, {cmdab:eq:uation(#}{it:eqno}|{it:eqname}{cmd:)}]{cmd:)}}condition a {cmd:pr}, {cmd:e}, or {cmd:ystar} statistic on bounding another equation's continuous (latent) outcome between {it:c} and {it:d}{p_end}
@@ -874,8 +874,9 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 
 {phang}. {stata webuse travel}{p_end}
 {phang}. {stata asmprobit choice travelcost termtime, casevars(income) case(id) alternatives(mode) struct}{p_end}
+{phang}. {stata predict pr, pr} // probability of choosing each outcome in each case{p_end}
 {phang}. {stata drop invehiclecost traveltime partysize}{p_end}
-{phang}. {stata reshape wide choice termtime travelcost, i(id) j(mode)}{p_end}
+{phang}. {stata reshape wide choice termtime travelcost pr, i(id) j(mode)}{p_end}
 {phang}. {stata constraint 1 [air]termtime1 = [train]termtime2}{p_end}
 {phang}. {stata constraint 2 [train]termtime2 = [bus]termtime3}{p_end}
 {phang}. {stata constraint 3 [bus]termtime3 = [car]termtime4}{p_end}
@@ -883,6 +884,10 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 {phang}. {stata constraint 5 [train]travelcost2 = [bus]travelcost3}{p_end}
 {phang}. {stata constraint 6 [bus]travelcost3 = [car]travelcost4}{p_end}
 {phang}. {stata "cmp (air:choice1=t*1) (train: choice2=income t*2) (bus: choice3=income t*3) (car: choice4=income t*4), ind((6 6 6 6)) constr(1/6) nodrop struct tech(dfp) ghkd(200)"}{p_end}
+{phang}. {stata predict cmppr1, eq(air) pr}{p_end}
+{phang}. {stata predict cmppr2, eq(train) pr}{p_end}
+{phang}. {stata predict cmppr3, eq(bus) pr}{p_end}
+{phang}. {stata predict cmppr4, eq(car) pr}{p_end}
 
 {phang}. {stata webuse wlsrank}{p_end}
 {phang}. {stata asroprobit rank high low, casevars(female score) case(id) alternatives(jobchar) reverse}{p_end}
@@ -973,12 +978,11 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 
 {phang}. {stata webuse productivity}{p_end}
 {phang}. {stata "xtmixed gsp private emp hwy water other unemp || region: || state:"}{p_end}
-{phang}. {stata "cmp (gsp = private emp hwy water other unemp || region: || state:), nolr ind($cmp_cont) qui"}{p_end}
+{phang}. {stata "cmp (gsp = private emp hwy water other unemp || region: || state:), nolr ind($cmp_cont) redraws(47 47) tech(dfp)"}{p_end}
 
 {pstd}These examples go beyond standard commands (other than {help gsem}):
 
 {phang}. {stata webuse laborsup}{p_end}
-
 
 {phang}{hilite:* Trivariate seemingly unrelated ordered probit}{p_end}
 {phang}. {stata gen byte kids2 = kids + int(uniform()*3)}{p_end}

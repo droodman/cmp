@@ -1,4 +1,4 @@
-/* cmp 8.2.0 29 January 2018
+/* cmp 8.2.0 28 June 2018
    Copyright (C) 2007-18 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@ mata
 mata clear
 mata set matastrict on
 mata set mataoptimize on
-mata set matalnum on
+mata set matalnum off
 
 struct smatrix {
 	real matrix M
@@ -1197,8 +1197,6 @@ void cmp_model::_st_view(real matrix V, real scalar missing, string rowvector va
 
 
 
-
-
 // main evaluator routine
 void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H , | real scalar addh, real scalar signh) {
 	real matrix Rho, t, L_g, invGamma, C, dOmega_dSig
@@ -1701,10 +1699,6 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 		}
 		if (lnf < .) mod->LastlnLThisIter = lnf
 	}
-/*if (todo==0) {
-"todo, moptimize_util_xb(M, b, 2), REs->sig, (REs->theta.M)[1],lnf"
- todo, moptimize_util_xb(M, b, 2), REs->sig, (REs->theta.M)[1],lnf
-}*/
 }
 
 void cmp_gf2(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
