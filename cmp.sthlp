@@ -870,7 +870,7 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 {phang}. {stata mprobit insure age male nonwhite site2 site3}{p_end}
 {phang}. {stata margins, dydx(nonwhite) predict(outcome(2))}{p_end}
 {phang}. {stata cmp (insure = age male nonwhite site2 site3, iia), nolr ind($cmp_mprobit) qui}{p_end}
-{phang}. {stata margins, dydx(nonwhite) expression(binormal( (predict(eq(#2))-predict(eq(#1)))/sqrt(2), (predict(eq(#2))-predict(eq(#3)))/sqrt(2), .5)) force}{p_end}
+{phang}. {stata margins, dydx(nonwhite) predict(eq(#2) pr)}{p_end}
 
 {phang}. {stata webuse travel}{p_end}
 {phang}. {stata asmprobit choice travelcost termtime, casevars(income) case(id) alternatives(mode) struct}{p_end}
