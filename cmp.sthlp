@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 8.2.0 28 June 2018}{...}
+{* *! version 8.2.2 29 June 2018}{...}
 {cmd:help cmp}
 {hline}{...}
 
@@ -891,14 +891,19 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 
 {phang}. {stata webuse wlsrank}{p_end}
 {phang}. {stata asroprobit rank high low, casevars(female score) case(id) alternatives(jobchar) reverse}{p_end}
-{phang}. {stata reshape wide rank high low, i(id) j(jobchar)}{p_end}
+{phang}. {stata predict pr, pr1} // probability of ranking each outcome first in each case{p_end}
+{phang}. {stata reshape wide rank high low pr, i(id) j(jobchar)}{p_end}
 {phang}. {stata constraint 1 [esteem]high1=[variety]high2}{p_end}
 {phang}. {stata constraint 2 [esteem]high1=[autonomy]high3}{p_end}
 {phang}. {stata constraint 3 [esteem]high1=[security]high4}{p_end}
 {phang}. {stata constraint 4 [esteem]low1=[variety]low2}{p_end}
 {phang}. {stata constraint 5 [esteem]low1=[autonomy]low3}{p_end}
 {phang}. {stata constraint 6 [esteem]low1=[security]low4}{p_end}
-{phang}. {stata "cmp (esteem:rank1=high1 low1)(variety:rank2=female score high2 low2)(autonomy:rank3=female score high3 low3)(security:rank4=female score high4 low4),ind((9 9 9 9)) tech(dfp) ghkd(200, type(hammersley)) rev constr(1/6)"}
+{phang}. {stata "cmp (esteem:rank1=high1 low1)(variety:rank2=female score high2 low2)(autonomy:rank3=female score high3 low3)(security:rank4=female score high4 low4),ind((9 9 9 9)) tech(dfp) ghkd(200, type(hammersley)) rev constr(1/6)"}{p_end}
+{phang}. {stata predict cmppr1, eq(esteem) pr}{p_end}
+{phang}. {stata predict cmppr2, eq(variety) pr}{p_end}
+{phang}. {stata predict cmppr3, eq(autonomy) pr}{p_end}
+{phang}. {stata predict cmppr4, eq(security) pr}{p_end}
 {p_end}
 
 {pstd}{hilite:* Heckman selection models}

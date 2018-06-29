@@ -1,4 +1,4 @@
-*! cmp 8.2.0 28 June 2018
+*! cmp 8.2.2 29 June 2018
 *! Copyright (C) 2007-18 David Roodman
 
 * This program is free software: you can redistribute it and/or modify
@@ -110,10 +110,11 @@ program define cmp_p
 	
 	if `"`_options'`pr'`residuals'`ystar'`e'"' == "" di as txt "(option xb assumed; fitted values)"
 	
-	qui if "`e(MprobitGroupEqs)'"!="" & "`_eqspec'"!="" & "`pr'" !="" {
-		tempname t d M E ghk2DrawSet pr
-		mata `t' = st_matrix("e(MprobitGroupEqs)")
-		mata st_local("inds", invtokens(strofreal(select(`t', (`_eqspec' :>= `t'[,1]) :& (`_eqspec' :<= `t'[,2])))))
+	qui if "`e(MprobitGroupEqs)'`e(ROprobitGroupEqs)'"!="" & "`_eqspec'"!="" & "`pr'" !="" {
+		tempname t1 t2 d M E ghk2DrawSet pr
+		mata `t1' = st_matrix("e(MprobitGroupEqs)"); `t2' = st_matrix("e(ROprobitGroupEqs)")
+		mata `t1' = rows(`t1')? (rows(`t2')? `t1' \ `t2' : `t1') : `t2'
+		mata st_local("inds", invtokens(strofreal(select(`t1', (`_eqspec' :>= `t1'[,1]) :& (`_eqspec' :<= `t1'[,2])))))
 		if "`inds"!="" { // specified equation in an mprobit group?
 			local lo: word 1 of `inds'
 			local hi: word 2 of `inds'
@@ -135,17 +136,17 @@ program define cmp_p
 			mata `Sigma' = `M' ' `Sigma' * `M' // eq (12) in cmp article
 			mata st_view(`E'=., ., "`xbs'", "`touse'")
 			if colsof(`Sigma') > 3 {
-				mata `t' = select(0..3, ("", "sqrt", "negsqrt", "fl"):=="`e(ghkscramble)'")
-				mata `ghk2DrawSet' = ghk2setup(rows(`E'), 0`e(ghkdraws)', `d', "`e(ghktype)'", 1, (NULL, &ghk2SqrtScrambler(), &ghk2NegSqrtScrambler(), &ghk2FLScrambler())[1+`t'])
+				mata `t1' = select(0..3, ("", "sqrt", "negsqrt", "fl"):=="`e(ghkscramble)'")
+				mata `ghk2DrawSet' = ghk2setup(rows(`E'), 0`e(ghkdraws)', `d', "`e(ghktype)'", 1, (NULL, &ghk2SqrtScrambler(), &ghk2NegSqrtScrambler(), &ghk2FLScrambler())[1+`t1'])
 			}
 			else mata `ghk2DrawSet' = .
 			gen `vartype' `_varlist' = . in 1
 			mata st_view(`pr'=., ., "`_varlist'", "`touse'")
-			mata `pr'[,] = vecmultinormal(`E', J(0,0,0), `Sigma', cols(`Sigma'), J(1,0,0), (1::rows(`E')), 0, `t', `t', `t', `ghk2DrawSet', 0`e(ghkanti)', ., .)
-			mata mata drop `t' `d' `M' `E' `ghk2DrawSet' `pr'
+			mata `pr'[,] = vecmultinormal(`E', J(0,0,0), `Sigma', cols(`Sigma'), J(1,0,0), (1::rows(`E')), 0, `t1', `t1', `t1', `ghk2DrawSet', 0`e(ghkanti)', ., .)
+			mata mata drop `t1' `d' `M' `E' `ghk2DrawSet' `pr'
 			exit
 		}
-		mata mata drop `t'
+		mata mata drop `t1' `t2'
 	}
 
 	tempvar L U phiL phiU PhiL PhiU condU condL xbinormalL_condL xbinormalL_condU xbinormalU_condL xbinormalU_condU binormalL_condL binormalL_condU binormalU_condL binormalU_condU denom

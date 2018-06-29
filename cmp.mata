@@ -1,4 +1,4 @@
-/* cmp 8.2.0 28 June 2018
+/* cmp 8.2.2 29 June 2018
    Copyright (C) 2007-18 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -2314,6 +2314,7 @@ void cmpSaveSomeResults(pointer(class cmp_model scalar) scalar mod) {
 	REs = mod->REs
 
 	st_matrix("e(MprobitGroupEqs)", mod->MprobitGroupInds)
+	st_matrix("e(ROprobitGroupEqs)", mod->RoprobitGroupInds)
 
 	if ((L =st_numscalar("e(L)")) == 1)
 		st_matrix("e(Sigma)", REs->Sig)
