@@ -1798,8 +1798,6 @@ void cmp_gf2(transmorphic M, real scalar todo, real rowvector b, real colvector 
 
 
 
-
-
 void cmp_model::cmp_init(transmorphic M) {
 	real scalar i, l, ghk_nobs, eq1, eq2, c, m, j, r, k, d_oprobit, d_mprobit, d_roprobit, start, stop, PrimeIndex, Hammersley, NDraws, HasRE, cols, d2
 	real matrix Yi, U

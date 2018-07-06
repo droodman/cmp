@@ -1,4 +1,4 @@
-*! cmp 8.2.2 29 June 2018
+*! cmp 8.2.2 6 July 2018
 *! Copyright (C) 2007-18 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -1135,20 +1135,19 @@ program define ParseEqs
 			macro shift 2
 		
 			local 0 `*'
-			syntax [varlist(fv ts default=none)] [fw aw pw iw], [noCONStant COVariance(string)]
+			syntax [varlist(fv ts default=none)] [fw aw pw iw/], [noCONStant COVariance(string)]
 
 			if "`varlist'"!="" fvunab varlist: `varlist'
 			local t: list varlist - global(parse_x$parse_d)
 
-			if `"${parse_wtype`L'}${parse_wexp`L'}"' == ""  {
-				global parse_wtype`L' `weight'
-				global parse_wexp`L' `"`exp'"'
-				if "`weight'"=="fweight" global parse_fweight 1
+			if `"`weight'`exp'"' != "" {
+				if `"${parse_wtype`L'}${parse_wexp`L'}"' == ""  {
+					global parse_wtype`L' `weight'
+					global parse_wexp`L' `"`exp'"'
+					if "`weight'"=="fweight" global parse_fweight 1
+				}
+				else if "${parse_wtype`L'}"!="`weight'" | `"${parse_wexp`L'}"'!=`"`exp'"' cmp_error 198 "Weights for the `id' level specified more than once."
 			}
-			else if "${parse_wtype`L'}"!="`weight'" | `"${parse_wexp`L'}"'!=`"`exp'"' cmp_error 198 "Weights for the `id' level specified more than once."
-			tokenize ${parse_wexp`L'}
-			macro shift // get rid of initial =
-			global parse_wexp`L' `*'
 
 			if "`varlist'"=="" & "`constant'"!="" di as res "Warning: No random effect or coefficients specified for the `id' level of the ${parse_y$parse_d} equation."
 
@@ -2528,6 +2527,7 @@ end
 
 * Version history
 * 8.2.2 Extended predictions of multinomial probabilities to predictions of being top-ranked for roprobit models.
+*       Fixed false error in parsing of upper-level weights in multilevel models
 * 8.2.1 Fixed 8.2.0 bug: fully loosened convergence criteria before "refining" multilevel model search
 * 8.2.0 Created gf1 evaluator for proper multilevel modeling (Hessian not quite right under lf1 trick)
 *       Added predictions of multinomial probit probabilities

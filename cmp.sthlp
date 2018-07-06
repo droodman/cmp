@@ -904,7 +904,6 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 {phang}. {stata predict cmppr2, eq(variety) pr}{p_end}
 {phang}. {stata predict cmppr3, eq(autonomy) pr}{p_end}
 {phang}. {stata predict cmppr4, eq(security) pr}{p_end}
-{p_end}
 
 {pstd}{hilite:* Heckman selection models}
 
