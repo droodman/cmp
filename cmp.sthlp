@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 8.2.2 29 June 2018}{...}
+{* *! cmp 8.2.3 13 July 2018}{...}
 {cmd:help cmp}
 {hline}{...}
 
@@ -982,7 +982,7 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 
 {phang}. {stata webuse productivity}{p_end}
 {phang}. {stata "xtmixed gsp private emp hwy water other unemp || region: || state:"}{p_end}
-{phang}. {stata "cmp (gsp = private emp hwy water other unemp || region: || state:), nolr ind($cmp_cont) redraws(47 47) tech(dfp)"}{p_end}
+{phang}. {stata "cmp (gsp = private emp hwy water other unemp || region: || state:), nolr ind($cmp_cont)"}{p_end}
 
 {pstd}These examples go beyond standard commands (other than {help gsem}):
 
@@ -1007,7 +1007,7 @@ illustrate how {cmd:cmp} works (colored text is clickable):
  
 {phang}{hilite:* Multinomial probit with heterogeneous preferences (random effects by individual)}{p_end}
 {phang}. {stata "use http://fmwww.bc.edu/repec/bocode/j/jspmix.dta"}{p_end}
-{phang}. {stata "cmp (tby = sex, iia || scy3:), ind($cmp_mprobit) tech(dfp) nolr"}{p_end}
+{phang}. {stata "cmp (tby = sex, iia || scy3:), ind($cmp_mprobit) nolr"}{p_end}
 
 {phang}{hilite:* Random effects probit dependent on latent first stage}{p_end}
 {phang}. {stata webuse union}{p_end}

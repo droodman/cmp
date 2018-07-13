@@ -1,4 +1,4 @@
-*! cmp 8.2.2 6 July 2018
+*! cmp 8.2.3 13 July 2018
 *! Copyright (C) 2007-18 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -1457,7 +1457,7 @@ cap program drop Estimate
 program Estimate, eclass
 	version 11.0
 	syntax if/ [fw aw pw iw], [auxparams(string) psampling(string) svy subpop(passthru) autoconstrain paramsdisplay(string) ///
-		modopts(string) mlopts(string) init(string) cmpinit(string) constraints(string) _constraints(string) technique(string) 1only quietly resteps(string) redraws(string) interactive lf *]
+		modopts(string) mlopts(string) init(string) cmpinit(string) constraints(string) _constraints(string) technique(string) vce(passthru) 1only quietly resteps(string) redraws(string) interactive lf *]
 
 	if "`weight'" != "" local awgtexp [aw`exp']
 	tempname _init
@@ -1530,66 +1530,7 @@ program Estimate, eclass
 			}
 		}
 	}
-*		constraint drop `_constraints'
-
-/*	tempname CnsCoef CnsCoefCols a C
-		if $parse_L>1 & "`autoconstrain'"=="" {
-				mata _Cns = st_matrix("e(Cns)")
-				// probit of y on nothing makes $cmpNumCoefs=0 and next statement crashes
-				mata _Cns = select(_Cns, rowsum(abs(_Cns[,1.._NumCoefs]):==1):==2) // constraints that equate two coefficients (up to sign)
-				mata st_matrix("`CnsCoefCols'", rowminmax(editvalue(abs(_Cns) :* J(rows(_Cns), 1, 1..cols(_Cns)), 0, .))) // cols affected by each constraint (2 each)
-				local colnames: colfullnames `cmpinit'
-				forvalues l=1/`=$parse_L-1' {
-					mata __Cns = _Cns
-					local NewCnsCt 0
-					forvalues c1=1/$cmpNumCoefs { // Use Guassian elimination to minimize constraints refering to coefs lacking /lnsigs in this level
-						local eq1         : list posof "`:word `c1' of `:coleq    `cmpinit'''" in global(cmp_eq)
-						local coef1       : list posof "`:word `c1' of `:colnames `cmpinit'''" in global(cmp_x`eq1')
-						local lnsigcol`c1': list posof `"`ln'sig`=cond(`coef1',"_`coef1'","")'_`l'_`eq1':_cons"' in colnames
-						if `lnsigcol`c1''==0 mata __Cns = eliminate(__Cns, `c1')
-						forvalues c2=1/$cmpNumCoefs { // Use Guassian elimination to minimize constraints refering to coefs lacking /lnsigs in this level
-							local eq2     : list posof "`:word `c2' of `:coleq    `cmpinit'''" in global(cmp_eq)
-							local coef2   : list posof "`:word `c2' of `:colnames `cmpinit'''" in global(cmp_x`eq2')
-							local eqlabel = cond(`coef1'+`coef2' | `eq1'==`eq2', `"_`=cond(`coef1', "`coef1'", "`=1+`:word count ${cmp_x`eq1'}''")'_`=cond(`coef2', "`coef2'", "`=1+`:word count ${cmp_x`eq2'}''")'"', "")
-							local atanhrhocol`c1'_`c2': list posof `"`atanh'rho`eqlabel'_`l'_`eq1'`=cond(`eq1'==`eq2',"","`eq2'")':_cons"' in colnames
-						}
-					}
-					mata st_matrix("`CnsCoef'", __Cns)
-					cap confirm matrix `CnsCoef'
-					if _rc==0 {
-						forvalues r1=1/`=rowsof(`CnsCoef')' { // auto-constrain corresponding lnsigs
-							mat `Cns' = `Cns' \ J(1, colsof(`Cns'), 0)
-							local ++NewCnsCt
-							forvalues ci1=1/2 {
-								local c1 = `CnsCoefCols'[`r1',`ci1']
-								cap mat `Cns'[`=rowsof(`Cns')', `lnsigcol`c1'] = `CnsCoef'[`r1',`c1']
-								if _rc {
-									mat `Cns' = `Cns'[1..`=rowsof(`Cns')-1', 1...]
-									local --NewCnsCt
-									continue, break
-								}
-							}
-							forvalues r2=1/`=rowsof(`CnsCoef')' { // auto-constrain atanhrhos corresponding to pairs of constraints
-								mat `Cns' = `Cns' \ J(1, colsof(`Cns'), 0)
-								local ++NewCnsCt
-								forvalues ci1=1/2 {
-									local c1 = `CnsCoefCols'[`r1',`ci1']
-									forvalues ci2=1/2 {
-										local c2 = `CnsCoefCols'[`r1',`ci2']
-										cap mat `Cns'[`=rowsof(`Cns')', ``atanhrhocol`c1'_`c2''] = (-1)^(`c1'+`c2')
-										if _rc {
-											mat `Cns' = `Cns'[1..`=rowsof(`Cns')-1', 1...]
-											local --NewCnsCt
-											continue, break
-										}
-										if _rc continue, break
-									}
-								}
-							}
-						}
-					}
-				}
-			}*/
+	constraint drop `_constraints'
 
 	tempname b sample
 	mata _mod.set_WillAdapt($cmp_IntMethod)
@@ -1634,30 +1575,43 @@ program Estimate, eclass
 			local final = `psampling_cutoff'>=1 & `restep'==`resteps'
 
 			if `final' {
-				local this_mlopts = cond(`gf' & "`svy'"=="", "nonrtolerance tolerance(.001)", "`mlopts'")
 				local this_technique `technique'
+				if `gf' & "`svy'"=="" {
+					local this_vce vce(opg) // faster than oim for lf1, gf1; this interim VCV ignored anyway
+					local 0, `mlopts'
+					local _options `options'
+					syntax, [iterate(passthru) *]
+					local options `_options'
+					local this_mlopts `iterate'
+				}
+				else  {
+					local this_mlopts `mlopts'
+					local this_vce `vce'
+				}
 			}
 			else {
-				local this_mlopts nonrtolerance tolerance(.001)
+				local this_mlopts nrtol(.001) tolerance(.001)
 				local this_technique = cond($cmp_IntMethod, "bhhh", "nr")
 				local this_technique nr
+				local this_vce vce(opg) // faster than oim for lf1, gf1; this interim VCV ignored anyway
 			}
 
 			local mlmodelcmd `model' `=cond(`final' & "`1only'"=="","[`weight'`exp'] `_if', `options'", "`awgtexp' `_if',")' ///
-				`svy' `subpop' constraints(`constraints') nocnsnotes nopreserve missing collinear `modopts' technique(`this_technique')
-			local mlmaxcmd `quietly' ml max, search(off) `this_mlopts' nooutput
+				`svy' `subpop' constraints(`constraints') nocnsnotes nopreserve missing collinear `modopts'
+			local mlmaxcmd `quietly' ml max, search(off) nooutput
+			`quietly' ml model `method' `mlmodelcmd' `initopt' technique(`this_technique')
 
-			`quietly' ml model `method' `mlmodelcmd' `initopt'
 			mata moptimize_init_userinfo($ML_M, 1, &_mod)
 			mata _mod.cmp_init($ML_M)
 
-			capture noisily `mlmaxcmd' noclear // Estimate!
+			capture noisily `mlmaxcmd' noclear `this_mlopts' // Estimate!
+
 			if _rc==1400 {
 				di as res "Restarting search with parameters all 0."
 				tempname zeroes
 				mat `zeroes' = J(1, `=colsof(`_init')', 0)
-				`quietly' ml model `method' `mlmodelcmd' init(`zeroes', copy)
-				capture noisiliy `mlmaxcmd'
+				`quietly' ml model `method' `mlmodelcmd' init(`zeroes', copy) technique(`this_technique')
+				capture noisiliy `mlmaxcmd' `this_mlopts' 
 			}
 			if _rc==1 {
 				if "`interactive'"=="" cmp_clear
@@ -1673,12 +1627,19 @@ program Estimate, eclass
 		local psampling_cutoff = `psampling_cutoff' * `psampling_rate'
 	} // psampling loop
 	
-	if `gf' & "`svy'"=="" { // Non-svy hierarchical models, use fast lf1 search, which doesn't quite give right Hessian; get correct VCV via honest gf1
-		`quietly' di as res _n "Refining..." _c
-		mata moptimize_init_evaluator($ML_M, &cmp_gf2())
-		mata moptimize_init_evaluatortype($ML_M, "gf1")
-		mata moptimize_init_by($ML_M, "_cmp_id1")
-		`quietly' ml max, search(off) `mlopts' nooutput
+	if `gf' & "`svy'"=="" { // Non-svy hierarchical models use fast lf1 search, which doesn't quite give right Hessian; get correct VCV via honest gf1
+		tempname hold V
+		_est hold `hold'
+		`quietly' ml model gf1 cmp_gf2() `mlmodelcmd' init(`_init') group(_cmp_id1) `vce'
+		mata moptimize_init_userinfo($ML_M, 1, &_mod)
+		quietly ml max, search(off) `mlopts' iter(0) // nooutput
+		mat `V' = e(V)
+		local vce `e(vce)'
+		local vcetype `e(vcetype)'
+		_est unhold `hold'
+		ereturn	repost V = `V'
+		ereturn local vce `vce'
+		ereturn local vcetype `vcetype'
 	}
 
 	cap local _a // reset _rc to 0
@@ -2526,6 +2487,9 @@ program define cmp_error
 end
 
 * Version history
+* 8.2.3 After 8.2.0 changes, in hierarchichal models, allowed iter() to affect pre-refinement estimation too.
+*       Got rid of "refining" stage for hierarchical models: first stage fully fits with lf1, second just computes proper VCV with iter(0).
+*       Fully redefined ml model for latter stage to prevent crashes in some contexts.
 * 8.2.2 Extended predictions of multinomial probabilities to predictions of being top-ranked for roprobit models.
 *       Fixed false error in parsing of upper-level weights in multilevel models
 * 8.2.1 Fixed 8.2.0 bug: fully loosened convergence criteria before "refining" multilevel model search
