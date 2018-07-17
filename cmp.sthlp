@@ -576,9 +576,9 @@ sequence for prime {it:p} by floor(sqrt(p)), modulo p. {opt scramble(negsqrt)} m
 by the number specific to {it:p} recommended by Faure and Lemieux (2009). {opt scramble(sqrt)} and {opt scramble(lr)} have no effect for models in with
 at most two random effect/coefficient components because for primes 2 and 3, their multipliers are 1.
 
-{phang}{opt lf} makes {cmd:cmp} use its lf-method evaluator instead of its d2-method one (for Stata 10 or earlier) or lf1-method one (Stata 11 or
-later). This forces {cmd:cmp} to compute first derivatives of the likelihood numerically instead of analytically, which substantially
-slows estimation but occassionally improves convergence.
+{phang}{opt lf} makes {cmd:cmp} use its lf-method evaluator instead of the lf0-method one. (See {help ml:help ml}.) This forces Stata's Maximum Likelihood estimation package 
+to compute the first derivatives of the likelihood numerically instead of using {cmd:cmp} to compute them analytically. This substantially slows 
+estimation but occassionally improves convergence.
 
 {phang}{cmdab:ghkd:raws(}[#]{cmd: , }[{opt type(halton | hammersley | ghalton | random)} {opt anti:thetics} {opt scr:amble(sqrt | negsqrt | fl)} ]{cmd:)} governs the draws used in GHK simulation of 
 higher-dimensional cumulative multivariate normal distributions. It is similar to the {opt red:raws} option. However, it takes at most one number;
@@ -702,7 +702,7 @@ variance is estimated:
 {synopt :{opt lnl}}observation-level log likelihood (in hierarchical models, averaged over groups){p_end}
 {synopt :{opt sc:ores}}derivative of the log likelihood with respect to xb or parameter{p_end}
 {synopt :{opt re:siduals}}residuals relative to linear prediction{p_end}
-{synopt :{cmd:pr}[{cmd:(}{it:a b}{cmd:)}]}probability of positive outcome (probit) or given outcome (ordered probit) or outcome being chosen (multinomial probit). Omitting {cmd:(}{it:a b}{cmd:)} defaults to {cmd:(0 .)}, meaning positive values{p_end}
+{synopt :{cmd:pr}[{cmd:(}{it:a b}{cmd:)}]}probability of positive outcome (probit) or given outcome (ordered probit) or outcome being chosen (multinomial). Omitting {cmd:(}{it:a b}{cmd:)} defaults to {cmd:(0 .)}, meaning positive values{p_end}
 {synopt :{cmd:e}[{cmd:(}{it:a b}{cmd:)}]}truncated expected value: E[y|{it:a}<y<{it:b}]. Omitting {cmd:(}{it:a b}{cmd:)} defaults to {cmd:(. .)}, meaning unbounded{p_end}
 {synopt :{cmd:ystar(}{it:a b}{cmd:)}}censored expected value: E(y*), y* = max({it:a}, min(y, {it:b})){p_end}
 {synopt :{cmdab:cond:ition(}{it:c d} [, {cmdab:eq:uation(#}{it:eqno}|{it:eqname}{cmd:)}]{cmd:)}}condition a {cmd:pr}, {cmd:e}, or {cmd:ystar} statistic on bounding another equation's continuous (latent) outcome between {it:c} and {it:d}{p_end}

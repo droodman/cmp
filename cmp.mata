@@ -1698,6 +1698,8 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 				printf("\n{res}Adaptive quadrature points fixed.\n")
 		}
 		if (lnf < .) mod->LastlnLThisIter = lnf
+		if (todo == 0)
+			lnf = J(base->N, 1, lnf/base->N)
 	}
 }
 
@@ -1759,8 +1761,6 @@ void cmp_gf2(transmorphic M, real scalar todo, real rowvector b, real colvector 
 		}
 	}
 }
-
-
 
 
 
