@@ -1,4 +1,4 @@
-*! cmp 8.2.4 17 July 2018
+*! cmp 8.2.5 1 August 2018
 *! Copyright (C) 2007-18 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -432,7 +432,7 @@ program define _cmp
 
 			cap assert _cmp_ind`cmp_eqno' != $cmp_oprobit if `touse', `fast'
 			if _rc { // ordered probit
-				GroupCategoricalVar if ${cmp_y`cmp_eqno'} < . & `touse', predict(`predict') cmp_eqno(`cmp_eqno')
+				GroupCategoricalVar if ${cmp_y`cmp_eqno'} < . & `touse' & _cmp_ind`cmp_eqno', predict(`predict') cmp_eqno(`cmp_eqno')
 				mat cmp_cat`cmp_eqno' = r(cat)
 				local t = colsof(cmp_cat`cmp_eqno') - 1
 				mat cmp_num_cuts = nullmat(cmp_num_cuts) \ `t'
@@ -1570,7 +1570,7 @@ program Estimate, eclass
 
 			local _if if (`if') `=cond("`psampling'" != "", "& (`psampling_cutoff'>=1 | `u'<=.001+`psampling_cutoff')", "")'
 
-			local method = cond(`gf' & "`svy'"!="", "gf`="`lf'"==""' cmp_gf2()", `"lf`="`lf'"==""' cmp_lf1()"')
+			local method = cond(`gf' & "`svy'"!="", "gf`="`lf'"==""' cmp_gf1()", `"lf`="`lf'"==""' cmp_lf1()"')
 
 			local final = `psampling_cutoff'>=1 & `restep'==`resteps'
 
@@ -1630,7 +1630,7 @@ program Estimate, eclass
 	if `gf' & "`svy'"=="" { // Non-svy hierarchical models use fast lf1 search, which doesn't quite give right Hessian; get correct VCV via honest gf1
 		tempname hold V
 		_est hold `hold'
-		`quietly' ml model gf`="`lf'"==""' cmp_gf2() `mlmodelcmd' init(`_init') group(_cmp_id1) `vce'
+		`quietly' ml model gf`="`lf'"==""' cmp_gf1() `mlmodelcmd' init(`_init') group(_cmp_id1) `vce'
 		mata moptimize_init_userinfo($ML_M, 1, &_mod)
 		quietly ml max, search(off) `mlopts' iter(0) // nooutput
 		mat `V' = e(V)
@@ -2487,6 +2487,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.2.5 Fixed crash when oprobit eq's take more values in full sample than in eq's sample.
 * 8.2.4 Fixed crashes in hierarchical models with "lf", introduced in 8.0.0.
 * 8.2.3 After 8.2.0 changes, in hierarchichal models, allowed iter() to affect pre-refinement estimation too.
 *       Got rid of "refining" stage for hierarchical models: first stage fully fits with lf1, second just computes proper VCV with iter(0).
