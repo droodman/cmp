@@ -1,4 +1,4 @@
-*! cmp 8.2.5 1 August 2018
+*! cmp 8.2.6 9 August 2018
 *! Copyright (C) 2007-18 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -1597,7 +1597,7 @@ program Estimate, eclass
 			}
 
 			local mlmodelcmd `model' `=cond(`final' & "`1only'"=="","[`weight'`exp'] `_if', `options'", "`awgtexp' `_if',")' ///
-				`svy' `subpop' constraints(`constraints') nocnsnotes nopreserve missing collinear `modopts'
+				`svy' `subpop' constraints(`constraints') nocnsnotes nopreserve missing collinear `modopts' `this_vce'
 			local mlmaxcmd `quietly' ml max, search(off) nooutput
 			`quietly' ml model `method' `mlmodelcmd' `initopt' technique(`this_technique')
 
@@ -2487,6 +2487,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.2.6 Fixed loss of user's vce() option in 8.2.3
 * 8.2.5 Fixed crash when oprobit eq's take more values in full sample than in eq's sample.
 * 8.2.4 Fixed crashes in hierarchical models with "lf", introduced in 8.0.0.
 * 8.2.3 After 8.2.0 changes, in hierarchichal models, allowed iter() to affect pre-refinement estimation too.
