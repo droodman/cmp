@@ -1,4 +1,4 @@
-/* cmp 8.2.5 1 August 2018
+/* cmp 8.2.7 19 August 2018
    Copyright (C) 2007-18 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -1198,7 +1198,7 @@ void cmp_model::_st_view(real matrix V, real scalar missing, string rowvector va
 
 
 // main evaluator routine
-void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H , | real scalar addh, real scalar signh) {
+void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
 	real matrix Rho, t, L_g, invGamma, C, dOmega_dSig
 	real scalar e, c, i, j, k, l, m, _l, r, d, L, tEq, EUncensEq, ECensEq, FCensEq, NewIter, eq, eq1, eq2, c1, c2, cut, lnsigWithin, lnsigAccross, atanhrhoAccross, atanhrhoWithin, Iter
 	real colvector shift, lnLmin, lnLmax, lnL, out
@@ -1220,17 +1220,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 
 	for (i=1; i<=d; i++) {
 		REs->theta[i].M = moptimize_util_xb(M, b, i)
-		if (i==addh) {
-			if (signh==1) mod->h = (abs(mean(REs->theta[i].M :/ (mod->indicators[,i]:>0))) + 1e-6) * 1e-6 // if sign=1, compute new h for manual estimation of derivative; ignores weights...
-			REs->theta[i].M = REs->theta[i].M :+ signh*mod->h
-		}
 		if (rows(REs->theta[i].M)==1) REs->theta[i].M = J(base->N, 1, REs->theta[i].M)
-	}
-
-	if (addh != . & addh > d) {
-		t =  moptimize_util_eq_indices(M, addh)[1,2]
-		if (signh==1) mod->h = (abs(b[t]) + 1e-6) * 1e-6
-		b[t] = b[t] + signh*mod->h
 	}
 
 	for (j=1; j<=rows(mod->GammaInd); j++)
@@ -1689,7 +1679,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 		}
 	} while (l) // exit when adding one more draw causes carrying all the way accross the draw counters, back to 1, 1, 1...
 
-	if (L > 1 & addh==.) {
+	if (L > 1) {
 		lnf = quadsum(rows(REs->Weights)? REs->Weights:* *(REs->plnL) : *(REs->plnL), 1)
 		if (mod->AdaptivePhaseThisEst & NewIter) {
 			if (mod->AdaptivePhaseThisEst = mreldif(mod->LastlnLThisIter, mod->LastlnLLastIter) >= 1e-6)
@@ -1703,8 +1693,8 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 	}
 }
 
-void cmp_gf2(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
-	real matrix _S, __S, _H, Hrow, IDRanges, subscripts; real colvector _lnf; real rowvector _b; real scalar addh, i, n, K, d; pointer(class cmp_model scalar) scalar mod; pointer (struct RE scalar) scalar REs
+void cmp_gf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
+	real matrix _S, __S, _H, Hrow, IDRanges, subscripts; real colvector _lnf; real rowvector _b; real scalar i, n, K, d; pointer(class cmp_model scalar) scalar mod; pointer (struct RE scalar) scalar REs
 	pragma unset _S; pragma unset _H; pragma unset __S; pragma unset _lnf; pragma unset _b
 
 	mod = moptimize_init_userinfo(M, 1)
@@ -1732,31 +1722,6 @@ void cmp_gf2(transmorphic M, real scalar todo, real rowvector b, real colvector 
 				subscripts[1,2] = subscripts[2,2] + 1
 				subscripts[2,2] = .
 				S[|subscripts|] = cmp_panelsum(_S[|.,mod->base->d+1\.,.|]              , mod->WeightProduct, IDRanges)
-			}
-
-			if (todo > 1) {
-				H = J(0, K, 0)
-				for (addh=n; addh > d; addh--) {
-					cmp_lf1(M, todo, _b=b, _lnf,  _S, _H, addh,  1)
-					cmp_lf1(M, todo, _b=b, _lnf, __S, _H, addh, -1)
-					_S = (_S - __S) / (2*mod->h)
-					Hrow = J(1,0,0)
-					for (i=addh;i>d;i--)
-						Hrow = moptimize_util_sum(M, _S[,i]), Hrow
-					for (;i;i--)
-						Hrow = moptimize_util_vecsum(M, i, _S[,i], 1), Hrow
-					H = (Hrow, J(rows(Hrow), cols(H)-cols(Hrow), .)) \ H
-				}
-				for (; addh; addh--) {
-					cmp_lf1(M, todo, _b=b, _lnf,  _S, _H, addh,  1)
-					cmp_lf1(M, todo, _b=b, _lnf, __S, _H, addh, -1)
-					_S = (_S - __S) / (2*mod->h)
-					subscripts = moptimize_util_eq_indices(M,addh); Hrow = J(subscripts[2,2]-subscripts[1,2]+1,0,0)
-					for (i=d;i;i--)
-						Hrow = moptimize_util_matsum(M, addh, i, _S[,i], 1), Hrow
-					H = (Hrow, J(rows(Hrow), cols(H)-cols(Hrow), .)) \ H
-				}
-				_makesymmetric(H)
 			}
 		}
 	}

@@ -1,5 +1,5 @@
 {smcl}
-{* *! cmp 8.2.3 13 July 2018}{...}
+{* *! cmp 8.2.7 19 August 2018}{...}
 {cmd:help cmp}
 {hline}{...}
 

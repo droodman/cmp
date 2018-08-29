@@ -1,4 +1,4 @@
-*! cmp 8.2.6 9 August 2018
+*! cmp 8.2.7 19 August 2018
 *! Copyright (C) 2007-18 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -152,6 +152,9 @@ program define _cmp
 
 	local diopts `eformopts' `mldiopts' `svydiopts' level(`level') resultsform(`resultsform')
 	mlopts mlopts, `options'
+	local 0, `mlopts'
+	syntax, [iterate(passthru) *]
+	local mlopts `options'
 
 	ParseEqs `model' // parse the equations
 	global cmp_d $parse_d
@@ -974,7 +977,7 @@ program define _cmp
 		qui InitSearch if `touse' `=cond("`subpop'"!="","& `subpop'","")', `drop' auxparams(`auxparams') mlopts(`mlopts')
 		mat `b' = r(b)
 		Estimate if `touse' `=cond("`subpop'"!="","& `subpop'","")', init(`init') cmpinit(`b') `vce' auxparams(`auxparams') psampling(`psampling') resteps(`steps') `lf' ///
-			`constraints' _constraints(`_constraints' `initconstraints') `autoconstrain' mlopts(`mlopts') `technique' `quietly' redraws(`redraws') paramsdisplay(`r(ParamsDisplay)') `interactive'
+			`constraints' _constraints(`_constraints' `initconstraints') `autoconstrain' mlopts(`mlopts') `iterate' `technique' `quietly' redraws(`redraws') paramsdisplay(`r(ParamsDisplay)') `interactive'
 		if _rc==0 {
 			tempname vsmp
 			mat `vsmp' = e(V)
@@ -992,7 +995,7 @@ program define _cmp
 		local 1onlyinitconstraints `r(initconstraints)'
 		mat `b' = r(b)
 		qui Estimate if `touse' `wgtexp', cmpinit(`b') `constraints' _constraints(`_constraints' `1onlyinitconstraints') `autoconstrain' psampling(`psampling') resteps(`steps') `lf' ///
-		                `svy' subpop(`subpop') modopts(`modopts') mlopts(`mlopts') `technique' auxparams(`r(auxparams)') 1only `quietly' redraws(`redraws') paramsdisplay(`r(ParamsDisplay)') `interactive'
+		                `svy' subpop(`subpop') modopts(`modopts') mlopts(`mlopts') `iterate' `technique' auxparams(`r(auxparams)') 1only `quietly' redraws(`redraws') paramsdisplay(`r(ParamsDisplay)') `interactive'
 		if _rc==0 local lf0opt lf0(`e(rank)' `e(ll)')
 
 		global cmpHasGamma `HasGamma'
@@ -1040,7 +1043,7 @@ program define _cmp
 
 	di as res _n "Fitting full model."
 
-	cmp_full_model if `touse' `wgtexp', `vce' `lf0opt' modopts(`modopts') mlopts(`mlopts') `technique' `lf' paramsdisplay(`ParamsDisplay') xvarsall(`XVarsAll') ///
+	cmp_full_model if `touse' `wgtexp', `vce' `lf0opt' modopts(`modopts') mlopts(`mlopts') `iterate' `technique' `lf' paramsdisplay(`ParamsDisplay') xvarsall(`XVarsAll') ///
 		`constraints' _constraints(`_constraints' `initconstraints') init(`init') cmpinit(`cmpInitFull') `svy' subpop(`subpop') psampling(`psampling') ///
 		`quietly' auxparams(`auxparams') cmdline(`"`cmdline'"') resteps(`steps') redraws(`redraws') intpoints(`intpoints') ///
 		vsmp(`vsmp') meff(`meff') ghkanti(`ghkanti') ghkdraws(`ghkdraws') ghktype(`ghktype') ghkscramble(`ghkscramble') diparmopt(`diparmopt') `interactive'
@@ -1457,9 +1460,11 @@ cap program drop Estimate
 program Estimate, eclass
 	version 11.0
 	syntax if/ [fw aw pw iw], [auxparams(string) psampling(string) svy subpop(passthru) autoconstrain paramsdisplay(string) ///
-		modopts(string) mlopts(string) init(string) cmpinit(string) constraints(string) _constraints(string) technique(string) vce(passthru) 1only quietly resteps(string) redraws(string) interactive lf *]
+		modopts(string) mlopts(string) iterate(passthru) init(string) cmpinit(string) constraints(string) _constraints(string) technique(string) vce(string) 1only quietly resteps(string) redraws(string) interactive lf *]
 
 	if "`weight'" != "" local awgtexp [aw`exp']
+	local weightexp `weight'`exp'
+
 	tempname _init
 	if "`init'" == "" local _init `cmpinit'
 		else {
@@ -1576,13 +1581,10 @@ program Estimate, eclass
 
 			if `final' {
 				local this_technique `technique'
-				if `gf' & "`svy'"=="" {
-					local this_vce vce(opg) // faster than oim for lf1, gf1; this interim VCV ignored anyway
-					local 0, `mlopts'
-					local _options `options'
-					syntax, [iterate(passthru) *]
-					local options `_options'
-					local this_mlopts `iterate'
+				local this_iterate `iterate'
+				if `gf' & "`svy'"=="" & "`vce'"!="opg" {
+					local this_vce opg // faster than oim for lf1, gf1; this interim VCV ignored anyway
+					local this_mlopts
 				}
 				else  {
 					local this_mlopts `mlopts'
@@ -1593,25 +1595,25 @@ program Estimate, eclass
 				local this_mlopts nrtol(.001) tolerance(.001)
 				local this_technique = cond($cmp_IntMethod, "bhhh", "nr")
 				local this_technique nr
-				local this_vce vce(opg) // faster than oim for lf1, gf1; this interim VCV ignored anyway
+				local this_vce opg // faster than oim for lf1, gf1; this interim VCV ignored anyway
 			}
 
-			local mlmodelcmd `model' `=cond(`final' & "`1only'"=="","[`weight'`exp'] `_if', `options'", "`awgtexp' `_if',")' ///
-				`svy' `subpop' constraints(`constraints') nocnsnotes nopreserve missing collinear `modopts' `this_vce'
+			local mlmodelcmd `model' `=cond(`final' & "`1only'"=="","[`weightexp'] `_if', `options'", "`awgtexp' `_if',")' ///
+				`svy' `subpop' constraints(`constraints') nocnsnotes nopreserve missing collinear `modopts'
 			local mlmaxcmd `quietly' ml max, search(off) nooutput
-			`quietly' ml model `method' `mlmodelcmd' `initopt' technique(`this_technique')
+			`quietly' ml model `method' `mlmodelcmd' vce(`this_vce') `initopt' technique(`this_technique')
 
 			mata moptimize_init_userinfo($ML_M, 1, &_mod)
 			mata _mod.cmp_init($ML_M)
 
-			capture noisily `mlmaxcmd' noclear `this_mlopts' // Estimate!
+			capture noisily `mlmaxcmd' noclear `this_mlopts' `iterate' // Estimate!
 
 			if _rc==1400 {
 				di as res "Restarting search with parameters all 0."
 				tempname zeroes
 				mat `zeroes' = J(1, `=colsof(`_init')', 0)
-				`quietly' ml model `method' `mlmodelcmd' init(`zeroes', copy) technique(`this_technique')
-				capture noisiliy `mlmaxcmd' `this_mlopts' 
+				`quietly' ml model `method' `mlmodelcmd' vce(`this_vce') init(`zeroes', copy) technique(`this_technique')
+				capture noisiliy `mlmaxcmd' `this_mlopts' `iterate'
 			}
 			if _rc==1 {
 				if "`interactive'"=="" cmp_clear
@@ -1626,11 +1628,11 @@ program Estimate, eclass
 
 		local psampling_cutoff = `psampling_cutoff' * `psampling_rate'
 	} // psampling loop
-	
-	if `gf' & "`svy'"=="" { // Non-svy hierarchical models use fast lf1 search, which doesn't quite give right Hessian; get correct VCV via honest gf1
+
+	if `gf' & "`svy'"=="" & "`vce'"!="opg" { // Non-svy hierarchical models use fast lf1 search, which doesn't quite give right Hessian; get correct VCV via honest gf1
 		tempname hold V
 		_est hold `hold'
-		`quietly' ml model gf`="`lf'"==""' cmp_gf1() `mlmodelcmd' init(`_init') group(_cmp_id1) `vce'
+		`quietly' ml model gf`="`lf'"==""' cmp_gf1() `mlmodelcmd' vce(`vce') init(`_init') group(_cmp_id1)
 		mata moptimize_init_userinfo($ML_M, 1, &_mod)
 		quietly ml max, search(off) `mlopts' iter(0) // nooutput
 		mat `V' = e(V)
@@ -2487,6 +2489,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.2.7 Fixed new "option vce() not allowed" bug in hierarchical models
 * 8.2.6 Fixed loss of user's vce() option in 8.2.3
 * 8.2.5 Fixed crash when oprobit eq's take more values in full sample than in eq's sample.
 * 8.2.4 Fixed crashes in hierarchical models with "lf", introduced in 8.0.0.
