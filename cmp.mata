@@ -1,4 +1,4 @@
-/* cmp 8.2.7 19 August 2018
+/* cmp 8.2.8 28 October 2018
    Copyright (C) 2007-18 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -2107,9 +2107,9 @@ void cmp_model::cmp_init(transmorphic M) {
 		for (k=rows(MprobitGroupInds); k; k--) {
 			start = MprobitGroupInds[k, 1]; stop = MprobitGroupInds[k, 2]
 
-			v->mprobit[k].d = d_mprobit = cols( mprobit = cmp_selectindex(v->TheseInds :& one2d:>=start :& one2d:<=stop) ) - 1
+			v->mprobit[k].d = d_mprobit = (v->TheseInds[start]<.) * (cols( mprobit = cmp_selectindex(v->TheseInds :& one2d:>=start :& one2d:<=stop) ) - 1)
 
-			if (d_mprobit>0) {
+			if (d_mprobit > 0) {
 				v->mprobit[k].out = v->TheseInds[start] - mprobit_ind_base // eq of chosen alternative
 				v->mprobit[k].res = cmp_selectindex((v->TheseInds :& one2d:>start  :& one2d:<=stop)[v->cens]) // index in v->ECens for relative differencing results
 				v->mprobit[k].in =  cmp_selectindex( v->TheseInds :& one2d:>=start :& one2d:<=stop :& one2d:!=v->mprobit[k].out) // eqs of rejected alternatives

@@ -1,4 +1,4 @@
-*! cmp 8.2.7 19 August 2018
+*! cmp 8.2.8 28 October 2018
 *! Copyright (C) 2007-18 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -1419,6 +1419,7 @@ program define cmp_full_model, eclass
 			mat `cat' = nullmat(`cat') \ `t'
 		}
 		mat rownames `cat' = $cmp_eq
+
 		ereturn mat cat = `cat'
 		mat `t' = cmp_num_cuts
 		mat rownames `t' = $cmp_eq
@@ -1685,11 +1686,8 @@ program define GroupCategoricalVar, rclass
 		}
 		mat `cat' = `cat'' // should extract numerically exact representation of doubles
 	}
-	else {
-		mat `num_cuts' = e(num_cuts)
-		mat `cat' = e(cat)
-		mat `cat' = `cat'[`cmp_eqno', 1..1+`num_cuts'[`cmp_eqno',1]]
-	}
+	else mata st_matrix("`cat'", select(st_matrix("e(cat)")[`cmp_eqno',], st_matrix("e(cat)")[`cmp_eqno',]:<.))
+
 	forvalues i=1/`=colsof(`cat')' {
 		local recode `recode' (`=string(`cat'[1,`i'], "%21x")' = `i') 
 	}
@@ -2489,6 +2487,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.2.8 Fixed bugs in predict after mprobit
 * 8.2.7 Fixed new "option vce() not allowed" bug in hierarchical models
 * 8.2.6 Fixed loss of user's vce() option in 8.2.3
 * 8.2.5 Fixed crash when oprobit eq's take more values in full sample than in eq's sample.
