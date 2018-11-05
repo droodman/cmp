@@ -1,5 +1,5 @@
 {smcl}
-{* *! cmp 8.2.7 19 August 2018}{...}
+{* *! cmp 8.2.9 5 November 2018}{...}
 {cmd:help cmp}
 {hline}{...}
 
@@ -984,7 +984,7 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 {phang}. {stata "xtmixed gsp private emp hwy water other unemp || region: || state:"}{p_end}
 {phang}. {stata "cmp (gsp = private emp hwy water other unemp || region: || state:), nolr ind($cmp_cont)"}{p_end}
 
-{pstd}These examples go beyond standard commands (other than {help gsem}):
+{pstd}These examples go beyond standard commands (though {help gsem} can do some):
 
 {phang}. {stata webuse laborsup}{p_end}
 
