@@ -1,4 +1,4 @@
-/* cmp 8.2.9 4 November 2018
+/* cmp 8.2.9 5 November 2018
    Copyright (C) 2007-18 David Roodman
 
    This program is free software: you can redistribute it and/or modify

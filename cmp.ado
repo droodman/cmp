@@ -1,4 +1,4 @@
-*! cmp 8.2.9 4 November 2018
+*! cmp 8.2.9 5 November 2018
 *! Copyright (C) 2007-18 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -1313,12 +1313,12 @@ program define cmp_full_model, eclass
 		ereturn scalar L = $parse_L
 		ereturn local ivars $parse_id
 		ereturn mat NumEff = cmp_NumEff
-		forvalues l=1/$parse_L {
+		forvalues l=$parse_L(-1)1 {
 			ereturn mat fixed_rhos`l' = cmp_fixed_rhos`l'
 			ereturn mat fixed_sigs`l' = cmp_fixed_sigs`l'
 			cap ereturn mat sig_score_inds`l' = cmpSigScoreInds`l'
 			ereturn local covariance `e(covariance)' ${cmp_cov`l'}
-			forvalues eq=1/$cmp_d {
+			forvalues eq=$cmp_d(-1)1 {
 				ereturn local covariance`eq' `e(covariance`eq')' ${cmp_cov`l'_`eq'}
 				ereturn local EffNames`l'_`eq' ${cmp_rc`l'_`eq'} ${cmp_re`l'_`eq'}
 			}
@@ -1418,7 +1418,7 @@ program define cmp_full_model, eclass
 		}
 		else if "$parse_wexpL"!="" ereturn local wexp `"= $parse_wexpL"'
 
-		forvalues eq=1/$cmp_d {
+		forvalues eq=$cmp_d(-1)1 {  // doing in reverse order seems to get proper order in displayed results
 			qui count if e(sample) & _cmp_ind`eq'
 			ereturn scalar N`eq' = r(N)
 		}
