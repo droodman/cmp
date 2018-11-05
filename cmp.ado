@@ -1,4 +1,4 @@
-*! cmp 8.2.8 28 October 2018
+*! cmp 8.2.9 4 November 2018
 *! Copyright (C) 2007-18 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -1196,6 +1196,21 @@ program define ParseEqs
 			di as err "Don't include this equation in the " as res "indicators()" as err " option."
 			cmp_error 110
 		}
+
+		forvalues l=1/$parse_L { // rearrange RE and RC macros to reflect any corrections to level numbers assigned in initial parsing pass.
+			forvalues i=1/$parse_d {
+				foreach macro in re rc cov {
+					mata st_local("_parse_`macro'`l'_`i'", st_global("parse_`macro'"+strofreal(_p[`l'])+"_`i'"))
+				}
+			}
+		}
+		forvalues l=1/$parse_L {
+			forvalues i=1/$parse_d {
+				foreach macro in re rc cov {
+					global parse_`macro'`l'_`i' `_parse_`macro'`l'_`i''
+				}
+			}
+		}
 	}
 
 	local i 0
@@ -1224,7 +1239,7 @@ program define ParseEqs
 	forvalues j=1/$parse_d { // will cause to generate and extract /atanhrho params to work correctly for bottom level
 		global parse_re$parse_L_`j' _cons
 	}
-	
+
 	local t: list dups eqnames
 	if "`t'" != "" cmp_error 110 "Multiply defined equations: `t'"
 	
@@ -2487,6 +2502,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.2.9 Fixed crashes in multi-equation, multilevel models when diferent equations have effects at different levels.
 * 8.2.8 Fixed bugs in predict after mprobit
 * 8.2.7 Fixed new "option vce() not allowed" bug in hierarchical models
 * 8.2.6 Fixed loss of user's vce() option in 8.2.3

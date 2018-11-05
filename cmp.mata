@@ -1,4 +1,4 @@
-/* cmp 8.2.8 28 October 2018
+/* cmp 8.2.9 4 November 2018
    Copyright (C) 2007-18 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -1144,10 +1144,10 @@ void cmp_model::BuildTotalEffects(real scalar l) {
 				UT[base->one2N,eq] = UT[base->one2N,eq] + quadrowsum((RE->U[r].M * RE->T[, RE->RCInds[eq].M]) :* RE->X[eq].M) // RCs * X
 		if (HasGamma)
 			for (eq=cols(RE->GammaEqs); eq; eq--)
-				RE->TotalEffect[r,eq].M = UT * RE->invGamma[,eq]
+				RE->TotalEffect[r,RE->GammaEqs[eq]].M = UT * RE->invGamma[,eq]
 		else
 			for (eq=cols(RE->GammaEqs); eq; eq--)
-				RE->TotalEffect[r,eq].M = UT[base->one2N,eq]
+				RE->TotalEffect[r,RE->GammaEqs[eq]].M = UT[base->one2N,eq]
 	}
 }
 
@@ -1200,7 +1200,7 @@ void cmp_model::_st_view(real matrix V, real scalar missing, string rowvector va
 // main evaluator routine
 void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
 	real matrix Rho, t, L_g, invGamma, C, dOmega_dSig
-	real scalar e, c, i, j, k, l, m, _l, r, d, L, tEq, EUncensEq, ECensEq, FCensEq, NewIter, eq, eq1, eq2, c1, c2, cut, lnsigWithin, lnsigAccross, atanhrhoAccross, atanhrhoWithin, Iter
+	real scalar e, c, i, j, k, l, m, _l, r, d, L, tEq, EUncensEq, ECensEq, FCensEq, NewIter, eq, eq1, eq2, _eq, c1, c2, cut, lnsigWithin, lnsigAccross, atanhrhoAccross, atanhrhoWithin, Iter
 	real colvector shift, lnLmin, lnLmax, lnL, out
 	pointer(struct subview scalar) scalar v
 	pointer(real matrix) scalar pdlnL_dtheta, pdlnL_dSig, pThisQuadXAdapt_j
@@ -1336,8 +1336,10 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 
 		if (l < L) {
 			mod->BuildTotalEffects(l)
-			for (eq1=cols(RE->GammaEqs); eq1; eq1--) // compute effect of first draws
-				(*REs)[l+1].theta[RE->GammaEqs[eq1]].M = RE->theta[RE->GammaEqs[eq1]].M :+ RE->TotalEffect[1,eq1].M
+			for (eq1=cols(RE->GammaEqs); eq1; eq1--) {  // compute effect of first draws
+				_eq = RE->GammaEqs[eq1]
+				(*REs)[l+1].theta[_eq].M = rows(RE->TotalEffect[1,_eq].M)? RE->theta[_eq].M :+ RE->TotalEffect[1,_eq].M : RE->theta[_eq].M
+			}
 			for (eq1=d; eq1; eq1--) // by default lower errors = upper ones, for eqs with no random effects/coefs at this level
 				if (!anyof(RE->GammaEqs,eq1))
 					(*REs)[l+1].theta[eq1].M = RE->theta[eq1].M
@@ -1607,8 +1609,10 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 
 			if (mod->ThisDraw[l+1] > 1 | RE->AdaptivePhaseThisIter) { // no (more) carrying? propagate draw changes down the tree
 				for (_l=l; _l<L; _l++)
-					for (eq=cols(RE->GammaEqs); eq; eq--)
-						(*REs)[_l+1].theta[RE->GammaEqs[eq]].M = (*REs)[_l].theta[RE->GammaEqs[eq]].M + (*REs)[_l].TotalEffect[mod->ThisDraw[_l+1], eq].M
+					for (eq=cols(RE->GammaEqs); eq; eq--) {
+						_eq = RE->GammaEqs[eq]
+						(*REs)[_l+1].theta[_eq].M = cols((*REs)[_l].TotalEffect[mod->ThisDraw[_l+1], _eq].M)? (*REs)[_l].theta[_eq].M + (*REs)[_l].TotalEffect[mod->ThisDraw[_l+1], _eq].M : (*REs)[_l].theta[_eq].M
+					}
 				break
  			}
 
@@ -1792,6 +1796,7 @@ void cmp_model::cmp_init(transmorphic M) {
 		vIKI = colsum((I(d) # Kmatrix(d,d) # I(d)) :*(1::d^4))
 	}
 	ThisDraw = J(1, L, 1)
+
 	for (l=L; l; l--) {
 		RE = &((*REs)[l])
 		RE->NEq = cols(RE->Eqs = cmp_selectindex(Eqs[,l]'))
@@ -1989,7 +1994,7 @@ void cmp_model::cmp_init(transmorphic M) {
 		}
 		RE->one2R = 1..(RE->R = NumREDraws[l+1])
 		RE->U = smatrix(RE->R)
-		RE->TotalEffect = smatrix(RE->R, cols(RE->GammaEqs))
+		RE->TotalEffect = smatrix(RE->R, d)
  		RE->XU          = smatrix(RE->R, sum((RE->NEq..1) :* RE->NEff))
 
 		S = ((1::RE->N) * NDraws)[RE->id]
