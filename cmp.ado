@@ -1,5 +1,5 @@
-*! cmp 8.2.9 5 November 2018
-*! Copyright (C) 2007-18 David Roodman 
+*! cmp 8.3.0 1 April 2019
+*! Copyright (C) 2007-19 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -1551,7 +1551,6 @@ program Estimate, eclass
 			}
 		}
 	}
-	constraint drop `_constraints'
 
 	tempname b sample
 	mata _mod.set_WillAdapt($cmp_IntMethod)
@@ -2502,6 +2501,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.3.0 Fixed bug introduced in 8.2.3, July 17, 2018: without "nolr" option, mprobit, asprobit, and gamma models estimated wrongly/didn't converge
 * 8.2.9 Fixed crashes in multi-equation, multilevel models when diferent equations have effects at different levels.
 * 8.2.8 Fixed bugs in predict after mprobit
 * 8.2.7 Fixed new "option vce() not allowed" bug in hierarchical models
