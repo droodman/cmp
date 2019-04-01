@@ -1,5 +1,5 @@
-/* cmp 8.2.9 5 November 2018
-   Copyright (C) 2007-18 David Roodman
+/* cmp 8.3.0 1 April 2019
+   Copyright (C) 2007-19 David Roodman
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
