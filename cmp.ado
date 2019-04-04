@@ -1,4 +1,4 @@
-*! cmp 8.3.0 1 April 2019
+*! cmp 8.3.1 4 April 2019
 *! Copyright (C) 2007-19 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -78,7 +78,13 @@ program define _cmp
 			cap findfile "lcmp.mlib"
 		}
 		qui findfile "cmp.mata"
-		run "`r(fn)'"
+		cap run "`r(fn)'"
+		if _rc & c(stata_version) >= 13 {
+			di _n "Warning: Could not recompile cmp.mata, probably for lack of write access to the directory where it is stored."
+			di    "For backward compatibility, cmp is distributed as compiled in Stata 11. Recompiling in Stata 13 or later"
+			di   `"makes it to run faster in some cases. To compile it manually, type or click on {stata "which cmp.mata"};"'
+			di    "then run the displayed file like a Stata .do file. This only needs to be done once per installation." _n
+		}
 	}
 
 	cap ghk2version
@@ -2501,6 +2507,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.3.1 Prevented crash when it can't recompile boottest.mata; instead issues an explanatory warning
 * 8.3.0 Fixed bug introduced in 8.2.3, July 17, 2018: without "nolr" option, mprobit, asprobit, and gamma models estimated wrongly/didn't converge
 * 8.2.9 Fixed crashes in multi-equation, multilevel models when diferent equations have effects at different levels.
 * 8.2.8 Fixed bugs in predict after mprobit
