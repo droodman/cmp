@@ -1,5 +1,5 @@
-*! cmp 8.2.2 29 June 2018
-*! Copyright (C) 2007-18 David Roodman
+*! cmp 8.3.2 23 May 2019
+*! Copyright (C) 2007-19 David Roodman
 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -282,11 +282,7 @@ program Predict, eclass
 		tempname b V N hold hold2 _p
 		if `reducedform'==0 {
 			mat `b' = e(b)
-			mat colnames `b' = `e(params)'
-			if "`eq'" != "" {
-				mat `b' = `b'[1,`"`:word `=substr("`eq'", 2, .)' of `e(eqnames)'':"']
-				local reducedform = strpos("`:colnames `b''", "#")
-			}
+			local reducedform = strpos("`:coleq `b''", "gamma"+substr("`eq'",2,.))  // does eq of interest include # references? If so, switch to reduced form
 		}
 		if `reducedform' {
 			mat `b' = e(br)
@@ -296,14 +292,14 @@ program Predict, eclass
 				local colnamesr: subinstr local colnamesr "`:word `i' of `:colnames e(bs)''" "`:word `i' of `:colnames e(b)''", all word
 			}
 			scalar `N' = e(N)
-			_estimates hold `hold'
+			_estimates hold `hold', restore
 			ereturn post `b' `V', obs(`=`N'') esample(`hold') // pass around sample marker without duplicating it
 			mat `b' = e(b)
 			mat colnames `b' = `colnamesr'
 			ereturn repost b=`b', rename
 		}
 		else {
-			_estimates hold `hold', copy
+			_estimates hold `hold', copy restore
 			mat `b' = e(b)
 			mat `V' = e(V)
 			mata `_p' = st_matrix("e(_p)"); st_matrix("`b'", st_matrix("`b'")[`_p']); st_matrix("`V'", st_matrix("`V'")[`_p',`_p'])

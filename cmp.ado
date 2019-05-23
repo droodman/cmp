@@ -1,4 +1,4 @@
-*! cmp 8.3.1 4 April 2019
+*! cmp 8.3.2 23 May 2019
 *! Copyright (C) 2007-19 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -2507,6 +2507,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.3.2 Fixed bug causing wrong predictions after gamma models
 * 8.3.1 Prevented crash when it can't recompile boottest.mata; instead issues an explanatory warning
 * 8.3.0 Fixed bug introduced in 8.2.3, July 17, 2018: without "nolr" option, mprobit, asprobit, and gamma models estimated wrongly/didn't converge
 * 8.2.9 Fixed crashes in multi-equation, multilevel models when diferent equations have effects at different levels.
