@@ -1,4 +1,4 @@
-*! cmp 8.3.2 23 May 2019
+*! cmp 8.3.3 23 May 2019
 *! Copyright (C) 2007-19 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -2183,15 +2183,11 @@ program Display, eclass
 					mat `V' = e(V`form')
 					mat `Cns' = e(Cns`form')
 					if `Cns'[1,1]==. local Cns
-					mat `b`curform'' = e(b)
-					mat `V`curform'' = e(V)
-					cap mat `Cns`curform'' = e(Cns)
-					if _rc local Cns`curform'
 
 					local scalars : e(scalars)
 					local macros  : e(macros)
 					local matrices: e(matrices)
-					local t b V Cns br Vr bs Vs Cnss
+					local t b V Cns
 					local matrices: list matrices - t
 					foreach t in `scalars' {
 						tempname `t'
@@ -2259,8 +2255,6 @@ program Display, eclass
 							ereturn local covariance`eq' ``covariance_reducedform`eq'''
 						}
 					}
-					ereturn mat b`curform' = `b`curform''
-					ereturn mat V`curform' = `V`curform''
 					ereturn local resultsform = cond("`form'"=="s", "structural", "reduced")
 				}
 			}
@@ -2507,6 +2501,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.3.3 Streamlined Predict code; made cmp always store e(bs) and e(br) regardless of current resultsform
 * 8.3.2 Fixed bug causing wrong predictions after gamma models
 * 8.3.1 Prevented crash when it can't recompile boottest.mata; instead issues an explanatory warning
 * 8.3.0 Fixed bug introduced in 8.2.3, July 17, 2018: without "nolr" option, mprobit, asprobit, and gamma models estimated wrongly/didn't converge

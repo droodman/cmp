@@ -1,4 +1,4 @@
-*! cmp 8.3.2 23 May 2019
+*! cmp 8.3.3 23 May 2019
 *! Copyright (C) 2007-19 David Roodman
 
 * This program is free software: you can redistribute it and/or modify
@@ -157,7 +157,7 @@ program define cmp_p
 			Predict `vartype' `1' if `touse', `_options' eq(#`eq') `offset' `reducedform'
 		}
 		else {
-			qui Predict double `xb' if `touse', `_options' eq(#`eq') `offset' `reducedform'
+			Predict double `xb' if `touse', `_options' eq(#`eq') `offset' `reducedform'
 			if "`residuals'" != "" {
 				gen `vartype' `1' = `depvar' - `xb' if `touse'
 				label var `1' Residuals
@@ -277,14 +277,10 @@ program Predict, eclass
 	
 	syntax anything [if], [eq(string) reducedform *]
 	local hasGamma = e(k_gamma) & "`options'"!="scores"
-	local reducedform = "`reducedform'"!=""
 	if `hasGamma' {
 		tempname b V N hold hold2 _p
-		if `reducedform'==0 {
-			mat `b' = e(b)
-			local reducedform = strpos("`:coleq `b''", "gamma"+substr("`eq'",2,.))  // does eq of interest include # references? If so, switch to reduced form
-		}
-		if `reducedform' {
+		if "`reducedform'"!="" | strpos("`:coleq e(b)'", "gamma"+substr("`eq'",2,.)) {
+			di "(using reduced-form results for predictions)"
 			mat `b' = e(br)
 			mat `V' = e(Vr)
 			local colnamesr: colnames e(br)
@@ -313,7 +309,7 @@ program Predict, eclass
 
 	/*qui*/ ml_p `anything' `if', `options' equation(`eq') `=cond("`options'"=="scores", "missing", "")'
 
-	if `hasGamma'`reducedform' {
+	if `hasGamma' {
 		_estimates hold `hold2'
 		_estimates unhold `hold'
 		ereturn repost, esample(`hold2')
