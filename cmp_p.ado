@@ -1,4 +1,4 @@
-*! cmp 8.3.3 23 May 2019
+*! cmp 8.3.4 30 May 2019
 *! Copyright (C) 2007-19 David Roodman
 
 * This program is free software: you can redistribute it and/or modify
@@ -114,8 +114,9 @@ program define cmp_p
 		tempname t1 t2 d M E ghk2DrawSet pr
 		mata `t1' = st_matrix("e(MprobitGroupEqs)"); `t2' = st_matrix("e(ROprobitGroupEqs)")
 		mata `t1' = rows(`t1')? (rows(`t2')? `t1' \ `t2' : `t1') : `t2'
-		mata st_local("inds", invtokens(strofreal(select(`t1', (`_eqspec' :>= `t1'[,1]) :& (`_eqspec' :<= `t1'[,2])))))
-		if "`inds"!="" { // specified equation in an mprobit group?
+		mata `t1' = select(`t1', (`_eqspec' :>= `t1'[,1]) :& (`_eqspec' :<= `t1'[,2]))
+		mata st_local("inds", rows(`t1')? invtokens(strofreal(`t1')) : "")
+		if "`inds'"!="" { // specified equation in an mprobit group?
 			local lo: word 1 of `inds'
 			local hi: word 2 of `inds'
 			local k = `_eqspec' - `lo' + 1 // chosen alternative

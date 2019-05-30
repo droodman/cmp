@@ -1,4 +1,4 @@
-*! cmp 8.3.3 23 May 2019
+*! cmp 8.3.4 30 May 2019
 *! Copyright (C) 2007-19 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -2501,6 +2501,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.3.4 Fixed crash on predict/margins of probabilities (pr) after estimation with mprobit/roprobit + other equations
 * 8.3.3 Streamlined Predict code; made cmp always store e(bs) and e(br) regardless of current resultsform
 * 8.3.2 Fixed bug causing wrong predictions after gamma models
 * 8.3.1 Prevented crash when it can't recompile boottest.mata; instead issues an explanatory warning
