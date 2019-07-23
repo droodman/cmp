@@ -1,5 +1,5 @@
 {smcl}
-{* *! cmp 8.2.9 5 November 2018}{...}
+{* *! cmp 8.3.4 26 June 2019}{...}
 {cmd:help cmp}
 {hline}{...}
 
@@ -192,20 +192,21 @@ parameters are structural. In the latter, it is a limited-information (LIML) est
 {cmd:cmp}'s modeling framework embraces those of the official Stata commands {help probit:probit}, {help ivprobit:ivprobit}, {help treatreg:treatreg}, 
 {help biprobit:biprobit}, {help tetrachoric:tetrachoric}, {help oprobit:oprobit}, {help mprobit:mprobit}, {help asmprobit:}, {help asroprobit:asroprobit}, {help tobit:tobit}, {help ivtobit:ivtobit}, 
 {help cnreg}, {help intreg}, {help truncreg}, {help fracreg}, {help heckman}, {help heckprob}, {help heckoprobit}, 
-{help xtreg:}, {help xtprobit}, {help xttobit}, {help xtinteg}, {help meintreg}, {help meoprobit}, and {help metobit}; to lesser degrees {help regress:regress}, {help sureg}, 
+{help xtreg:}, {help xtprobit}, {help xttobit}, {help xtintreg}, {help xtheckman}, {help meintreg}, {help meoprobit}, {help metobit}, {help metobit}, 
+{help eprobit}; to lesser degrees {help regress:regress}, {help sureg}, 
 and {help reg3}; and user-written {stata findit ssm:ssm}, {stata findit polychoric:polychoric}, {stata findit triprobit:triprobit}, 
 {stata findit mvprobit:mvprobit}, {stata findit bitobit:bitobit}, 
 {stata findit mvtobit:mvtobit}, {stata findit oheckman:oheckman}, {stata findit switch_probit:switch_probit}, {stata findit reoprob:reoprob}, 
-{stata findit cdsimeq:cdsimeq}, and {stata findit bioprobit:bioprobit}. It 
-goes beyond them in many ways. Thanks to the flexibility of {help ml:ml}, on which it is built, it accepts linear coefficient {help constraint:constraints}
+{stata findit cdsimeq:cdsimeq}, and {stata findit bioprobit:bioprobit}. While lacking the specialized post-estimation features many of those packages offer, {cmd:cmp} 
+goes beyond them in the generality of model specification. Thanks to the flexibility of {help ml:ml}, on which it is built, it accepts linear coefficient {help constraint:constraints}
 as well as all weight types, vce types (robust, cluster, linearized, etc.), and {cmd:svy} settings. And it offers 
 more flexibility in model construction. For example, one can regress a continuous variable on two endogenous variables, 
 one binary and the other sometimes left-censored, instrumenting each with additional variables. And {cmd:cmp} usually allows the model to vary by observations.
 Equations can have different samples, overlapping or non-overlapping. Heckman selection modeling can be incorporated into a wide variety of models through auxilliary
 probit equations. In some cases, the gain is consistent estimation where it was difficult before. Sometimes the gain is in efficiency.
 For example if {it:C} is continuous, {it:B} is a sometimes-left-censored determinant of {it:C}, and {it:A} is an instrument, then the effect of {it:B} on {it:C} can be
-consistently estimated with 2SLS (Kelejian 1971). However, a {cmd:cmp} estimate that uses the information that {it:B} is censored will be more efficient, based as it
-is on a more accurate model.
+consistently estimated with 2SLS (Kelejian 1971). However, a {cmd:cmp} estimate that uses the information that {it:B} is censored will be more efficient, if it is based
+on a more accurate model.
 
 {pstd}
 To inform {cmd:cmp} about the natures of the dependent variables and about which equations apply to which observations, the user must include the 
@@ -326,7 +327,7 @@ and the contradiction here would cause an error:
 {pin}(math = age || school: || class: [pw=weightvar1]) (reading = age || class: [pw=weightvar2]){p_end}
 
 {pstd}
-Like {help xtreg:xtreg}, {help xtprobit:xtprobit}, {help xttobit:xttobit}, {help xtinteg:xtintreg}, and {help xtmixed:xtmixed},
+Like {help xtreg:xtreg}, {help xtprobit:xtprobit}, {help xttobit:xttobit}, {help xtintreg:xtintreg}, {help xtheckman:xtheckman}, and {help xtmixed:xtmixed},
 {cmd:cmp} uses adaptive quadrature by default to integrate likelihoods over the unobserved random effects (see {manhelp xtmixed R}). Quadrature estimates these 
 integrals by evaluating the integrands at a few strategically chosen points (12 by default), and summing using particular weights. It is extremely efficient for computing
 one-dimensional integrals, but unreliable. {it:Adaptive} quadrature is more reliable, but slower. It iteratively adjusts the points 
@@ -905,6 +906,10 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 {phang}. {stata predict cmppr3, eq(autonomy) pr}{p_end}
 {phang}. {stata predict cmppr4, eq(security) pr}{p_end}
 
+{phang}. {stata webuse class10}{p_end}
+{phang}. {stata eprobit graduate income i.roommate, endogenous(hsgpa = income i.hscomp) entreat(program = i.campus i.scholar income) vce(robust)}{p_end}
+{phang}. {stata "cmp (graduate = program#(c.income roommate c.hsgpa) program income roommate hsgpa) (program = i.campus i.scholar income) (hsgpa = income i.hscomp), vce(robust) ind($cmp_probit $cmp_probit $cmp_cont) qui nolr":cmp (graduate = program##(c.income roommate c.hsgpa)) (program = i.campus i.scholar income) (hsgpa = income i.hscomp), vce(robust) ind($cmp_probit $cmp_probit $cmp_cont) qui nolr}{p_end}
+
 {pstd}{hilite:* Heckman selection models}
 
 {phang}. {stata webuse womenwk}{p_end}
@@ -961,9 +966,9 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 {pstd}{hilite:* Hierarchical/random effects models}
 
 {phang}. {stata webuse union}{p_end}
-{phang}. {stata "xtprobit union age grade not_smsa south south#c.year"}{p_end}
-{phang}. {stata "gsem (union <- age grade not_smsa south south#c.year M[idcode]@1), probit intp(12)"}{p_end}
-{phang}. {stata "cmp (union = age grade not_smsa south south#c.year || idcode:), ind($cmp_probit) nolr qui"}{p_end}
+{phang}. {stata "xtprobit union age grade not_smsa south south#c.year" :xtprobit union age grade not_smsa south##c.year}{p_end}
+{phang}. {stata "gsem (union <- age grade not_smsa south south#c.year M[idcode]@1), probit intp(12)":gsem (union <- age grade not_smsa south##c.year M[idcode]@1), probit intp(12)}{p_end}
+{phang}. {stata "cmp (union = age grade not_smsa south south#c.year || idcode:), ind($cmp_probit) qui" :cmp (union = age grade not_smsa south##c.year || idcode:), ind($cmp_probit) qui}{p_end}
 
 {phang}. {stata webuse nlswork3}{p_end}
 {phang}. {stata xttobit ln_wage union age grade not_smsa south south#c.year, ul(1.9)}{p_end}
@@ -983,6 +988,15 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 {phang}. {stata webuse productivity}{p_end}
 {phang}. {stata "xtmixed gsp private emp hwy water other unemp || region: || state:"}{p_end}
 {phang}. {stata "cmp (gsp = private emp hwy water other unemp || region: || state:), nolr ind($cmp_cont)"}{p_end}
+
+{phang}. {stata webuse womenhlthre}{p_end}
+{phang}. {stata gen byte goodhlth = health > 3}{p_end}
+{phang}. {stata xteprobit goodhlth exercise grade, entreat(insured = grade i.workschool)}{p_end}
+{phang}. {stata "cmp (goodhlth = insured#c.(exercise grade) exercise grade insured || personid:) (insured = grade i.workschool || personid:), ind($cmp_probit $cmp_probit) intp(7) nolr":cmp (goodhlth = insured##c.(exercise grade) || personid:) (insured = grade i.workschool || personid:), ind($cmp_probit $cmp_probit) intp(7) nolr}{p_end}
+
+{phang}. {stata webuse wagework}{p_end}
+{phang}. {stata xtheckman wage age tenure, select(working = age market)}{p_end}
+{phang}. {stata "cmp (wage = age tenure || personid:) (working = age market || personid:), ind(working*$cmp_cont $cmp_probit) intp(7) nolr"}{p_end}
 
 {pstd}These examples go beyond standard commands (though {help gsem} can do some):
 
