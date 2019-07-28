@@ -1,4 +1,4 @@
-*! cmp 8.3.4 30 May 2019
+*! cmp 8.3.5 28 July 2019
 *! Copyright (C) 2007-19 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -1323,9 +1323,9 @@ program define cmp_full_model, eclass
 			ereturn mat fixed_rhos`l' = cmp_fixed_rhos`l'
 			ereturn mat fixed_sigs`l' = cmp_fixed_sigs`l'
 			cap ereturn mat sig_score_inds`l' = cmpSigScoreInds`l'
-			ereturn local covariance `e(covariance)' ${cmp_cov`l'}
+			ereturn local covariance ${cmp_cov`l'} `e(covariance)'
 			forvalues eq=$cmp_d(-1)1 {
-				ereturn local covariance`eq' `e(covariance`eq')' ${cmp_cov`l'_`eq'}
+				ereturn local covariance`eq' ${cmp_cov`l'_`eq'} `e(covariance`eq')'
 				ereturn local EffNames`l'_`eq' ${cmp_rc`l'_`eq'} ${cmp_re`l'_`eq'}
 			}
 		}
@@ -2501,11 +2501,12 @@ program define cmp_error
 end
 
 * Version history
+* 8.3.5 Fixed 8.3.0 bug, 4/1/2019: e(covariance...) terms in backwards order, sometimes causing crash on results display
 * 8.3.4 Fixed crash on predict/margins of probabilities (pr) after estimation with mprobit/roprobit + other equations
 * 8.3.3 Streamlined Predict code; made cmp always store e(bs) and e(br) regardless of current resultsform
 * 8.3.2 Fixed bug causing wrong predictions after gamma models
 * 8.3.1 Prevented crash when it can't recompile boottest.mata; instead issues an explanatory warning
-* 8.3.0 Fixed bug introduced in 8.2.3, July 17, 2018: without "nolr" option, mprobit, asprobit, and gamma models estimated wrongly/didn't converge
+* 8.3.0 Fixed bug introduced in 8.2.3, 7/17/2018: without "nolr" option, mprobit, asprobit, and gamma models estimated wrongly/didn't converge
 * 8.2.9 Fixed crashes in multi-equation, multilevel models when diferent equations have effects at different levels.
 * 8.2.8 Fixed bugs in predict after mprobit
 * 8.2.7 Fixed new "option vce() not allowed" bug in hierarchical models
