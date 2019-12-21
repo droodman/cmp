@@ -1,4 +1,4 @@
-/* cmp 8.3.0 1 April 2019
+/* cmp 8.3.6 21 December 2019
    Copyright (C) 2007-19 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -173,6 +173,7 @@ class cmp_model {
 				set_REAnti(), set_REType(), set_REScramble(), set_Eqs(), set_GammaI(), set_NumEff(), set_NumMprobitGroups(), set_NumRoprobitGroups(),
 				set_MprobitGroupInds(), set_RoprobitGroupInds(), set_NonbaseCases(), set_vNumCuts(), set_trunceqs(), set_intregeqs(), set_NumREDraws(), set_GammaInd(),
 				set_AdaptNow(), set_WillAdapt()
+	real scalar get_ghkDraws()
 }
 
 void cmp_model::new() {
@@ -192,6 +193,7 @@ void cmp_model::set_QuadIter(real scalar t) QuadIter = t
 void cmp_model::set_ghkType(string scalar t) ghkType = t
 void cmp_model::set_ghkAnti(real scalar t) ghkAnti = t
 void cmp_model::set_ghkDraws(real scalar t) ghkDraws = t
+real scalar cmp_model::get_ghkDraws() return(ghkDraws)
 void cmp_model::set_ghkScramble(string scalar t) ghkScramble = select(0..3, ("", "sqrt", "negsqrt", "fl"):==t)
 void cmp_model::set_REType    (string scalar t) REType = t
 void cmp_model::set_REAnti    (real scalar t) REAnti = t

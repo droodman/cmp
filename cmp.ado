@@ -1,4 +1,4 @@
-*! cmp 8.3.5 28 July 2019
+*! cmp 8.3.6 21 December 2019
 *! Copyright (C) 2007-19 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -171,7 +171,7 @@ program define _cmp
 				local 0 `intmethod'
 				syntax [anything(name=intmethod)], [TOLerance(real 1e-8) ITERate(integer 1001)]
 				if `tolerance'<=0 cmp_error 198 "Adaptive quadrature tolerance must be positive."
-				if `iterate'<=0 cmp_error 198 "Maximum adaptive quadrature iterations must be positive."
+				if   `iterate'<=0 cmp_error 198 "Maximum adaptive quadrature iterations must be positive."
 				mata _mod.set_QuadTol(`tolerance'); _mod.set_QuadIter(`iterate')
 			}
 			else mata _mod.set_QuadTol(1e-3); _mod.set_QuadIter(1001)
@@ -184,7 +184,7 @@ program define _cmp
 				else cmp_error 198 `"The {cmdab:intm:ethod()} option, if included, should be "ghermite" or "mvaghermite"."'
 			
 			if `"`vce'`svy'`robust'`cluster'"'=="" local vce oim
-			if "`technique'"=="" & !("`svy'"!="" & date(c(born_date),"DMY")<d(30jan2018)) { // moptimize() would crash with BHHH & svy & gfX evaluators
+			if "`technique'"=="" & !("`svy'"!="" & date(c(born_date),"DMY")<d(30jan2018)) {  // moptimize() would crash with BHHH & svy & gfX evaluators
 				local technique bhhh
 				di as res _n "For quadrature, defaulting to technique(bhhh) for speed."
 			}
@@ -1452,6 +1452,7 @@ program define cmp_full_model, eclass
 		}
 	
 		ereturn scalar num_scores = $cmp_num_scores
+		mata st_local("ghkdraws", strofreal(_mod.get_ghkDraws()))
 		foreach macro in diparmopt ghkanti ghkdraws ghktype retype reanti intpoints {
 			ereturn local `macro' ``macro''
 		}
@@ -2501,6 +2502,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.3.6 Return e(ghkdraws) even when option not set by user; fixes crash in predict or margins for models with mprobits with >3 categories
 * 8.3.5 Fixed 8.3.0 bug, 4/1/2019: e(covariance...) terms in backwards order, sometimes causing crash on results display
 * 8.3.4 Fixed crash on predict/margins of probabilities (pr) after estimation with mprobit/roprobit + other equations
 * 8.3.3 Streamlined Predict code; made cmp always store e(bs) and e(br) regardless of current resultsform
