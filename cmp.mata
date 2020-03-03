@@ -1,5 +1,5 @@
-/* cmp 8.3.6 21 December 2019
-   Copyright (C) 2007-19 David Roodman
+/* cmp 8.3.6 2 March 2020
+   Copyright (C) 2007-20 David Roodman
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -407,7 +407,7 @@ real colvector binormal2(real colvector E1, real matrix E2, real matrix F2, real
 	return (abs(binormalGenz(E1, sign:*E2, rho, sign) - binormalGenz(E1, sign:*F2, rho, sign)))
 }
 
-// Based on Genz 2004 Fortran code, http://www.math.wsu.edu/faculty/genz/software/fort77/tvpack.f
+// Based on Genz 2004 Fortran code, https://web.archive.org/web/20180922125509/http://www.math.wsu.edu/faculty/genz/software/fort77/tvpack.f
 // Alan Genz, "Numerical computation of rectangular bivariate and trivariate normal and t probabilities," Statistics and Computing, August 2004, Volume 14, Issue 3, pp 251-60.
 //
 //    A function for computing bivariate normal probabilities.
@@ -511,7 +511,7 @@ dim  : dimension of the integration problem
 k    : Accuracy level. The rule will be exact for polynomial up to total order 2k-1
 Returns 1x2 vector of pointers to matrices: nodes and weights
 correspond to Heiss and Winschel GQN & KPN types
-Adapted with permission from Florian Heiss & Viktor Winschel, http://sparse-grids.de/stata/build_nwspgr.do.
+Adapted with permission from Florian Heiss & Viktor Winschel, https://web.archive.org/web/20181007012445/http://sparse-grids.de/stata/build_nwspgr.do.
 Sources: Florian Heiss and Viktor Winschel, "Likelihood approximation by numerical integration on sparse grids", Journal of Econometrics 144(1): 62-80.
          A. Genz and B. D. Keister (1996): "Fully symmetric interpolatory rules for multiple integrals over infinite regions with Gaussian weight." Journal of Computational and Applied Mathematics 71, 299-309.*/
 pointer (real matrix) rowvector SpGr(real scalar dim, real scalar k) {
@@ -740,8 +740,7 @@ pointer colvector GQNn1d18() {
 	return (n1d)
 }
 
-// apply a binormal function to columns of values. Accepts general covariance matrix, not just rho parameter
-// optionally computes scores
+// vectorize binormal(). Accepts general covariance matrix, not just rho parameter. Optionally computes scores.
 real colvector vecbinormal(real matrix X, real matrix Sig, real colvector one2N, real scalar todo, real matrix dPhi_dX, real matrix dPhi_dSig) {
 	real colvector Phi, Xhat, X_2
 	real matrix dPhi_dSigDiag, phi, X_
@@ -1189,7 +1188,6 @@ void cmp_model::_st_view(real matrix V, real scalar missing, string rowvector va
 	if (vars != ".")
 		st_view(V, ., vars, st_global("ML_samp"))
 }
-
 
 
 
@@ -1699,6 +1697,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 	}
 }
 
+
 void cmp_gf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
 	real matrix _S, __S, _H, Hrow, IDRanges, subscripts; real colvector _lnf; real rowvector _b; real scalar i, n, K, d; pointer(class cmp_model scalar) scalar mod; pointer (struct RE scalar) scalar REs
 	pragma unset _S; pragma unset _H; pragma unset __S; pragma unset _lnf; pragma unset _b
@@ -1732,41 +1731,6 @@ void cmp_gf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 		}
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 void cmp_model::cmp_init(transmorphic M) {
@@ -2393,22 +2357,6 @@ void cmpSaveSomeResults(pointer(class cmp_model scalar) scalar mod) {
 		st_matrixrowstripe("e(Vr)", colstripe)
 	}
 }
-
-/*void cmpParseCorrOption (string scalar option) {
-	transmorphic t
-	string scalar thisToken
-	string rowvector eqs
-	real matrix FixedRhos
-	
-	t = tokeninitstata()
-	tokenset(t, option)
-	eqs = tokens(st_global("cmp_eq"))
-	FixedRhos = J(cols(eqs), cols(eqs), .)
-	
-	while ((thisToken = tokenget(t)) != "") {
-		
-	}
-}*/
 
 mata mlib create lcmp, dir("`c(sysdir_plus)'l") replace
 mata mlib add lcmp *(), dir("`c(sysdir_plus)'l")

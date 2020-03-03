@@ -1,5 +1,5 @@
-*! cmp 8.3.6 21 December 2019
-*! Copyright (C) 2007-19 David Roodman 
+*! cmp 8.3.8 3 March 2020
+*! Copyright (C) 2007-20 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -361,7 +361,8 @@ program define _cmp
 				else global parse_xc`parse_eqno' nocons			
 			}
 
-			gen byte _cmp_ind`cmp_eqno' = `1'
+			cap gen byte _cmp_ind`cmp_eqno' = `1'
+			if _rc cmp_error 198 `"Error building indicator variable for equation `cmp_eqno' from expression `1'. Did you forget to type {stata "cmp setup"}?"'
 			if "${parse_y`parse_eqno'}"=="." {
 				cap assert inlist(_cmp_ind`cmp_eqno', ., 0) if `touse', `fast'
 				if _rc cmp_error 198 `"Indicator for ${parse_eq`parse_eqno'} equation must only evaluate to missing (".") or 0 since the dependent variable is unobserved."'
@@ -1485,8 +1486,10 @@ program Estimate, eclass
 	syntax if/ [fw aw pw iw], [auxparams(string) psampling(string) svy subpop(passthru) autoconstrain paramsdisplay(string) ///
 		modopts(string) mlopts(string) iterate(passthru) init(string) cmpinit(string) constraints(string) _constraints(string) technique(string) vce(string) 1only quietly resteps(string) redraws(string) interactive lf *]
 
-	if "`weight'" != "" local awgtexp [aw`exp']
-	local weightexp `weight'`exp'
+	if "`svy'" == "" {
+  	if "`weight'" != "" local awgtexp [aw`exp']
+    local weightexp `weight'`exp'
+  }
 
 	tempname _init
 	if "`init'" == "" local _init `cmpinit'
@@ -1623,12 +1626,13 @@ program Estimate, eclass
 			local mlmodelcmd `model' `=cond(`final' & "`1only'"=="","[`weightexp'] `_if', `options'", "`awgtexp' `_if',")' ///
 				`svy' `subpop' constraints(`constraints') nocnsnotes nopreserve missing collinear `modopts'
 			local mlmaxcmd `quietly' ml max, search(off) nooutput
-			`quietly' ml model `method' `mlmodelcmd' vce(`this_vce') `initopt' technique(`this_technique')
+
+			`quietly' ml model `method' `mlmodelcmd' vce(`this_vce') `initopt' technique(`this_technique') `=cond("`svy'"!="", "group(_cmp_id1)", "")'
 
 			mata moptimize_init_userinfo($ML_M, 1, &_mod)
 			mata _mod.cmp_init($ML_M)
 
-			capture noisily `mlmaxcmd' noclear `this_mlopts' `iterate' // Estimate!
+			capture noisily `mlmaxcmd' noclear `this_mlopts' `iterate'  // Estimate!
 
 			if _rc==1400 {
 				di as res "Restarting search with parameters all 0."
@@ -2502,6 +2506,8 @@ program define cmp_error
 end
 
 * Version history
+* 8.3.8 Prevented crash when using svy on data svyset with pweights or when combining svy with multi-level
+* 8.3.7 Better error message on syntax error in indicator variable definition caused most likely by not doing "cmp setup"
 * 8.3.6 Return e(ghkdraws) even when option not set by user; fixes crash in predict or margins for models with mprobits with >3 categories
 * 8.3.5 Fixed 8.3.0 bug, 4/1/2019: e(covariance...) terms in backwards order, sometimes causing crash on results display
 * 8.3.4 Fixed crash on predict/margins of probabilities (pr) after estimation with mprobit/roprobit + other equations
