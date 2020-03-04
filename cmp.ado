@@ -1,4 +1,4 @@
-*! cmp 8.3.8 3 March 2020
+*! cmp 8.3.9 4 March 2020
 *! Copyright (C) 2007-20 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -169,10 +169,12 @@ program define _cmp
 		if `"`redraws'"'=="" {
 			if "`intmethod'"'!="" {
 				local 0 `intmethod'
-				syntax [anything(name=intmethod)], [TOLerance(real 1e-8) ITERate(integer 1001)]
+				local _iterate `iterate'
+        syntax [anything(name=intmethod)], [TOLerance(real 1e-8) ITERate(integer 1001)]
 				if `tolerance'<=0 cmp_error 198 "Adaptive quadrature tolerance must be positive."
 				if   `iterate'<=0 cmp_error 198 "Maximum adaptive quadrature iterations must be positive."
 				mata _mod.set_QuadTol(`tolerance'); _mod.set_QuadIter(`iterate')
+        local iterate `_iterate'
 			}
 			else mata _mod.set_QuadTol(1e-3); _mod.set_QuadIter(1001)
 			if "`intmethod'"'=="" local intmethod mvaghermite
@@ -2506,6 +2508,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.3.9 Fixed crash on use of intmethod()
 * 8.3.8 Prevented crash when using svy on data svyset with pweights or when combining svy with multi-level
 * 8.3.7 Better error message on syntax error in indicator variable definition caused most likely by not doing "cmp setup"
 * 8.3.6 Return e(ghkdraws) even when option not set by user; fixes crash in predict or margins for models with mprobits with >3 categories
