@@ -1,4 +1,4 @@
-*! cmp 8.3.9 4 March 2020
+*! cmp 8.4.0 23 May 2020
 *! Copyright (C) 2007-20 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -355,12 +355,8 @@ program define _cmp
 				if `"`1'"' == ")" continue
 				local asprobit_eq 1
 				local first_asprobit_eq `cmp_eqno'
-				if "${parse_x`parse_eqno'}" == "" { // assure nocons for first eq in asprobit group or leave cons in but constrained to 0
-					constraint free
-					local _constraints `_constraints' `r(free)'
-					constraint `r(free)' [${parse_eq`parse_eqno'}]_cons
-				}
-				else global parse_xc`parse_eqno' nocons			
+
+				if "${parse_x`parse_eqno'}" != "" global parse_xc`parse_eqno' nocons  // put nocons for first eq in asprobit group or (below, after eq gets its name) leave cons in but constrained to 0
 			}
 
 			cap gen byte _cmp_ind`cmp_eqno' = `1'
@@ -439,6 +435,12 @@ program define _cmp
 			global cmp_eq`cmp_eqno' = cond("${parse_eq`parse_eqno'}"=="eq`parse_eqno'", subinstr("`: word 1 of ${parse_y`parse_eqno'}'", ".", "", .), "${parse_eq`parse_eqno'}")
 			if "`:list eqnames & global(cmp_eq`cmp_eqno')'" != "" global cmp_eq`cmp_eqno' `=substr("${cmp_eq`cmp_eqno'}",1,29)'`cmp_eqno'
 			local eqnames `eqnames' ${cmp_eq`cmp_eqno'}
+
+      if 0`first_asprobit_eq' == `cmp_eqno' & "${parse_x`parse_eqno'}" == "" { // if this is an mprobit base case with no regressors, leave cons in but constrain to 0
+        constraint free
+        local _constraints `_constraints' `r(free)'
+        constraint `r(free)' [${cmp_eq`parse_eqno'}]_cons
+      }	
 
 			replace `_touse' = `_touse' | _cmp_ind`cmp_eqno'
 
@@ -940,6 +942,7 @@ program define _cmp
 		`quietly' di as res "Note: For programming reasons, these initial estimates may deviate from your specification."
 		`quietly' di as res "      For exact fits of each equation alone, run cmp separately on each."
 	}
+
 	`quietly' DoInitSearch InitSearch if `touse' `=cond("`subpop'"!="","& `subpop'","")' `wgtexp', `svy' adjustprobitsample `drop' auxparams(`auxparams') `=cond("`init'" == "", "", "quietly")' mlopts(`mlopts')
 	mat `cmpInitFull' = r(b)
 	local ParamsDisplay `r(ParamsDisplay)'
@@ -1830,7 +1833,18 @@ program InitSearch, rclass
 				cap confirm variable _mp_cmp_y`eq' // check for cmp-made dummies for non-as mprobit
 				`quietly' `svy' probit `=cond(_rc, "${cmp_y`eq'}", "_mp_cmp_y`eq'")' `xvars' `iwgtexp' ///
 					if `if' & (inlist(_cmp_ind`eq',$cmp_probit,$cmp_probity1,$cmp_mprobit) | (_cmp_ind`eq' > $cmp_mprobit_ind_base & _cmp_ind`eq' < $cmp_roprobit_ind_base)), ${cmp_xc`eq'} offset(${cmp_xo`eq'}) `mlopts'
-				if "`adjustprobitsample'" != "" qui replace _cmp_ind`eq' = 0 if e(sample)==0
+
+        if "`adjustprobitsample'" != "" {
+          forvalues r=1/$cmp_num_mprobit_groups {  // for mprobit obs that got zapped for perfect prediction, remove from all eqs in group
+            if cmp_mprobit_group_inds[`r',1] <= `eq' & `eq' <= cmp_mprobit_group_inds[`r',2] {
+              qui forvalues c=`=cmp_mprobit_group_inds[`r',1]'/`=cmp_mprobit_group_inds[`r',2]' {
+                if `c' != `eq' replace _cmp_ind`c' = 0 if `if' & e(sample)==0 & _cmp_ind`eq'
+              }
+            }
+          }
+          qui replace _cmp_ind`eq' = 0 if e(sample)==0
+        }
+        
 				mat `beta' = e(b)
 				mat `V' = e(V)
 				scalar `sig' = 0
@@ -2024,19 +2038,21 @@ program InitSearch, rclass
 		mat `betavec' = `betavec', `gammavec'
 	}
 
-	if "`adjustprobitsample'" != "" & $cmp_num_mprobit_groups { // for mprobit obs which in some eq got zapped for perfect prediction, remove from all eqs in group
-		tempname t
-		qui forvalues r=1/$cmp_num_mprobit_groups {
-			gen byte `t' = 0 if `if'
-			forvalues c=`=cmp_mprobit_group_inds[`r',1]'/`=cmp_mprobit_group_inds[`r',2]' {
-				replace `t' = 1 if `if' & _cmp_ind`c'==0
-			}
-			forvalues c=`=cmp_mprobit_group_inds[`r',1]'/`=cmp_mprobit_group_inds[`r',2]' {
-				replace _cmp_ind`c' = 0 if `if' & `t'
-			}
-			drop `t'
-		}
-	}
+  if "`adjustprobitsample'" != "" {  // for mprobit obs which in some eq got zapped for perfect prediction, see if only base case remains or chosen case dropped and drop obs if so
+    tempvar t
+    qui forvalues r=1/$cmp_num_mprobit_groups {
+    	gen byte `t' = 1 if `if'
+      forvalues c=`=cmp_mprobit_group_inds[`r',1]+1'/`=cmp_mprobit_group_inds[`r',2]' {
+      	replace `t' = 0 if `if' & _cmp_ind`c'
+      }
+      forvalues c=`=cmp_mprobit_group_inds[`r',1]+1'/`=cmp_mprobit_group_inds[`r',2]' {  // but zap if obs for chosen case dropped
+      	replace `t' = 1 if `if' & _cmp_ind`c'==0 & _cmp_ind`=cmp_mprobit_group_inds[`r',1]'==$cmp_mprobit_ind_base + `c' - cmp_mprobit_group_inds[`r',1] + 1
+      }
+      forvalues c=`=cmp_mprobit_group_inds[`r',1]'/`=cmp_mprobit_group_inds[`r',2]' {
+        replace _cmp_ind`c' = 0 if `if' & `t'
+      }
+    }
+  }
 
 	if "${cmp_cov$parse_L}" == "exchangeable" cap mata st_matrix("`sigvec'", mean(st_matrix("`sigvec'")'))   // can fail if sigvec is empty because all sigs fixed
 
@@ -2508,6 +2524,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.4.0 Fixed bugs in handling mprobits in which observable (not-chosen!) cases vary by observation
 * 8.3.9 Fixed crash on use of intmethod()
 * 8.3.8 Prevented crash when using svy on data svyset with pweights or when combining svy with multi-level
 * 8.3.7 Better error message on syntax error in indicator variable definition caused most likely by not doing "cmp setup"
@@ -2538,7 +2555,7 @@ end
 * 8.1.0 Fixed 8.0.9 crash in fully uncensored models
 * 8.0.9 Fixed bug in models mixing fractional probits with non-censored models, or varying which fractional probit eqs are included
 * 8.0.8 Added reference to $ML_samp in one call of st_data(), preventing crash in hierarchical models not fit to all data
-* 8.0.7 Fixed 6.9.1 causing crash on subpop()
+* 8.0.7 Fixed 6.9.1 bug causing crash on subpop()
 * 8.0.6 Fixed crash when all included eqs have unobserved outcomes
 * 8.0.5 Fixed crash in multi-equation models with only some eqs truncated
 * 8.0.4 Fixed another bug causing crash in quadrature models with nolrtest. Restored broken LR test.

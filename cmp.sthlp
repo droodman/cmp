@@ -1,5 +1,5 @@
 {smcl}
-{* *! cmp 8.3.4 26 June 2019}{...}
+{* *! cmp 8.4.0 23 May 2020}{...}
 {cmd:help cmp}
 {hline}{...}
 
@@ -376,8 +376,8 @@ suboptions. See {help cmp##options:options}
 below for more.
 
 {pstd}
-{cmd:cmp} starts by fitting each equation separately in order to obtain a good starting point for the full model fit.
-Sometimes in this preparatory step, convergence difficulties make a reported parameter covariance matrix singular, yielding missing 
+{cmd:cmp} starts by fitting each equation separately in order to obtain a good starting point for the full model fit. Sometimes in this preparatory step, 
+convergence difficulties make a reported parameter covariance matrix singular, yielding missing 
 standard errors for some regressors. Or variables are found to be collinear. In order to maximize the chance of convergence, {cmd:cmp} ordinarily 
 drops such regressors from the equations in which they cause trouble, reruns the single-equation fit, and then leaves them out for the full model too. The 
 {opt nodr:op} option prevents this behavior.
@@ -424,7 +424,7 @@ probit syntax. In this "alternative-specific" syntax, you list one equation in t
 regressors. Unlike {help asmprobit:asmprobit}, {cmd:cmp} does not force regressors that appear in more than one equation 
 to have the same coefficient across alternatives, although again this restriction can be imposed through {help constraint:constraints}. When using
 the alternative-specific syntax, the dependent variables listed should be a set of {it:dummies}, as can be generated with {help xi:xi, noomit} from the 
-underlying choice variable. The first equation is always treated as the base alternative, so here you can control which alternative is the base alternative,
+underlying choice variable. The first equation is always treated as the base alternative, so here you can control which alternative is the base alternative
 by reordering the equations. In 
 general, regressors that appear in all other equations should be excluded from the base alternative. Otherwise, unless a constraint is imposed to reduce the degrees
 of freedom, the model will not be identified. ({cmd:cmp} automatically excludes the constant from the base alternative equation.) Variables that are specific 
@@ -433,7 +433,7 @@ assumed, nor available through an option. It can still be imposed through constr
 
 {pstd}
 To specify an alternative-specific multinomial probit group, include expressions in the {cmdab:ind:icators()} that evaluate to 0 or 6 
-({cmd:$cmp_out} or {cmd:$cmp_mprobit}) for each equation (0 indicating that the choice is not available for given observations). You must enclose the 
+({cmd:$cmp_out} or {cmd:$cmp_mprobit}) for each equation (0 indicating that the choice is not available for given observations). Enclose the 
 whole list in 
 an additional set of parentheses. Note that unlike with {help asmprobit:asmprobit}, there should be still be one row in the data set per case, not per case and
 alternative. So instead of variables that vary by alternative, there must be a version of that variable for each
@@ -459,7 +459,7 @@ IIA under this option, one would then constrain various "atanhrho" and "lnsig" p
 with and without the structural parameterization.
 
 {pstd}
-The intuitiveness of the structural parameterization comes at a real cost, however (Bunch (1991); 
+The intuitiveness of the structural parameterization comes at a cost, however (Bunch (1991); 
 {browse "http://books.google.com/books?id=kbrIEvo_zawC&printsec=frontcover":Long and Freese (2006)}, pp. 325-29). Though the particular set of 
 constraints imposed seems innocent, it actually results in a mapping from the space of allowed structural covariances to the space of possible 
 covariance matrices for the relative-differenced errors that is not {it:onto}. That is, there are positive definite (J-1)x(J-1) matrices,

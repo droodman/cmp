@@ -1,4 +1,4 @@
-/* cmp 8.3.6 2 March 2020
+/* cmp 8.4.0 23 May 2020
    Copyright (C) 2007-20 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -878,7 +878,7 @@ real colvector vecmultinormal(real matrix E, real matrix F, real matrix Sig, rea
 		sqrtSig = sqrt(Sig[1,1])
 		if (cols(bounded)) {
 			Phi = normal2(F[,1]/sqrtSig, E[,1]/sqrtSig)
-			if (todo) { // Compute partial deriv w.r.t. sig^2 in 1/sqrt(sig^2) term in normal dist
+			if (todo) {  // Compute partial deriv w.r.t. sig^2 in 1/sqrt(sig^2) term in normal dist
 				if (N_perm == 1) {
 					dPhi_dE =  editmissing(normalden(E, 0, sqrtSig), 0) :/ Phi
 					dPhi_dF = -editmissing(normalden(F, 0, sqrtSig), 0) :/ Phi
@@ -908,7 +908,7 @@ real colvector vecmultinormal(real matrix E, real matrix F, real matrix Sig, rea
 						dPhi_dE = dPhi_dE1, dPhi_dE2
 						dPhi_dF = dPhi_dF1, J(rows(E), 1, 0)
 					}
-				} else { // rectangular region integration 
+				} else {  // rectangular region integration 
 					Phi = Phi - vecbinormal2(F[one2N,2], *pE1, *pF1, Sig, 0, 1, one2N, todo, _dPhi_dF2, _dPhi_dE1, _dPhi_dF1, _dPhi_dSig)
 					if (todo) {
 						dPhi_dE   = dPhi_dE1 -_dPhi_dE1, dPhi_dE2
@@ -989,12 +989,12 @@ real colvector lnLCensored(pointer(struct subview scalar) scalar v, pointer (cla
 	uncens=v->uncens; oprobit=v->oprobit; cens=v->cens; d_cens=v->d_cens; d_two_cens=v->d_two_cens; N_perm=v->N_perm; ThisNumCuts=v->NumCuts
 	pdPhi_dpF = mod->NumRoprobitGroups? &dPhi_dpF : &(v->dPhi_dpF)
 
-	if (v->d_uncens) { // Partial continuous variables out of the censored ones
+	if (v->d_uncens) {  // Partial continuous variables out of the censored ones
 		beta = (invSig_uncens = cholinv(v->Omega[uncens,uncens])) * (Sig_uncens_cens = v->Omega[uncens, cens])
 
 		t = v->EUncens * beta
-		roprobit_pE = fracprobit_pE = pE = &(v->ECens - t) // partial out errors from upper bounds
-		pF = d_two_cens? &(v->F - t) : &J(0,0,0) // partial out errors from lower bounds
+		roprobit_pE = fracprobit_pE = pE = &(v->ECens - t)  // partial out errors from upper bounds
+		pF = d_two_cens? &(v->F - t) : &J(0,0,0)  // partial out errors from lower bounds
 		roprobit_pSig = fracprobit_pSig = pSig = v->Omega[cens, cens] - quadcross(Sig_uncens_cens, beta) // corresponding covariance
 	} else {
 		roprobit_pE = fracprobit_pE = pE = &(v->ECens    )
@@ -1017,7 +1017,6 @@ real colvector lnLCensored(pointer(struct subview scalar) scalar v, pointer (cla
 
 			Phi = vecmultinormal(*roprobit_pE, *pF, roprobit_pSig, v->dCensNonrobase, v->two_cens, v->one2N, todo, dPhi_dpE, v->dPhi_dpF, dPhi_dpSig, 
 			                                            mod->ghk2DrawSet, mod->ghkAnti, v->GHKStart, N_perm)
-
 			if (todo & mod->NumRoprobitGroups) {
 				dPhi_dpE   = dPhi_dpE   * *roprobit_pQE'
 				dPhi_dpSig = dPhi_dpSig * *v->roprobit_Q_Sig[ThisPerm]
@@ -1051,7 +1050,7 @@ real colvector lnLCensored(pointer(struct subview scalar) scalar v, pointer (cla
 				dPhi_dpE   = S_dPhi_dpE   :/ S_Phi
 				dPhi_dpSig = S_dPhi_dpSig :/ S_Phi
 				if (d_two_cens)
-					dPhi_dpF   = S_dPhi_dpF   :/ S_Phi
+					dPhi_dpF   = S_dPhi_dpF :/ S_Phi
 			}
 		}
 		
@@ -1113,7 +1112,7 @@ real colvector lnLCensored(pointer(struct subview scalar) scalar v, pointer (cla
 				
 			if (ThisNumCuts) {
 				lcat = (lcut = ThisNumCuts) + (i = v->d_oprobit) + 1
-				for (; i; i--) { // for each oprobit eq
+				for (; i; i--) {  // for each oprobit eq
 					pYi_lcat = &(v->Yi[v->one2N, --lcat])
 					for (j = (v->vNumCuts)[i]; j; j--) {
 						pYi_lcatm1 = &(v->Yi[v->one2N, --lcat])
@@ -1156,7 +1155,7 @@ void cmp_model::BuildXU(real scalar l) {
 	real scalar c, r, j, k, e, eq1, eq2; pointer (struct RE scalar) scalar RE; pointer(struct subview scalar) scalar v
 	RE = &((*REs)[l])
 	if (RE->HasRC)
-		for (r=RE->R; r; r--) { // pre-compute X-U products in order most convenient for computing scores w.r.t upper-level T's
+		for (r=RE->R; r; r--) {  // pre-compute X-U products in order most convenient for computing scores w.r.t upper-level T's
 			k = e = 0
 			for (eq1=1; eq1<=RE->NEq; eq1++)
 				for (c=1; c<=cols(RE->X[eq1].M)+anyof(RE->REEqs, eq1); c++) {
@@ -1172,7 +1171,7 @@ void cmp_model::BuildXU(real scalar l) {
 				}
 		}
 	else
-		for (r=RE->R; r; r--) // simpler form works when just REs
+		for (r=RE->R; r; r--)  // simpler form works when just REs
 			for (j=RE->d; j; j--)
 				RE->XU[r,j].M = RE->U[r].M[base->one2N,j]
 
@@ -1188,6 +1187,7 @@ void cmp_model::_st_view(real matrix V, real scalar missing, string rowvector va
 	if (vars != ".")
 		st_view(V, ., vars, st_global("ML_samp"))
 }
+
 
 
 
@@ -1238,16 +1238,16 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 	for (l=1; l<=L; l++) {
 		RE = &((*REs)[l])
 		RE->sig = RE->rho = J(1, 0, 0)
-		if (!RE->covAcross) // exchangeable across?
+		if (!RE->covAcross)  // exchangeable across?
 			lnsigWithin = lnsigAccross = moptimize_util_xb(M, b, i++)
 
 		for (eq1=1; eq1<=RE->NEq; eq1++) {
-			if (!RE->covWithin[RE->Eqs[eq1]] & RE->covAcross) // exchangeable within but not across?
+			if (!RE->covWithin[RE->Eqs[eq1]] & RE->covAcross)  // exchangeable within but not across?
 				lnsigWithin = lnsigAccross
 
 			for (c1=1; c1<=RE->NEff[eq1]; c1++)
 				if (RE->FixedSigs[RE->Eqs[eq1]] == .) {
-					if (RE->covWithin[RE->Eqs[eq1]] & RE->covAcross) // exchangeable neither within nor accross?
+					if (RE->covWithin[RE->Eqs[eq1]] & RE->covAcross)  // exchangeable neither within nor accross?
 						lnsigWithin = moptimize_util_xb(M, b, i++)
 				  if (mod->SigXform==0 & lnsigWithin==0)
 						return
@@ -1256,12 +1256,12 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 					RE->sig = RE->sig, RE->FixedSigs[RE->Eqs[eq1]]
 		}
 
-		if (!RE->covAcross & RE->d > 1) // exchangeable across?
+		if (!RE->covAcross & RE->d > 1)  // exchangeable across?
 			atanhrhoAccross = moptimize_util_xb(M, b, i++)
 		for (eq1=1; eq1<=RE->NEq; eq1++) {
-			if (RE->covWithin[RE->Eqs[eq1]] == 2) // independent?
+			if (RE->covWithin[RE->Eqs[eq1]] == 2)  // independent?
 				atanhrhoWithin = 0
-			else if (!RE->covWithin[RE->Eqs[eq1]] & RE->NEff[eq1] > 1) // exchangeable within?
+			else if (!RE->covWithin[RE->Eqs[eq1]] & RE->NEff[eq1] > 1)  // exchangeable within?
 				atanhrhoWithin = moptimize_util_xb(M, b, i++)
 			for (c1=1; c1<=RE->NEff[eq1]; c1++) {
 				for (c2=c1+1; c2<=RE->NEff[eq1]; c2++) {
@@ -1340,7 +1340,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 				_eq = RE->GammaEqs[eq1]
 				(*REs)[l+1].theta[_eq].M = rows(RE->TotalEffect[1,_eq].M)? RE->theta[_eq].M :+ RE->TotalEffect[1,_eq].M : RE->theta[_eq].M
 			}
-			for (eq1=d; eq1; eq1--) // by default lower errors = upper ones, for eqs with no random effects/coefs at this level
+			for (eq1=d; eq1; eq1--)  // by default lower errors = upper ones, for eqs with no random effects/coefs at this level
 				if (!anyof(RE->GammaEqs,eq1))
 					(*REs)[l+1].theta[eq1].M = RE->theta[eq1].M
 			if (todo)
@@ -1384,15 +1384,15 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 	base->plnL = &(lnf = base->J_N_1_0)
 	if (todo) S = mod->S0
 
-	do {   // for each draw combination
+	do {  // for each draw combination
 		for (v = mod->subviews; v!=NULL; v = v->next) {
 			tEq = EUncensEq = ECensEq = FCensEq = 0
 			for (i=1; i<=d; i++)
-				if (v->TheseInds[i]==6) { // handle mprobit eqs below
+				if (v->TheseInds[i]==6) {  // handle mprobit eqs below
 					++ECensEq
 					++FCensEq
 				} else {
-					if (v->TheseInds[i]<mod->mprobit_ind_base | v->TheseInds[i]>=mod->roprobit_ind_base) { // skip mprobit base eqs but include unobserved case (TheseInds=.)
+					if (v->TheseInds[i]<mod->mprobit_ind_base | v->TheseInds[i]>=mod->roprobit_ind_base) {  // skip mprobit base eqs but include unobserved case (TheseInds=.)
 						v->theta[i].M = base->theta[i].M[v->SubsampleInds]
 
 						if (v->TheseInds[i] & v->TheseInds[i]<.) {
@@ -2014,6 +2014,7 @@ void cmp_model::cmp_init(transmorphic M) {
 		v->d_frac = cols(v->frac = cols(v->cens)? cmp_selectindex(v->TheseInds[v->cens]:==10) : J(1,0,0))
 		d_cens = max((d_cens, v->d_cens))
 		v->dCensNonrobase = cols(v->cens_nonrobase = cmp_selectindex(NonbaseCases :& (v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<mprobit_ind_base :| v->TheseInds:>=roprobit_ind_base))))
+
 		if (v->d_cens)
 			v->d_two_cens = cols(v->two_cens = cmp_selectindex((v->TheseInds:==5 :| v->TheseInds:==7 :| (v->TheseInds:==2 :| v->TheseInds:==3 :| v->TheseInds:==4 :| v->TheseInds:==8) :& trunceqs)[v->cens])) //indexes *within* list of censored eqs of doubly censored ones
 		else
@@ -2077,14 +2078,12 @@ void cmp_model::cmp_init(transmorphic M) {
 		v->mprobit = mprobit_group(rows(MprobitGroupInds))
 		for (k=rows(MprobitGroupInds); k; k--) {
 			start = MprobitGroupInds[k, 1]; stop = MprobitGroupInds[k, 2]
-
 			v->mprobit[k].d = d_mprobit = (v->TheseInds[start]<.) * (cols( mprobit = cmp_selectindex(v->TheseInds :& one2d:>=start :& one2d:<=stop) ) - 1)
-
 			if (d_mprobit > 0) {
 				v->mprobit[k].out = v->TheseInds[start] - mprobit_ind_base // eq of chosen alternative
 				v->mprobit[k].res = cmp_selectindex((v->TheseInds :& one2d:>start  :& one2d:<=stop)[v->cens]) // index in v->ECens for relative differencing results
 				v->mprobit[k].in =  cmp_selectindex( v->TheseInds :& one2d:>=start :& one2d:<=stop :& one2d:!=v->mprobit[k].out) // eqs of rejected alternatives
-				(v->QE)[mprobit,mprobit] = J(d_mprobit+1, 1, 0), cmp_insert(-I(d_mprobit), v->mprobit[k].out-start+1, J(1, d_mprobit, 1))
+				(v->QE)[mprobit,mprobit] = J(d_mprobit+1, 1, 0), cmp_insert(-I(d_mprobit), v->mprobit[k].out-start+1-sum(v->TheseInds[|start\v->mprobit[k].out|]:==0), J(1, d_mprobit, 1))
 			}
 		}
 
