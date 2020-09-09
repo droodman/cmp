@@ -1,4 +1,4 @@
-*! cmp 8.4.0 23 May 2020
+*! cmp 8.4.1 8 September 2020
 *! Copyright (C) 2007-20 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -2051,6 +2051,7 @@ program InitSearch, rclass
       forvalues c=`=cmp_mprobit_group_inds[`r',1]'/`=cmp_mprobit_group_inds[`r',2]' {
         replace _cmp_ind`c' = 0 if `if' & `t'
       }
+			drop `t'
     }
   }
 
@@ -2524,6 +2525,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.4.1 Fixed 8.4.0 bug causing crash
 * 8.4.0 Fixed bugs in handling mprobits in which observable (not-chosen!) cases vary by observation
 * 8.3.9 Fixed crash on use of intmethod()
 * 8.3.8 Prevented crash when using svy on data svyset with pweights or when combining svy with multi-level
