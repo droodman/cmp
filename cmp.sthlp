@@ -64,7 +64,7 @@ parentheses, optionally prefixed with a name for the equation:
 	[{cmd:,} {opt nocons:tant} {opth off:set(varname:varname_o)} {opth exp:osure(varname:varname_e)} {opt trunc:points(exp exp)} {opt iia}]
 {cmd:)}
 
-{phang}{it:indepvars} may include factor variables; see {help fvvarlist}. Importantly, {it:indepvars} may also include the linear functionals associated with
+{phang}{it:indepvars} may include factor variables; see {help fvvarlist}. Importantly, {it:indepvars} may also include the linear predictors associated with
 any equations in the model. Such references should be by {it:eqname} rather than {it:depvar}, if the two differ, and suffixed with a {cmd:#}. This feature 
 allows dependent variables to depend on each other in their continuous and perhaps
 incompletely observed form. It also allows for simultaneous, as distinct from strictly recursive, systems of equations.{p_end}
@@ -129,7 +129,7 @@ may be numbers or variables; {it:a} missing ({it:a} {ul:>} {cmd:.}) means minus 
 all models except multinomial and rank-ordered probit.
 
 {p 4 6 0}
-* References to any equation's linear functional (XB) can appear on the right side of any equation, even when it is modeled as latent (not fully observed), and
+* References to any equation's linear predictor (XB) can appear on the right side of any equation, even when it is modeled as latent (not fully observed), and
 even if the resulting equation system is simultaneous rather than recursive.
 
 {p 4 6 0}
@@ -146,7 +146,7 @@ Consider giving back through a {browse "http://j.mp/1iptvDY":donation} to suppor
 
 {pstd}
 {cmd:cmp} fits a large family of multi-equation, multi-level, conditional mixed-process estimators. Right-side references to left-side variables must together have
-a recursive structure when those references are to the observed, censored variables; but references to the (latent) linear functionals may be 
+a recursive structure when those references are to the observed, censored variables; but references to the (latent) linear predictors may be 
 collectively simultaneous. The various terms in that description can be defined as follows:
 
 {p 4 6 0}
@@ -179,7 +179,7 @@ modeled determinant of {it:A}, {it:B}, or {it:C}.
 
 {p 4 6 0}
 * "Simultaneous" means that that recursivity is {it:not} required in the references to linear (latent) dependent variables. If {it:A*}, {it:B*}, {it:C*}, and {it:D*}
-are the hypothesized, unobserved linear functionals behind the observed {it:A}, {it:B}, {it:C}, and {it:D}--ie., if {it:A}=0 when {it:A*}<0 and {it:A}=1 when {it:A*}>=0,
+are the hypothesized, unobserved linear predictors behind the observed {it:A}, {it:B}, {it:C}, and {it:D}--ie., if {it:A}=0 when {it:A*}<0 and {it:A}=1 when {it:A*}>=0,
 etc.--then {it:D*} can appear in any of the equations even though {it:D} cannot. The same holds even if D* is {it:completely} censored, i.e., completely unobserved.
 
 {pstd}
@@ -279,7 +279,7 @@ the documentation does not describe {help sureg:sureg} as an instrumental variab
 Version 6 of cmp, introduced in 2013, can handle violations of both conditions. This it does using the standard technique for estimating simultaneous-equation systems, which transforms
 a simultaneous system into an SUR one (with "reduced form" coefficients). Condition 2 is no longer required: models may refer to latent 
 variables, using a # suffix. {cmd:cmp (y1 = y2# x1) (y2 = x2), ind($cmp_probit $cmp_probit)} models y1 and y2 as probit and y1 as depending on the unobserved
-linear functional behind y2. The #-suffixed references should be to names of equations rather than dependent variables, though these are the same by default. So, 
+linear predictor behind y2. The #-suffixed references should be to names of equations rather than dependent variables, though these are the same by default. So, 
 equivalent to the previous example is {cmd:cmp (eq1:y1 = eq2# x1) (eq2:y2 = x2), ind($cmp_probit $cmp_probit)}. In addition, references to (latent) linear dependent variables
 need not satisfy condition 1. So {cmd:cmp (y1 = y2# x1) (y2 = y1# x2), ind($cmp_probit $cmp_probit)} is acceptable. References to {it:censored} variables must still be recursive:
 {cmd:cmp (y1 = y2 x1) (y2 = y1 x2), ind($cmp_probit $cmp_probit)} will not work as intended. Fortunately, this requirement is not as restrictive as it seems because 
@@ -528,7 +528,7 @@ for confidence intervals of the coefficients; see {help level:help level}. The
 default is set by {help set level:level} and is usually 95.
 
 {phang}{cmdab:result:sform(}{cmdab:struct:ural} | {cmdab:red:uced)} affects how results are stored and displayed after fitting models with
-#-suffixed references to other equations' linear functionals. {cmdab:result:sform(}{cmdab:struct:ural)}, the default, displays results
+#-suffixed references to other equations' linear predictors. {cmdab:result:sform(}{cmdab:struct:ural)}, the default, displays results
 corresponding to the specified model. {cmdab:result:sform(}{cmdab:red:uced)} switches to the reduced form, in which dependent variables
 are expressed more fully in terms of the exogenous variables. After estimation,
 you can switch between the two forms by typing {cmd:cmp, {cmdab:result:sform}{cmd:(}{cmdab:red:uced}{cmd:)}} and 
