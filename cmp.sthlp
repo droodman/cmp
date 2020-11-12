@@ -842,7 +842,7 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 {phang}. {stata ivprobit fem_work fem_educ kids (other_inc = male_educ), first}{p_end}
 {phang}. {stata "version 13: margins, predict(pr) dydx(*)"}{p_end}
 {phang}. {stata cmp (fem_work = other_inc fem_educ kids) (other_inc = fem_educ kids male_educ), ind($cmp_probit $cmp_cont)}{p_end}
-{phang}. {stata margins, predict(pr eq(#1)) dydx(*) force}{p_end}
+{phang}. {stata margins, predict(pr eq(#2)) dydx(*) force}{p_end}
 
 {phang}. {stata treatreg other_inc fem_educ kids, treat(fem_work  = male_educ)}{p_end}
 {phang}. {stata cmp (other_inc = fem_educ kids fem_work) (fem_work  = male_educ), ind($cmp_cont $cmp_probit) qui}{p_end}
