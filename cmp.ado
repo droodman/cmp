@@ -1,4 +1,4 @@
-*! cmp 8.4.1 8 September 2020
+*! cmp 8.5.0 13 November 2020
 *! Copyright (C) 2007-20 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -2525,6 +2525,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.5.0 Made predict, pr factor in error variance in all cases, not assume it's 1
 * 8.4.1 Fixed 8.4.0 bug causing crash
 * 8.4.0 Fixed bugs in handling mprobits in which observable (not-chosen!) cases vary by observation
 * 8.3.9 Fixed crash on use of intmethod()

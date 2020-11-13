@@ -1,5 +1,5 @@
 {smcl}
-{* *! cmp 8.4.0 23 May 2020}{...}
+{* *! cmp 8.5.0 13 November 2020}{...}
 {cmd:help cmp}
 {hline}{...}
 
@@ -842,13 +842,15 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 {phang}. {stata ivprobit fem_work fem_educ kids (other_inc = male_educ), first}{p_end}
 {phang}. {stata "version 13: margins, predict(pr) dydx(*)"}{p_end}
 {phang}. {stata cmp (fem_work = other_inc fem_educ kids) (other_inc = fem_educ kids male_educ), ind($cmp_probit $cmp_cont)}{p_end}
-{phang}. {stata margins, predict(pr eq(#2)) dydx(*) force}{p_end}
+{phang}. {stata margins, predict(pr) dydx(*) force}{p_end}
 
 {phang}. {stata treatreg other_inc fem_educ kids, treat(fem_work  = male_educ)}{p_end}
 {phang}. {stata cmp (other_inc = fem_educ kids fem_work) (fem_work  = male_educ), ind($cmp_cont $cmp_probit) qui}{p_end}
 
 {phang}. {stata tobit fem_inc kids male_educ, ll}{p_end}
+{phang}. {stata margins, dydx(*) predict(pr(17,.))}{p_end}
 {phang}. {stata cmp (fem_inc = kids male_educ), ind("cond(fem_inc>10, $cmp_cont, $cmp_left)") qui}{p_end}
+{phang}. {stata margins, dydx(*) predict(pr(17 .))}{p_end}
 
 {phang}. {stata ivtobit fem_inc kids (male_educ = other_inc fem_work), ll first}{p_end}
 {phang}. {stata cmp (fem_inc=kids male_educ) (male_educ=kids other_inc fem_work), ind("cond(fem_inc>10,$cmp_cont,$cmp_left)" $cmp_cont)}{p_end}
@@ -908,7 +910,7 @@ illustrate how {cmd:cmp} works (colored text is clickable):
 
 {phang}. {stata webuse class10}{p_end}
 {phang}. {stata eprobit graduate income i.roommate, endogenous(hsgpa = income i.hscomp) entreat(program = i.campus i.scholar income) vce(robust)}{p_end}
-{phang}. {stata "cmp (graduate = program#(c.income roommate c.hsgpa) program income roommate hsgpa) (program = i.campus i.scholar income) (hsgpa = income i.hscomp), vce(robust) ind($cmp_probit $cmp_probit $cmp_cont) qui nolr":cmp (graduate = program##(c.income roommate c.hsgpa)) (program = i.campus i.scholar income) (hsgpa = income i.hscomp), vce(robust) ind($cmp_probit $cmp_probit $cmp_cont) qui nolr}{p_end}
+{phang}. {stata "cmp (graduate = program#(c.income roommate c.hsgpa) program income roommate hsgpa) (program = i.campus i.scholar income) (hsgpa = income i.hscomp), vce(robust) ind(4 4 1) qui nolr":cmp (graduate = program##(c.income roommate c.hsgpa)) (program = i.campus i.scholar income) (hsgpa = income i.hscomp), vce(robust) ind($cmp_probit $cmp_probit $cmp_cont) qui nolr}{p_end}
 
 {pstd}{hilite:* Heckman selection models}
 

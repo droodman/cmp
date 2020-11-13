@@ -1,5 +1,5 @@
-*! cmp 8.3.4 30 May 2019
-*! Copyright (C) 2007-19 David Roodman
+*! cmp 8.5.0 13 November 2020
+*! Copyright (C) 2007-20 David Roodman
 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -222,7 +222,7 @@ program define cmp_p
 						if `"`outcome'"' == "" {
 							_stubstar2names `1'_*, nvars(`num_cats') outcome
 							forvalues outno=1/`num_cats' {
-								condpr `xb' `rho' `vartype' `1'_`outno' if `touse', condll(`condll') condul(`condul') condxb(`condxb') condsig(`condsig') ///
+								condpr `xb' `rho' `vartype' `1'_`outno' if `touse', sig(1) condll(`condll') condul(`condul') condxb(`condxb') condsig(`condsig') ///
 									ll(`=cond(`outno'>1, "[cut_`eq'_`=`outno'-1']_cons", ".")') ///
 									ul(`=cond(`outno'<=`num_cuts'[`eq',1], "[cut_`eq'_`outno']_cons", ".")') 
 								label var `1'_`outno' "Pr(`depvar'=`=`cat'[`eq', `outno']')"
@@ -247,7 +247,7 @@ program define cmp_p
 								}
 								local outcome `i'
 							}
-							condpr `xb' `rho' `vartype' `1' if `touse', condll(`condll') condul(`condul') condxb(`condxb') condsig(`condsig') ///
+							condpr `xb' `rho' `vartype' `1' if `touse', sig(1) condll(`condll') condul(`condul') condxb(`condxb') condsig(`condsig') ///
 								ll(`=cond(`outcome'>1, "[cut_`eq'_`=`outcome'-1']_cons", ".")') ///
 								ul(`=cond(`outcome'<=`num_cuts'[`eq',1], "[cut_`eq'_`outcome']_cons", ".")')
 							label var `1' "Pr(`depvar'=`=`cat'[`eq', `outcome']')"
@@ -255,10 +255,10 @@ program define cmp_p
 					}
 					else if `"`outcome'"' == "" {
 						if `"`condition'"'=="" & `"`pr'"'=="0 ." {
-							gen `vartype' `1' = normal(`xb')
+							gen `vartype' `1' = normal(cond(`Sigma'[`eq',`eq']==1, `xb', `xb' / sqrt(`Sigma'[`eq',`eq'])))
 							label var `1' "Pr(`depvar')"
 						}
-						else condpr `xb' `rho' `vartype' `1' if `touse', ll(`ll') ul(`ul') condll(`condll') condul(`condul') condxb(`condxb') condsig(`condsig')
+						else condpr `xb' `rho' `vartype' `1' if `touse', ll(`ll') ul(`ul') sig(`sig') condll(`condll') condul(`condul') condxb(`condxb') condsig(`condsig')
 					}
 					else {
 						di as err "Equation #`eq' is not ordered probit. outcome() is not allowed."
@@ -378,10 +378,10 @@ cap program drop condpr
 program define condpr
 	version 11
 	args xb rho newvartype newvarname
-	syntax anything [if], ll(string) ul(string) [condll(string) condul(string) condxb(string) condsig(string)]
+	syntax anything [if], ll(string) ul(string) sig(string) [condll(string) condul(string) condxb(string) condsig(string)]
 	tempvar L U condL condU binormalL_condL binormalL_condU binormalU_condL binormalU_condU
-	qui gen double `L' = (`ll')-`xb' `if'
-	qui gen double `U' = (`ul')-`xb' `if'
+  qui gen double `L' = ((`ll') - `xb') `=cond(`sig' != 1, "/ `sig'", "")' `if'
+  qui gen double `U' = ((`ul') - `xb') `=cond(`sig' != 1, "/ `sig'", "")' `if'  	
 	if `"`condll'"' == "" {
 		gen `newvartype' `newvarname' = cond(`U'>=., 1, normal(`U')) - cond(`L'>=., 0, normal(`L')) `if'
 	}
