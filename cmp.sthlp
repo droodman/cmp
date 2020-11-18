@@ -150,8 +150,7 @@ a recursive structure when those references are to the observed, censored variab
 collectively simultaneous. The various terms in that description can be defined as follows:
 
 {p 4 6 0}
-* "Multi-equation" means that {cmd:cmp} can fit Seemingly Unrelated (SUR), instrumental variables (IV) systems, and some simultaneous-equation systems. As a special case,
-single-equation models can be fit too.
+* "Multi-equation" means that {cmd:cmp} can fit Seemingly Unrelated (SUR), instrumental variables (IV) systems, and some simultaneous-equation systems. Single-equation models can be fit too.
 
 {p 4 6 0}
 * "Multi-level" means that random coefficients and effects (intercepts) can be modeled at
@@ -164,7 +163,7 @@ with each other, with the observation-level errors, and with the regressors.{p_e
 * "Mixed process" means that different equations can have different kinds of 
 dependent variables (response types). The choices, all generalized linear models with a Gaussian error distribution, are: continuous and unbounded (the classical linear regression 
 model), tobit (left-, right-, or bi-censored), interval-censored, probit, ordered probit, multinomial 
-probit, and rank-ordered probit. Pre-censoring truncation can be modeled for most response types. A dependent variable in one equation can appear on the right side of another equation.
+probit, rank-ordered probit, and fractional probit. Pre-censoring truncation can be modeled for most response types. A dependent variable in one equation can appear on the right side of another equation.
 
 {p 4 6 0}
 * "Conditional" means that the model can vary by observation. An equation can be dropped for observations for which it is not relevant--if, say, a worker
@@ -178,7 +177,7 @@ determinants of {it:C} and {it:C} as a determinant of {it:D}--but {it:D} could n
 modeled determinant of {it:A}, {it:B}, or {it:C}.
 
 {p 4 6 0}
-* "Simultaneous" means that that recursivity is {it:not} required in the references to linear (latent) dependent variables. If {it:A*}, {it:B*}, {it:C*}, and {it:D*}
+* "Simultaneous" means that that recursivity is {it:not} required in the references to the (latent) linear predictors of dependent variables. If {it:A*}, {it:B*}, {it:C*}, and {it:D*}
 are the hypothesized, unobserved linear predictors behind the observed {it:A}, {it:B}, {it:C}, and {it:D}--ie., if {it:A}=0 when {it:A*}<0 and {it:A}=1 when {it:A*}>=0,
 etc.--then {it:D*} can appear in any of the equations even though {it:D} cannot. The same holds even if D* is {it:completely} censored, i.e., completely unobserved.
 
@@ -199,13 +198,13 @@ and {help reg3}; and user-written {stata findit ssm:ssm}, {stata findit polychor
 {stata findit mvtobit:mvtobit}, {stata findit oheckman:oheckman}, {stata findit switch_probit:switch_probit}, {stata findit reoprob:reoprob}, 
 {stata findit cdsimeq:cdsimeq}, and {stata findit bioprobit:bioprobit}. While lacking the specialized post-estimation features many of those packages offer, {cmd:cmp} 
 goes beyond them in the generality of model specification. Thanks to the flexibility of {help ml:ml}, on which it is built, it accepts linear coefficient {help constraint:constraints}
-as well as all weight types, vce types (robust, cluster, linearized, etc.), and {cmd:svy} settings. And it offers 
+as well as all weight types, vce types (robust, cluster, etc.), and {cmd:svy} settings. And it offers 
 more flexibility in model construction. For example, one can regress a continuous variable on two endogenous variables, 
 one binary and the other sometimes left-censored, instrumenting each with additional variables. And {cmd:cmp} usually allows the model to vary by observations.
 Equations can have different samples, overlapping or non-overlapping. Heckman selection modeling can be incorporated into a wide variety of models through auxilliary
 probit equations. In some cases, the gain is consistent estimation where it was difficult before. Sometimes the gain is in efficiency.
 For example if {it:C} is continuous, {it:B} is a sometimes-left-censored determinant of {it:C}, and {it:A} is an instrument, then the effect of {it:B} on {it:C} can be
-consistently estimated with 2SLS (Kelejian 1971). However, a {cmd:cmp} estimate that uses the information that {it:B} is censored will be more efficient, if it is based
+consistently estimated with 2SLS (Kelejian 1971). However, a {cmd:cmp} estimate that uses the information that {it:B} is censored will be more efficient if it is based
 on a more accurate model.
 
 {pstd}
@@ -216,7 +215,7 @@ quotes. For each observation, each expression must evaluate to one of the follow
 
 {pin} 0 = observation is not in this equation's sample{p_end}
 {pin} . = observation is in this equation's sample but dependent variable unobserved for this observation{p_end}
-{pin} 1 = equation is "continuous" for this observation, i.e., has the OLS likelihood or is an uncensored observation in a tobit equation{p_end}
+{pin} 1 = equation is "continuous" for this observation, i.e., is linear with Gaussian error or is an uncensored observation in a tobit equation{p_end}
 {pin} 2 = observation is left-censored for this (tobit) equation at the value stored in the dependent variable{p_end}
 {pin} 3 = observation is right-censored at the value stored in the dependent variable{p_end}
 {pin} 4 = equation is probit for this observation{p_end}
@@ -280,7 +279,7 @@ Version 6 of cmp, introduced in 2013, can handle violations of both conditions. 
 a simultaneous system into an SUR one (with "reduced form" coefficients). Condition 2 is no longer required: models may refer to latent 
 variables, using a # suffix. {cmd:cmp (y1 = y2# x1) (y2 = x2), ind($cmp_probit $cmp_probit)} models y1 and y2 as probit and y1 as depending on the unobserved
 linear predictor behind y2. The #-suffixed references should be to names of equations rather than dependent variables, though these are the same by default. So, 
-equivalent to the previous example is {cmd:cmp (eq1:y1 = eq2# x1) (eq2:y2 = x2), ind($cmp_probit $cmp_probit)}. In addition, references to (latent) linear dependent variables
+equivalent to the previous example is {cmd:cmp (eq1:y1 = eq2# x1) (eq2:y2 = x2), ind($cmp_probit $cmp_probit)}. In addition, references to (latent) linear predictors
 need not satisfy condition 1. So {cmd:cmp (y1 = y2# x1) (y2 = y1# x2), ind($cmp_probit $cmp_probit)} is acceptable. References to {it:censored} variables must still be recursive:
 {cmd:cmp (y1 = y2 x1) (y2 = y1 x2), ind($cmp_probit $cmp_probit)} will not work as intended. Fortunately, this requirement is not as restrictive as it seems because 
 many models with non-recursive dependencies on censored variables are logically impossible (see discussion in Roodman 2011).
@@ -337,7 +336,7 @@ function.
 {pstd}
 The traditional generaization of quadrature to multidimensional integrals, such as arise with correlated random effects and coefficients,
 is inefficient. A {it:d}-dimensional integral, can take 12^{it:d} evaluations. Heiss and Winschel (2008) put forward an alternative called sparse-grid integration
-that radically reduces the number of evaluations needed for a given level of accuracy. {cmd:cmp} uses this method by default for multidimensional random
+that reduces the number of evaluations needed for a given level of accuracy. {cmd:cmp} uses this method by default for multidimensional random
 effects/coefficients problems. Still, despite the reduction, for higher-dimensional problems, practicality may still require the user to reduce the precision of the grid below the default
 of 12, using the {cmdab:intp:oints()} option.
 
@@ -352,12 +351,12 @@ search method often works best).
 {pstd}
 To trigger simulation, include the {cmdab:red:raws()} option. This sets the number of draws per observation
 at each level,
-the type of sequence (Halton, Hammersley, generalized Halton, pseudorandom), whether antithetics are also drawn, and whether, in the Halton and Hammersley caes,
+the type of sequence (Halton, Hammersley, generalized Halton, pseudorandom), whether antithetics are also drawn, and, in the Halton and Hammersley caes,
 whether and how the sequences should be scrambled. (See Gates 2006 for more on all these concepts except scrambling, for which see Kolenikov 2012.)
 For (generalized) Halton and Hammersley sequences, it is preferable to make the number of draws prime, to insure more variable coverage of the
 distribution from observation to observation, making coverage more uniform overall. Increasing the 
 number of draws increases precision at the expense of time. In a bid for speed {cmd:cmp} can begin by estimating
-with just 1 draw per observation and random effect (plus the antithetics if specified). It can then use the result of this rough search as the starting point for an
+with just 1 draw per observation per random effect (plus the antithetics if specified). It can then use the result of this rough search as the starting point for an
 estimate with more draws, then repeat, multiplying by a fixed amount each time until reaching the specified number of draws. The {opt st:eps(#)} suboption 
 of {cmdab:red:raws()} can override the default number of steps, which is just 1. {cmd:redraws(50 50)} would 
 specify immediate estimation with the full 50
