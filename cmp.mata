@@ -956,7 +956,7 @@ real colvector lnLContinuous(pointer(struct subview scalar) scalar v, real scala
 	phi = quadrowsum_lnnormalden(v->EUncens * C', quadsum(ln(diagonal(C)), 1))
 	if (todo) {
 		v->dphi_dE[., v->uncens] = t = v->EUncens * -(invSig = quadcross(C,C))
-		v->dphi_dSig[., v->SigIndsUncens] = neg_half_E_Dinvsym_E(t, v->one2N, v->EDE) :- vec(invSig) ' v->halfDmatrix
+		v->dphi_dSig[., v->SigIndsUncens] = neg_half_E_Dinvsym_E(t, v->one2N, v->EDE) :- colshape(invSig, 1) ' v->halfDmatrix
 	}
 	return (phi)
 }
@@ -1354,8 +1354,8 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 	if (mod->HasGamma) {
 		if (todo) {
 			dOmega_dSig = (Lmatrix(cols(invGamma))*(invGamma'#invGamma')*Dmatrix(rows(invGamma))) // QE2QSig(invGamma)
-			t = vec(invGamma')
-			t = (vec(base->Sig)'#mod->Idd)[mod->vLd,mod->vIKI] * (mod->Idd#t + t#mod->Idd)[,mod->vKd]
+			t = colshape(invGamma, 1)
+			t = (colshape(base->Sig,1)'#mod->Idd)[mod->vLd,mod->vIKI] * (mod->Idd#t + t#mod->Idd)[,mod->vKd]
 			for (m=d; m; m--)
 				for (c=1; c<=mod->G[m]; c++)
 					mod->dOmega_dGamma[m,c].M = t * invGamma[m,]'#invGamma[,(*mod->GammaIndByEq[m])[c]]
@@ -2283,25 +2283,25 @@ void cmpSaveSomeResults(pointer(class cmp_model scalar) scalar mod) {
 		V = st_matrix("e(V)")
 		BetaInd = st_matrix("cmpBetaInd"); GammaInd = st_matrix("cmpGammaInd")
 		invGamma = (*REs)[L].invGamma'
-		Beta = (invGamma * st_matrix(st_local("Beta")))'
-		d = cols(Beta); k = rows(Beta)
-		br = vec(Beta)
+		Beta = invGamma * st_matrix(st_local("Beta"))
+		d = rows(Beta); k = cols(Beta)
+		br = colshape(Beta,1)
 		eb = st_matrix("e(b)")
 		k_aux_nongamma = st_numscalar("e(k_aux)")-st_numscalar("e(k_gamma)")
-		dBeta_dB = invGamma # I(k); dBeta_dGamma = invGamma # Beta
+		dBeta_dB = invGamma # I(k); dBeta_dGamma = invGamma # Beta'
 
 		dbr_db = J(rows(dBeta_dB), 0, 0)
 		for (eq=d; eq; eq--)
-			dbr_db = dBeta_dGamma[, GammaInd[cmp_selectindex(GammaInd[,2]:==eq),1] :+ (eq-1)*d         ], dbr_db        
+			dbr_db = dBeta_dGamma[, GammaInd[cmp_selectindex(GammaInd[,2]:==eq),1] :+ (eq-1)*d], dbr_db        
 		for (eq=d; eq; eq--)
-			dbr_db = dBeta_dB    [, BetaInd [cmp_selectindex(BetaInd [,2]:==eq),1] :+ (eq-1)*rows(Beta)], dbr_db        
+			dbr_db = dBeta_dB    [, BetaInd [cmp_selectindex(BetaInd [,2]:==eq),1] :+ (eq-1)*k], dbr_db        
 
 		keep = cmp_selectindex(rowsum(dbr_db:!=0):>0)
 		br = br[keep]'
 		dbr_db = dbr_db[keep,]
 		eqnames = tokens(st_global("cmp_eq"))
 		for (eq=d; eq; eq--)
-			colstripe = J(rows(Beta), 1, eqnames[eq]) \ colstripe
+			colstripe = J(k, 1, eqnames[eq]) \ colstripe
 		colstripe = (colstripe, J(d, 1, tokens(st_local("xvarsall"))'))[keep,]
 
 		if (mod->NumCuts) {
