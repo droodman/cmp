@@ -573,7 +573,7 @@ and {help ml:ml}'s {cmd:nonrtolerance tolerance(0.1)} options in order to accept
 only to increase speed by using fewer draws until the search is close to the maximum. The optional {opt scr:amble()} option "scrambles"
 the digit sequences to reduce cross-sequence correlations (Kolenikov 2012). The square-root scrambler {opt scramble(sqrt)} multiplies each digit in the
 sequence for prime {it:p} by floor(sqrt(p)), modulo p. {opt scramble(negsqrt)} multiples by the negative square root. {opt scramble(fl)} multplies
-by the number specific to {it:p} recommended by Faure and Lemieux (2009). {opt scramble(sqrt)} and {opt scramble(lr)} have no effect for models in with
+by the number specific to {it:p} recommended by Faure and Lemieux (2009). {opt scramble(sqrt)} and {opt scramble(lr)} have no effect for models with
 at most two random effect/coefficient components because for primes 2 and 3, their multipliers are 1.
 
 {phang}{opt lf} makes {cmd:cmp} use its lf-method evaluator instead of the lf0-method one. (See {help ml:help ml}.) This forces Stata's Maximum Likelihood estimation package 
@@ -1097,23 +1097,3 @@ to labor supply. {it:Econometrica} 54(3): 679-85.{p_end}
 
 {pstd}Thanks to Kit Baum, David Drukker, Arne Hole, Stanislaw Kolenikov, and Mead Over for comments, and to Florian Heiss and Viktor Winschel for permission to adapt
 their sparse grid Mata code.
-
-{title:Also see}
-
-{psee}
-{manhelp ml R},
-{manhelp biprobit R},
-{manhelp probit R},
-{manhelp oprobit R},
-{manhelp sureg R},
-{manhelp ivreg R},
-{manhelp tobit R},
-{manhelp cnreg R},
-{manhelp intreg R},
-{manhelp truncreg R},
-{manhelp ivtobit R},
-{manhelp ivprobit R},
-{manhelp heckman R},
-{manhelp heckprob R},
-{manhelp svy_estimation SVY:svy estimation}.
-{p_end}

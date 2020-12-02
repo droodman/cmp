@@ -1567,7 +1567,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 					L_g = L_g :* RE->QuadW
 				RE->plnL = &quadrowsum(L_g) // in non-quadrature case, sum rather than average of likelihoods across draws
 				if (todo | (mod->AdaptivePhaseThisEst & mod->WillAdapt))
-					_editmissing(L_g = L_g :/ *(RE->plnL), 0) // normalize L_g's as weights for obs-level scores or for use in Smith-Naylor adaptation
+					_editmissing(L_g = L_g :/ *(RE->plnL), 0) // normalize L_g's as weights for obs-level scores or for use in Naylor-Smith adaptation
 				if (mod->AdaptivePhaseThisEst & NewIter) {
 					pThisQuadXAdapt = &asarray(RE->QuadXAdapt, mod->ThisDraw[|.\l|])
 					if (rows(*pThisQuadXAdapt)==0) { // initialize if needed
@@ -1579,7 +1579,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 						pThisQuadXAdapt_j = &((*pThisQuadXAdapt)[j].M)
 						if (rows(*pThisQuadXAdapt_j)==0) pThisQuadXAdapt_j = &(RE->QuadX)
 
-							RE->QuadMean[j].M = mean(*pThisQuadXAdapt_j, t=L_g[j,]')
+							RE->QuadMean[j].M = (t=L_g[j,]) * *pThisQuadXAdapt_j  // weighted sum
 							C = cholesky(quadcrossdev(*pThisQuadXAdapt_j, RE->QuadMean[j].M, t, *pThisQuadXAdapt_j, RE->QuadMean[j].M))
 							if (C[1,1] == .) { // diverged? try restarting, but decrement counter to prevent infinite loop
 								RE->ToAdapt[j] = RE->ToAdapt[j] - 1
@@ -1984,11 +1984,12 @@ void cmp_model::cmp_init(transmorphic M) {
 				if (l < L) RE->Weights = RE->Weights[RE->IDRanges[,1]] // get one instance of each group's weight
 				if (anyof(("pweight", "aweight"), st_global("parse_wtype"+strofreal(l)))) // normalize pweights, aweights to sum to # of groups
 					if (l == 1)
-						REs->Weights = RE->Weights / mean(RE->Weights)
+						REs->Weights = RE->Weights * rows(RE->Weights) / quadsum(RE->Weights)  // fast way to divide by mean
 					else
 						for (j=(*REs)[l-1].N; j; j--) {
 							S = (*REs)[l-1].IDRangesGroup[j,]', (.\.)
-							RE->Weights[|S|] = RE->Weights[|S|] / mean(RE->Weights[|S|])
+              t = RE->Weights[|S|]
+							RE->Weights[|S|] = t * rows(t) / quadsum(t)  // fast way to divide by mean
 						}
 				t = l==L? RE->Weights : RE->Weights[RE->id]
 				WeightProduct = rows(WeightProduct)? WeightProduct:* t : t
