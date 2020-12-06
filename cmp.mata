@@ -1,4 +1,4 @@
-/* cmp 8.4.0 23 May 2020
+/* cmp 8.5.1 6 December 2020
    Copyright (C) 2007-20 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -168,12 +168,13 @@ class cmp_model {
 	real scalar h // if computing 2nd derivatives most recent h used
 	struct smatrix colvector X // NEq-vector of data matrices--needed only  in gfX() estimation, to expands scores to one per regressor
 
-	void new(), cmp_init(), BuildXU(), BuildTotalEffects(), _st_view(), 
+	void new(), cmp_init(), BuildXU(), BuildTotalEffects(), 
 				set_reverse(), set_SigXform(), set_QuadTol(), set_QuadIter(), set_ghkType(), set_MaxCuts(), set_indVars(), set_LtVars(), set_UtVars(), set_yLVars(), 
 				set_ghkAnti(), set_ghkDraws(), set_ghkScramble(), set_Quadrature(), set_d(), set_L(), set_todo(),
 				set_REAnti(), set_REType(), set_REScramble(), set_Eqs(), set_GammaI(), set_NumEff(), set_NumMprobitGroups(), set_NumRoprobitGroups(),
 				set_MprobitGroupInds(), set_RoprobitGroupInds(), set_NonbaseCases(), set_vNumCuts(), set_trunceqs(), set_intregeqs(), set_NumREDraws(), set_GammaInd(),
 				set_AdaptNow(), set_WillAdapt()
+	static void _st_view()
 	real scalar get_ghkDraws()
 }
 
@@ -1696,8 +1697,8 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 
 
 void cmp_gf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
-	real matrix _S, __S, _H, Hrow, IDRanges, subscripts; real colvector _lnf; real rowvector _b; real scalar i, n, K, d; pointer(class cmp_model scalar) scalar mod; pointer (struct RE scalar) scalar REs
-	pragma unset _S; pragma unset _H; pragma unset __S; pragma unset _lnf; pragma unset _b
+	real matrix _S, IDRanges, subscripts; real scalar i, n, K, d; pointer(class cmp_model scalar) scalar mod
+	pragma unset _S
 
 	mod = moptimize_init_userinfo(M, 1)
 	cmp_lf1(M, todo, b, lnf, _S, H)
@@ -1708,7 +1709,6 @@ void cmp_gf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 			IDRanges = mod->REs->IDRanges
 			K = cols(b); n=moptimize_init_eq_n(M) // numbers of eqs (inluding auxiliary parameters); number of parameters
 			d = mod->base->d
-			REs = mod->REs
 			S = J(rows(lnf), K, 0)
 			if (length(mod->X)==0) {
 				mod->X = smatrix(d)
