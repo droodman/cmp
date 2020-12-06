@@ -881,21 +881,17 @@ real colvector vecmultinormal(real matrix E, real matrix F, real matrix Sig, rea
 			Phi = normal2(F[,1]/sqrtSig, E[,1]/sqrtSig)
 			if (todo) {  // Compute partial deriv w.r.t. sig^2 in 1/sqrt(sig^2) term in normal dist
 				if (N_perm == 1) {
-					dPhi_dE =  editmissing(normalden(E, 0, sqrtSig), 0) :/ Phi
+					dPhi_dE =  editmissing(normalden(E, 0, sqrtSig), 0) :/ Phi  // only as of Stata 13 can 0 args to normalden be dropped
 					dPhi_dF = -editmissing(normalden(F, 0, sqrtSig), 0) :/ Phi
 				}
 				dPhi_dSig = (rowsum(dPhi_dE :* E) + rowsum(dPhi_dF :* F)) / (-2 * Sig)
 			}
 		} else {
-timer_on(63)
 			Phi = normal(E / sqrtSig)
-timer_off(63)
-timer_on(64)
 			if (todo) {
 				if (N_perm == 1) dPhi_dE = editmissing(normalden(E, 0, sqrtSig), 0) :/ Phi
 				dPhi_dSig = dPhi_dE :* E / (-2 * Sig)
 			}
-timer_off(64)
 		}
 		if (N_perm==1)
 			return (ln(Phi))
@@ -1546,46 +1542,40 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 			}
 		}
 
-		for (l=L-1; l; l--) { // If L=1, sets l=0 as needed to terminate do loop. Usually this loop runs once.
+		for (l=L-1; l; l--) {  // If L=1, sets l=0 as needed to terminate do loop. Usually this loop runs once.
 			RE = &((*REs)[l])
 
 			RE->lnLByDraw[RE->one2N, mod->ThisDraw[l+1]] = cmp_panelsum(*((*REs)[l+1].plnL), (*REs)[l+1].Weights, RE->IDRangesGroup)
-timer_on(8)
 			if (mod->ThisDraw[l+1] < RE->R)
 				mod->ThisDraw[l+1] = mod->ThisDraw[l+1] + 1
 			else {
 				if (mod->Adapted)
-					RE->lnLByDraw = RE->lnLByDraw + RE->AdaptiveShift // even if active adaptation done, add adaptive ln(det(C)*normalden(QuadXAdapt)/normalden(QuadX))
-timer_on(82)
-				// for each group, make weights proportional to L (not lnL) for the group/obs at next-lower level
-				t = RE->lnLlimits :- rowminmax(RE->lnLByDraw) // In summing groups' Ls, shift just enough to prevent underflow in exp(), but if necessary even less to avoid overflow
+					RE->lnLByDraw = RE->lnLByDraw + RE->AdaptiveShift  // even if active adaptation done, add adaptive ln(det(C)*normalden(QuadXAdapt)/normalden(QuadX))
+
+        // for each group, make weights proportional to L (not lnL) for the group/obs at next-lower level
+				t = RE->lnLlimits :- rowminmax(RE->lnLByDraw)  // In summing groups' Ls, shift just enough to prevent underflow in exp(), but if necessary even less to avoid overflow
 				lnLmin = t[,1]; lnLmax = t[,2]
 				t = lnLmin:*(lnLmin:>0) - lnLmax; shift = t:*(t :< 0) + lnLmax // parallelizes better than rowminmax()
-				_editmissing( L_g=exp(RE->lnLByDraw:+shift), 0) // un-log likelihood for each group & draw; lnL=. => L=0
+				_editmissing( L_g=exp(RE->lnLByDraw:+shift), 0)  // un-log likelihood for each group & draw; lnL=. => L=0
 				if (mod->Quadrature)
 					L_g = L_g :* RE->QuadW
-				RE->plnL = &quadrowsum(L_g) // in non-quadrature case, sum rather than average of likelihoods across draws
+				RE->plnL = &quadrowsum(L_g)  // in non-quadrature case, sum rather than average of likelihoods across draws
 				if (todo | (mod->AdaptivePhaseThisEst & mod->WillAdapt))
-					_editmissing(L_g = L_g :/ *(RE->plnL), 0) // normalize L_g's as weights for obs-level scores or for use in Naylor-Smith adaptation
-timer_off(82)
+					_editmissing(L_g = L_g :/ *(RE->plnL), 0)  // normalize L_g's as weights for obs-level scores or for use in Naylor-Smith adaptation
+
 				if (mod->AdaptivePhaseThisEst & NewIter) {
 					pThisQuadXAdapt = &asarray(RE->QuadXAdapt, mod->ThisDraw[|.\l|])
 					if (rows(*pThisQuadXAdapt)==0) {  // initialize if needed
 						asarray(RE->QuadXAdapt, mod->ThisDraw[|.\l|], smatrix(RE->N))
 						pThisQuadXAdapt = &asarray(RE->QuadXAdapt, mod->ThisDraw[|.\l|])
 					}
-timer_on(84)
 					for (j=RE->N; j; j--)
 						if (RE->ToAdapt[j]) {
-              pThisQuadXAdapt_j = &((*pThisQuadXAdapt)[j].M)
-              if (rows(*pThisQuadXAdapt_j)==0) pThisQuadXAdapt_j = &(RE->QuadX)
-timer_on(86)
+              pThisQuadXAdapt_j = &((*pThisQuadXAdapt)[j].M); if (rows(*pThisQuadXAdapt_j)==0) pThisQuadXAdapt_j = &(RE->QuadX)
+
               RE->QuadMean[j].M = (t=L_g[j,]) * *pThisQuadXAdapt_j  // weighted sum
-"*pThisQuadXAdapt_j"
-*pThisQuadXAdapt_j
-              C = cholesky(quadcrossdev(*pThisQuadXAdapt_j, RE->QuadMean[j].M, t, *pThisQuadXAdapt_j, RE->QuadMean[j].M))
-timer_off(86)
-timer_on(87)
+              C = cholesky(crossdev(*pThisQuadXAdapt_j, RE->QuadMean[j].M, t, *pThisQuadXAdapt_j, RE->QuadMean[j].M))
+
               if (C[1,1] == .) {  // diverged? try restarting, but decrement counter to prevent infinite loop
                 RE->ToAdapt[j] = RE->ToAdapt[j] - 1
                 (*pThisQuadXAdapt)[j].M = RE->QuadX
@@ -1594,22 +1584,18 @@ timer_on(87)
                 RE->QuadSD[j].M = diagonal(C)
                 if (mreldif(*pThisQuadXAdapt_j, t=RE->QuadX*C':+RE->QuadMean[j].M) < mod->QuadTol) {  // has adaptation converged for this ML search iteration?
                   RE->ToAdapt[j] = 0
-timer_off(87)
                   continue
                 }
                 (*pThisQuadXAdapt)[j].M = t
                 RE->AdaptiveShift[j,] = quadrowsum_lnnormalden(t, quadcolsum(ln(RE->QuadSD[j].M),1))' - RE->lnnormaldenQuadX
               }
-timer_off(87)
-timer_on(88)
+
               Subscript = RE->IDRanges[j,]', (.\.)
               iota = J(RE->IDRangeLengths[j],1,1)
               for (r=RE->R; r; r--)
                 RE->U[r].M[|Subscript|] = iota # (*pThisQuadXAdapt_j)[r,]
-timer_off(88)
 						}
-timer_off(84)
-					if (RE->AdaptivePhaseThisIter = any(RE->ToAdapt) * mod(RE->AdaptivePhaseThisIter-1, mod->QuadIter)) { // not converged and haven't hit max number of adaptations?
+					if (RE->AdaptivePhaseThisIter = any(RE->ToAdapt) * mod(RE->AdaptivePhaseThisIter-1, mod->QuadIter)) {  // not converged and haven't hit max number of adaptations?
 						mod->BuildTotalEffects(l)
 						if (mod->todo)
 							mod->BuildXU(l)
@@ -1617,7 +1603,7 @@ timer_off(84)
 				}
 				mod->ThisDraw[l+1] = 1
 			}
-timer_off(8)
+
 			if (mod->ThisDraw[l+1] > 1 | RE->AdaptivePhaseThisIter) {  // no (more) carrying? propagate draw changes down the tree
 				for (_l=l; _l<L; _l++)
 					for (eq=cols(RE->GammaEqs); eq; eq--) {
@@ -1628,7 +1614,6 @@ timer_off(8)
  			}
 
 			// finished the group's (adaptive) draws
-timer_on(10)
 			if (todo) { // obs-level score for next level up is avg of scores over this level's draws, weighted by group's L for each draw
 				real matrix L_gv, L_gvr, sThetaScores, sCutScores
 				struct smatrix colvector sTScores, sGammaScores; sTScores=smatrix(L); sGammaScores=smatrix(sum(mod->G))
@@ -1689,7 +1674,6 @@ timer_on(10)
 					}
 				}
 			}
-timer_off(10)
 			RE->plnL = &(ln(*(RE->plnL)) - shift)
 			if (!mod->Quadrature)
 				RE->plnL = &(*(RE->plnL) :- RE->lnNumREDraws)
