@@ -1,5 +1,5 @@
-*! cmp 8.5.1 6 December 2020
-*! Copyright (C) 2007-20 David Roodman 
+*! cmp 8.5.2 6 December 2021
+*! Copyright (C) 2007-21 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -1632,7 +1632,7 @@ program Estimate, eclass
 				`svy' `subpop' constraints(`constraints') nocnsnotes nopreserve missing collinear `modopts'
 			local mlmaxcmd `quietly' ml max, search(off) nooutput
 
-			`quietly' ml model `method' `mlmodelcmd' vce(`this_vce') `initopt' technique(`this_technique') `=cond("`svy'"!="", "group(_cmp_id1)", "")'
+			`quietly' ml model `method' `mlmodelcmd' vce(`this_vce') `initopt' technique(`this_technique') `=cond(`gf' & "`svy'"!="", "group(_cmp_id1)", "")'
 
 			mata moptimize_init_userinfo($ML_M, 1, &_mod)
 			mata _mod.cmp_init($ML_M)
@@ -2525,6 +2525,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.5.2 Fixed crash on non-hierarchical svy models
 * 8.5.1 Small speed-ups
 * 8.5.0 Made predict, pr factor in error variance in all cases, not assume it's 1
 * 8.4.1 Fixed 8.4.0 bug causing crash

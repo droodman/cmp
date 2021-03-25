@@ -112,7 +112,7 @@ may be numbers or variables; {it:a} missing ({it:a} {ul:>} {cmd:.}) means minus 
 
 {title:UPDATES}
 
-{pstd} Versions 8.0.0 and 8.20. of {cmd:cmp}, released in mid-2017 and early 2018, include changes that can somewhat affect results in hierarchical models. An older version, 7.1.0, is available as a
+{pstd} Versions 8.0.0 and 8.2.0 of {cmd:cmp}, released in mid-2017 and early 2018, include changes that can somewhat affect results in hierarchical models. An older version, 7.1.0, is available as a
 {browse "http://github.com/droodman/cmp/tree/09ce0ec1fe765a8c585208004b848758763a1cfe":Github archive}, and can be directly installed, in Stata 13 or later, via
 "{net "from https://raw.github.com/droodman/cmp/v7.1.0":net from https://raw.github.com/droodman/cmp/v7.1.0}".
 
@@ -178,7 +178,7 @@ modeled determinant of {it:A}, {it:B}, or {it:C}.
 
 {p 4 6 0}
 * "Simultaneous" means that that recursivity is {it:not} required in the references to the (latent) linear predictors of dependent variables. If {it:A*}, {it:B*}, {it:C*}, and {it:D*}
-are the hypothesized, unobserved linear predictors behind the observed {it:A}, {it:B}, {it:C}, and {it:D}--ie., if {it:A}=0 when {it:A*}<0 and {it:A}=1 when {it:A*}>=0,
+are the hypothesized, unobserved linear predictors behind the observed {it:A}, {it:B}, {it:C}, and {it:D}--e.g., if {it:A}=0 when {it:A*}<0 and {it:A}=1 when {it:A*}>=0,
 etc.--then {it:D*} can appear in any of the equations even though {it:D} cannot. The same holds even if D* is {it:completely} censored, i.e., completely unobserved.
 
 {pstd}
@@ -188,15 +188,18 @@ as in two-stage least squares. In the first case, {cmd:cmp} is a full-informatio
 parameters are structural. In the latter, it is a limited-information (LIML) estimator, and only the final stage's or stages' coefficients are structural.
 
 {pstd}
-{cmd:cmp}'s modeling framework embraces those of the official Stata commands {help probit:probit}, {help ivprobit:ivprobit}, {help treatreg:treatreg}, 
-{help biprobit:biprobit}, {help tetrachoric:tetrachoric}, {help oprobit:oprobit}, {help mprobit:mprobit}, {help asmprobit:}, {help asroprobit:asroprobit}, {help tobit:tobit}, {help ivtobit:ivtobit}, 
+{cmd:cmp}'s modeling framework embraces those of the official Stata commands {help probit}, {help ivprobit}, {help treatreg}, 
+{help biprobit}, {help tetrachoric}, {help oprobit:oprobit}, {help mprobit}, {help asmprobit}, {help asroprobit}, {help tobit}, {help ivtobit}, 
 {help cnreg}, {help intreg}, {help truncreg}, {help fracreg}, {help heckman}, {help heckprob}, {help heckoprobit}, 
-{help xtreg:}, {help xtprobit}, {help xttobit}, {help xtintreg}, {help xtheckman}, {help meintreg}, {help meoprobit}, {help metobit}, {help metobit}, 
-{help eprobit}; to lesser degrees {help regress:regress}, {help sureg}, 
+{help xtreg}, {help xtprobit}, {help xttobit}, {help xtintreg}, {help xtheckman}, {help meintreg}, {help meoprobit}, {help metobit}, {help metobit}, 
+{help eprobit}; to lesser degrees {help regress}, {help sureg}, 
 and {help reg3}; and user-written {stata findit ssm:ssm}, {stata findit polychoric:polychoric}, {stata findit triprobit:triprobit}, 
 {stata findit mvprobit:mvprobit}, {stata findit bitobit:bitobit}, 
 {stata findit mvtobit:mvtobit}, {stata findit oheckman:oheckman}, {stata findit switch_probit:switch_probit}, {stata findit reoprob:reoprob}, 
-{stata findit cdsimeq:cdsimeq}, and {stata findit bioprobit:bioprobit}. While lacking the specialized post-estimation features many of those packages offer, {cmd:cmp} 
+{stata findit cdsimeq:cdsimeq}, and {stata findit bioprobit:bioprobit}.
+
+{pstd}
+While lacking the specialized post-estimation features in many of those packages, {cmd:cmp} 
 goes beyond them in the generality of model specification. Thanks to the flexibility of {help ml:ml}, on which it is built, it accepts linear coefficient {help constraint:constraints}
 as well as all weight types, vce types (robust, cluster, etc.), and {cmd:svy} settings. And it offers 
 more flexibility in model construction. For example, one can regress a continuous variable on two endogenous variables, 
@@ -210,7 +213,7 @@ on a more accurate model.
 {pstd}
 To inform {cmd:cmp} about the natures of the dependent variables and about which equations apply to which observations, the user must include the 
 {cmdab:ind:icators()} option after the comma in the {cmd:cmp} command line. This must contain one expression for each equation. The expression can 
-be a constant, a variable name, or a more complicated mathematical formula. Formulas that contain spaces or parentheses should be enclosed in 
+be a constant, a variable name, or a formula. Formulas that contain spaces or parentheses should be enclosed in 
 quotes. For each observation, each expression must evaluate to one of the following codes, with the meanings shown:
 
 {pin} 0 = observation is not in this equation's sample{p_end}
@@ -243,7 +246,7 @@ For clarity, users can execute the {cmd:cmp setup} subcommand, which defines glo
 {pin}$cmp_frac = 10{p_end}
 
 {pstd}
-Since {cmd:cmp} is a Maximum Likelihood estimator built on {help ml:ml}, equations are specified according to the {cmd:ml model} 
+Equations are specified according to the {cmd:ml model} 
 syntax. This means that for instrumented regressions, {cmd:cmp} differs from {help ivregress:ivregress}, {help ivprobit:ivprobit}, 
 {help ivtobit:ivtobit}, and similar commands
 in not automatically including exogenous regressors (included instruments) from the second stage in the first stage. So you must arrange for this 
@@ -271,12 +274,12 @@ As an illustration of the ideas here, some Stata estimation commands have wider 
 matches {cmd:ivregress 2sls X (Y=Z)} exactly even though 
 the documentation does not describe {help sureg:sureg} as an instrumental variables (IV) estimator. 
 (Iterated SUR is not a true ML estimator, but it converges to the same solution as ML-based SUR, as implemented, for example, in the demonstration command 
-{browse "http://www.stata-press.com/data/ml3.html":mysureg}. See Pagan (1979) on the LIML-iterated SUR connection.) And 
+{browse "http://www.stata-press.com/data/ml3.html":mysureg}. See Pagan (1979) on the LIML/iterated SUR connection.) And 
 {cmd:biprobit (X=Y) (Y=Z)} will consistently estimate an IV model in which {it:X} and {it:Y} are binary.
 
 {pstd}
 Version 6 of cmp, introduced in 2013, can handle violations of both conditions. This it does using the standard technique for estimating simultaneous-equation systems, which transforms
-a simultaneous system into an SUR one (with "reduced form" coefficients). Condition 2 is no longer required: models may refer to latent 
+a simultaneous system into an SUR one. Condition 2 is no longer required: models may refer to latent 
 variables, using a # suffix. {cmd:cmp (y1 = y2# x1) (y2 = x2), ind($cmp_probit $cmp_probit)} models y1 and y2 as probit and y1 as depending on the unobserved
 linear predictor behind y2. The #-suffixed references should be to names of equations rather than dependent variables, though these are the same by default. So, 
 equivalent to the previous example is {cmd:cmp (eq1:y1 = eq2# x1) (eq2:y2 = x2), ind($cmp_probit $cmp_probit)}. In addition, references to (latent) linear predictors
@@ -290,14 +293,14 @@ When fitting simultaneous linear (uncensored) systems, you must #-suffix enough 
 {cmd:cmp (y1 = y2# x1) (y2 = y1# x2), ind($cmp_cont $cmp_cont)} will work and produce the same results (the latter a bit more slowly).
 
 {pstd}
-In order to model random coefficients and effects, {cmd:cmp} borrows syntax from {help xtmixed:xtmixed}. It is best explained with examples.
-This {it:eq} specifies an equation with two levels of random effects corresponding to groups defined by the variables {cmd:school} and 
+In order to model random coefficients and effects, {cmd:cmp} borrows syntax from {help xtmixed:xtmixed}. It is best explained with 
+examples. This {it:eq} fragment specifies an equation with two levels of random effects corresponding to groups defined by the variables {cmd:school} and 
 {cmd:class}:
 
 {pin}(math = age || school: || class:)
 
 {pstd}
-({cmd:school}, coming first, is understood to be "above" {cmd:class} in the hierarchy.) At a given level, random effects can be 
+Coming first, {cmd:school} is understood to be "above" {cmd:class} in the hierarchy. At a given level, random effects can be 
 assumed present in some equations and not others. Those in more than one equation at a given level are assumed to be (potentially) correlated
 across equations (an assumption that can be overridden through constraints or the {opt cov:ariance()} option). This specifies a school effect only for math but not reading scores,
 and potentially correlated class effects for both:
@@ -335,7 +338,7 @@ function.
 
 {pstd}
 The traditional generaization of quadrature to multidimensional integrals, such as arise with correlated random effects and coefficients,
-is inefficient. A {it:d}-dimensional integral, can take 12^{it:d} evaluations. Heiss and Winschel (2008) put forward an alternative called sparse-grid integration
+is inefficient. A {it:d}-dimensional integral with 12 integration points for each dimension will take 12^{it:d} evaluations. Heiss and Winschel (2008) put forward an alternative called sparse-grid integration
 that reduces the number of evaluations needed for a given level of accuracy. {cmd:cmp} uses this method by default for multidimensional random
 effects/coefficients problems. Still, despite the reduction, for higher-dimensional problems, practicality may still require the user to reduce the precision of the grid below the default
 of 12, using the {cmdab:intp:oints()} option.
@@ -343,14 +346,14 @@ of 12, using the {cmdab:intp:oints()} option.
 {pstd}
 {cmd:cmp} also offers a competing method for computing these integrals: simulation. This differs in taking a large, representative set of draws from the hypothesized distributions,
 evaluating the integrand at each, and taking the simple average (Train 2009; Greene 2011, 
-chap 15). {bf:In the author's experience, despite the innovation of sparse grids, adaptive quadrature under-performs simulation on multidimensional random effects/coefficients.} 
-That is, simulation tends to achieve higher precision for a given runtime, sometimes especially when used
-with the DFP search algorithm (invoked with {cmd:tech(dfp)}). {bf:Adaptive quadrature appears superior for single-effect models} (and for it, the default Berndt-Hall-Hall-Hausman
-search method often works best). 
+chap 15). {bf:In the author's experience, despite the innovation of sparse grids, adaptive quadrature under-performs simulation on multidimensional random effects/coefficients.} That
+is, simulation tends to achieve higher precision for a given runtime, sometimes especially when used
+with the DFP search algorithm (invoked with {cmd:tech(dfp)}). {bf:Adaptive quadrature appears superior for single-effect models}; and for it, the default Berndt-Hall-Hall-Hausman
+search method often works best.
 
 {pstd}
 To trigger simulation, include the {cmdab:red:raws()} option. This sets the number of draws per observation
-at each level,
+at each level, along with
 the type of sequence (Halton, Hammersley, generalized Halton, pseudorandom), whether antithetics are also drawn, and, in the Halton and Hammersley caes,
 whether and how the sequences should be scrambled. (See Gates 2006 for more on all these concepts except scrambling, for which see Kolenikov 2012.)
 For (generalized) Halton and Hammersley sequences, it is preferable to make the number of draws prime, to insure more variable coverage of the
@@ -367,8 +370,8 @@ Estimation problems with observations that are censored in three or more equatio
 such as a trivariate probit, require calculation of cumulative 
 joint normal distributions of dimension three or higher. This is a non-trivial problem. The preferred technique again involves simulation: the method of
 Geweke, Hajivassiliou, and Keane (GHK). (Greene 2011; Cappellari and Jenkins 2003; Gates 2006). {cmd:cmp} accesses the algorithm 
-through the separately available Mata function {stata findit ghk2:ghk2()}, which must be installed for {cmd:cmp} to work. 
-Modeled on the built-in {help mf_ghk:ghk()} and {help mf_ghkfast:ghkfast()}, {stata findit ghk2:ghk2()} gives users choices about the length and nature of the 
+through the separately available Mata function {stata findit ghk2:ghk2()}, which must be installed for {cmd:cmp} to work. Modeled 
+on the built-in {help mf_ghk:ghk()} and {help mf_ghkfast:ghkfast()}, {stata findit ghk2:ghk2()} gives users choices about the length and nature of the 
 sequences generated for the simulation,
 which choices {cmd:cmp} largely passes on through the optional {cmdab:ghkd:raws()} option, which includes {cmd:type()}, {cmdab:anti:thetics}, {cmdab:scr:amble()} 
 suboptions. See {help cmp##options:options}
@@ -791,14 +794,14 @@ Please cite it as such: {p_end}
 {title:Introductory examples}
 
 {pstd}The purpose of {cmd:cmp} is not to match standard commands, but to fit models otherwise beyond easy estimation in Stata. But replications 
-illustrate how {cmd:cmp} works (colored text is clickable):
+are the best way to introduce how to use {cmd:cmp} (colored text is clickable):
 
 {phang}{cmd:* Define indicator macros for clarity.}{p_end}
 {phang}. {stata cmp setup}{p_end}
 
 {phang}. {stata webuse laborsup}{p_end}
 
-{phang}. {stata reg kids fem_inc male_educ}{p_end}
+{phang}. {stata regress kids fem_inc male_educ}{p_end}
 {phang}. {stata cmp (kids = fem_inc male_educ), ind($cmp_cont) quietly}{p_end}
 
 {phang}. {stata sureg (kids = fem_inc male_educ) (fem_work = male_educ), isure}{p_end}
@@ -1096,4 +1099,4 @@ to labor supply. {it:Econometrica} 54(3): 679-85.{p_end}
 {title:Acknowledgements}
 
 {pstd}Thanks to Kit Baum, David Drukker, Arne Hole, Stanislaw Kolenikov, and Mead Over for comments, and to Florian Heiss and Viktor Winschel for permission to adapt
-their sparse grid Mata code.
+their sparse grid Mata code.{p_end}

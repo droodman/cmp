@@ -249,10 +249,10 @@ void _ms_findomitted(string scalar bname, string scalar Vname) {
 
 	stripe = st_matrixcolstripe(bname)
 	for (i=rows(stripe); i; i--)
-		if (!(st_matrix(bname)[i] & st_matrix(Vname)[i,i])) {
+		if ((st_matrix(bname)[i] & st_matrix(Vname)[i,i])==0) {
 			s = tokens(stripe[i,2], "#")
 			for (j=cols(s); j; j--)
-				if (s[j]!="#" & !(strmatch(s[j],"*b*.*") | strmatch(s[j],"*o*.*"))) {
+				if (s[j]!="#" & (strmatch(s[j],"*b*.*") | strmatch(s[j],"*o*.*"))==0) {
 					stata("fvexpand o."+s[j])
 					s[j] = st_global("r(varlist)")
 				}
@@ -428,7 +428,7 @@ real colvector binormalGenz(real colvector x1, real colvector x2, real scalar r,
 	real scalar a, as, absr, asinr; real colvector X, W, B, C, D, retval, BS, HS, HK, negx2, normalx1, normalx2, normalnegx1, normalnegx2; real rowvector xs, rs, sn, sn2; pointer (real colvector) px2
 
 	if (r>=.) return (J(rows(x1),1,.))
-	if (!r  ) return (normal(x1):*normal(x2))
+	if (r==0) return (normal(x1):*normal(x2))
 	
 	if ((absr=abs(r)) < 0.925) {
 		// Gauss Legendre Points and Weights
@@ -1234,11 +1234,11 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
   for (l=1; l<=L; l++) {  // loop over hierarchy levels
 		RE = &((*REs)[l])
 		RE->sig = RE->rho = J(1, 0, 0)
-		if (!RE->covAcross)  // exchangeable across?
+		if (RE->covAcross==0)  // exchangeable across?
 			lnsigWithin = lnsigAccross = moptimize_util_xb(M, b, i++)
 
 		for (eq1=1; eq1<=RE->NEq; eq1++) {
-			if (!RE->covWithin[RE->Eqs[eq1]] & RE->covAcross)  // exchangeable within but not across?
+			if (RE->covWithin[RE->Eqs[eq1]]==0 & RE->covAcross)  // exchangeable within but not across?
 				lnsigWithin = lnsigAccross
 
 			for (c1=1; c1<=RE->NEff[eq1]; c1++)
@@ -1252,12 +1252,12 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 					RE->sig = RE->sig, RE->FixedSigs[RE->Eqs[eq1]]
 		}
 
-		if (!RE->covAcross & RE->d > 1)  // exchangeable across?
+		if (RE->covAcross==0 & RE->d > 1)  // exchangeable across?
 			atanhrhoAccross = moptimize_util_xb(M, b, i++)
 		for (eq1=1; eq1<=RE->NEq; eq1++) {
 			if (RE->covWithin[RE->Eqs[eq1]] == 2)  // independent?
 				atanhrhoWithin = 0
-			else if (!RE->covWithin[RE->Eqs[eq1]] & RE->NEff[eq1] > 1)  // exchangeable within?
+			else if (RE->covWithin[RE->Eqs[eq1]]==0 & RE->NEff[eq1] > 1)  // exchangeable within?
 				atanhrhoWithin = moptimize_util_xb(M, b, i++)
 			for (c1=1; c1<=RE->NEff[eq1]; c1++) {
 				for (c2=c1+1; c2<=RE->NEff[eq1]; c2++) {
@@ -1290,7 +1290,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 	if (mod->WillAdapt)
 		if (NewIter = (Iter = moptimize_result_iterations(M)) != mod->LastIter) {
 			mod->LastIter = Iter
-			if (!mod->Adapted)
+			if (mod->Adapted==0)
 				if (mod->AdaptNextTime) {
 					mod->set_AdaptNow(1)
 					printf("\n{res}Performing Naylor-Smith adaptive quadrature.\n")
@@ -1337,7 +1337,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 				(*REs)[l+1].theta[_eq].M = rows(RE->TotalEffect[1,_eq].M)? RE->theta[_eq].M :+ RE->TotalEffect[1,_eq].M : RE->theta[_eq].M
 			}
 			for (eq1=d; eq1; eq1--)  // by default lower errors = upper ones, for eqs with no random effects/coefs at this level
-				if (!anyof(RE->GammaEqs,eq1))
+				if (anyof(RE->GammaEqs,eq1)==0)
 					(*REs)[l+1].theta[eq1].M = RE->theta[eq1].M
 			if (todo)
 				RE->D = ghk2_dTdV(RE->T') * RE->D
@@ -1676,13 +1676,13 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 				}
 			}
 			RE->plnL = &(ln(*(RE->plnL)) - shift)
-			if (!mod->Quadrature)
+			if (mod->Quadrature==0)
 				RE->plnL = &(*(RE->plnL) :- RE->lnNumREDraws)
 		}
 	} while (l) // exit when adding one more draw causes carrying all the way accross the draw counters, back to 1, 1, 1...
 
 	if (L > 1) {
-		lnf = quadsum(rows(REs->Weights)? REs->Weights:* *(REs->plnL) : *(REs->plnL), 1)
+		lnf = quadsum(rows(REs->Weights)? REs->Weights :* *(REs->plnL) : *(REs->plnL), 1)
 		if (mod->AdaptivePhaseThisEst & NewIter) {
 			if (mod->AdaptivePhaseThisEst = mreldif(mod->LastlnLThisIter, mod->LastlnLLastIter) >= 1e-6)
 				mod->LastlnLLastIter = mod->LastlnLThisIter
@@ -1703,7 +1703,7 @@ void cmp_gf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 	mod = moptimize_init_userinfo(M, 1)
 	cmp_lf1(M, todo, b, lnf, _S, H)
 
-	if (!hasmissing(lnf)) {
+	if (hasmissing(lnf)==0) {
 		lnf = *(mod->REs->plnL)
 		if (todo) {
 			IDRanges = mod->REs->IDRanges
@@ -1803,14 +1803,14 @@ void cmp_model::cmp_init(transmorphic M) {
 			// build dSigdParams, derivative of sig, vech(rho) vector w.r.t. vector of actual sig, rho parameters, reflecting "exchangeable" and "independent" options
 			real scalar accross, within, c1, c2
 			t = J(0, 1, 0); i = 0 // index of entries in full sig, vech(rho) vector
-			if (!RE->covAcross) // exchangeable across?
+			if (RE->covAcross==0) // exchangeable across?
 				accross = ++i
 			for (eq1=1; eq1<=RE->NEq; eq1++) {
-				if (!RE->covWithin[RE->Eqs[eq1]]) // exchangeable within?
-					if (!RE->covAcross) // exchangeable across?
-						within = accross
-					else
+				if (RE->covWithin[RE->Eqs[eq1]]==0) // exchangeable within?
+					if (RE->covAcross) // exchangeable across?
 						within = ++i
+					else
+						within = accross
 				for (c1=1; c1<=RE->NEff[eq1]; c1++)
 					if  (RE->FixedSigs[RE->Eqs[eq1]] == .)
 						if (RE->covWithin[RE->Eqs[eq1]] & RE->covAcross) // exchangeable neither within nor across?
@@ -1820,10 +1820,10 @@ void cmp_model::cmp_init(transmorphic M) {
 					else
 						t = t \ . // entry of sig vector corresponds to no parameter in model, being fixed
 			}
-			if (!RE->covAcross & RE->d>1) // exchangeable across?
+			if (RE->covAcross==0 & RE->d>1) // exchangeable across?
 				accross  = ++i
 			for (eq1=1; eq1<=RE->NEq; eq1++) {
-				if (!RE->covWithin[RE->Eqs[eq1]] & RE->NEff[eq1]>1) // exchangeable within?
+				if (RE->covWithin[RE->Eqs[eq1]]==0 & RE->NEff[eq1]>1) // exchangeable within?
 					within = ++i
 				for (c1=1; c1<=RE->NEff[eq1]; c1++) {
 					for (c2=c1+1; c2<=RE->NEff[eq1]; c2++) {
@@ -1925,7 +1925,7 @@ void cmp_model::cmp_init(transmorphic M) {
 		if (Quadrature) {
 			QuadData = SpGr(RE->d, NumREDraws[l+1])
 			NDraws = NumREDraws[l+1] = rows(*QuadData[1])
-			if (!WillAdapt) printf("Number of integration points = %f.\n\n", NDraws)
+			if (WillAdapt==0) printf("Number of integration points = %f.\n\n", NDraws)
 // inefficiently duplicates draws over groups then parcels them out below
 			U = J(RE->N, 1, 1) # (*QuadData[1])
 			RE->QuadX = *QuadData[1]
@@ -2083,7 +2083,7 @@ void cmp_model::cmp_init(transmorphic M) {
 				v->mprobit[k].out = v->TheseInds[start] - mprobit_ind_base // eq of chosen alternative
 				v->mprobit[k].res = cmp_selectindex((v->TheseInds :& one2d:>start  :& one2d:<=stop)[v->cens]) // index in v->ECens for relative differencing results
 				v->mprobit[k].in =  cmp_selectindex( v->TheseInds :& one2d:>=start :& one2d:<=stop :& one2d:!=v->mprobit[k].out) // eqs of rejected alternatives
-				(v->QE)[mprobit,mprobit] = J(d_mprobit+1, 1, 0), cmp_insert(-I(d_mprobit), v->mprobit[k].out-start+1-sum(v->TheseInds[|start\v->mprobit[k].out|]:==0), J(1, d_mprobit, 1))
+				(v->QE)[mprobit,mprobit] = J(d_mprobit+1, 1, 0), cmp_insert(-I(d_mprobit), v->mprobit[k].out-start+1-sum(!v->TheseInds[|start\v->mprobit[k].out|]), J(1, d_mprobit, 1))
 			}
 		}
 
@@ -2173,7 +2173,7 @@ void cmp_model::cmp_init(transmorphic M) {
 
 			if (v->d_two_cens | v->d_trunc) {
 				v->dPhi_dpF = J(v->N, v->dCensNonrobase, 0)
-				if (!v->d_uncens)
+				if (v->d_uncens==0)
 					v->dPhi_dF = J(v->N, d, 0)
 				if (v->d_trunc) {
 					v->dPhi_dEt = J(v->N, d,  0)
@@ -2181,7 +2181,7 @@ void cmp_model::cmp_init(transmorphic M) {
 				}
 			}
 
-			if (v->d_cens & !v->d_uncens)
+			if (v->d_cens & v->d_uncens==0)
 				v->dPhi_dSig = J(v->N, d2, 0)
 			if (v->d_cens & v->d_uncens) {
 				v->dPhi_dpE_dSig = J(v->N, d2, 0)
