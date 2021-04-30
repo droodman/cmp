@@ -1,4 +1,4 @@
-/* cmp 8.5.2 24 March 2021
+/* cmp 8.5.3 30 April 2021
    Copyright (C) 2007-21 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -65,6 +65,7 @@ struct subview { // info associated with subsets of data defined by given combin
 	real rowvector SigIndsTrunc // Ditto for trunc obs
 	real rowvector SigIndsCensUncens // Permutes vectorized upper triangle of Sig to order corresponding to cens eqs first
 	real rowvector CutInds // Indexes, within full list of oprobit cuts, of those relevant for the equations in these observations
+  real rowvector NotBaseEq  // indicators of which eqs are not mprobit or roprobit base eqs
 	real matrix QSig   // correction factor for trial cov matrix reflecting scores of passed "error" (XB,-XB,Y-XB, or XB-Y) w.r.t XB, and relative differencing
 	real matrix Sig     // Sig, reflecting that correction
 	real matrix Omega   // invGamma * Sig * invGamma' in Gamma models. Slips into place of "Sig".
@@ -1194,6 +1195,8 @@ void cmp_model::_st_view(real matrix V, real scalar missing, string rowvector va
 
 
 
+
+
 // main evaluator routine
 void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
 	real matrix Rho, t, L_g, invGamma, C, dOmega_dSig, Subscript
@@ -1388,7 +1391,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 					++ECensEq
 					++FCensEq
 				} else {
-					if (v->TheseInds[i]<mod->mprobit_ind_base | v->TheseInds[i]>=mod->roprobit_ind_base) {  // skip mprobit base eqs but include unobserved case (TheseInds=.)
+					if (v->NotBaseEq[i]) {
 						v->theta[i].M = base->theta[i].M[v->SubsampleInds]
 
 						if (v->TheseInds[i] & v->TheseInds[i]<.) {
@@ -1509,8 +1512,10 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 					if (cols(base->D)) S[v->SubsampleInds, mod->Scores.  SigScores.M] = *pdlnL_dSig * v->invGammaQSigD
 					for (i=m=1; m<=d; m++)
 						for (c=1; c<=mod->G[m]; c++)
-							S[v->SubsampleInds, mod->Scores.GammaScores[i++].M] = v->TheseInds[m]? 
-								(*pdlnL_dtheta)[v->one2N,m]:*v->theta[(*mod->GammaIndByEq[m])[c]].M + *pdlnL_dSig*v->dOmega_dGamma[m,c].M : v->J_N_1_0
+   						S[v->SubsampleInds, mod->Scores.GammaScores[i++].M] = v->TheseInds[m]? 
+								(v->NotBaseEq[(*mod->GammaIndByEq[m])[c]] ? *pdlnL_dSig*v->dOmega_dGamma[m,c].M + (*pdlnL_dtheta)[v->one2N,m]:*v->theta[(*mod->GammaIndByEq[m])[c]].M :
+                                                            *pdlnL_dSig*v->dOmega_dGamma[m,c].M                                                                        ) :
+                v->J_N_1_0
 				} else {
 					_editmissing(*pdlnL_dtheta, 0)
 					_editmissing(v->dPhi_dcuts, 0)
@@ -2117,6 +2122,8 @@ void cmp_model::cmp_init(transmorphic M) {
 				(v->roprobit_Q_Sig)[i] = &QE2QSig(*((v->roprobit_QE)[i] = &t[v->cens, v->cens_nonrobase]))
 			}
 		}
+
+    v->NotBaseEq = v->TheseInds :< mprobit_ind_base :| v->TheseInds :>= roprobit_ind_base
 
 		if (v->d_trunc) {
 			v->one2d_trunc = 1..v->d_trunc

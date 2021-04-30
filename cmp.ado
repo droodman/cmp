@@ -1,4 +1,4 @@
-*! cmp 8.5.2 24 March 2021
+*! cmp 8.5.3 30 April 2021
 *! Copyright (C) 2007-21 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -2525,6 +2525,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.5.3 Fixed crash on # reference to m/roprobit base case
 * 8.5.2 Fixed crash on non-hierarchical svy models
 * 8.5.1 Small speed-ups
 * 8.5.0 Made predict, pr factor in error variance in all cases, not assume it's 1

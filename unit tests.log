@@ -32,12 +32,12 @@ Fitting constants-only model for LR test of overall model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =        500
-                                                LR chi2(2)        =      24.10
-Log likelihood = -851.94963                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =    500
+                                                        LR chi2(2)    =  24.10
+Log likelihood = -851.94963                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-        kids |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+        kids | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 kids         |
      fem_inc |  -.0237664   .0048068    -4.94   0.000    -.0331877   -.0143452
@@ -58,12 +58,12 @@ Fitting constant-only model for LR test of overall model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =        500
-                                                LR chi2(3)        =      43.82
-Log likelihood = -1194.6747                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =    500
+                                                        LR chi2(3)    =  43.82
+Log likelihood = -1194.6747                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 kids         |
      fem_inc |  -.0172772   .0065563    -2.64   0.008    -.0301273    -.004427
@@ -92,12 +92,12 @@ Fitting constant-only model for LR test of overall model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =        500
-                                                LR chi2(6)        =     141.07
-Log likelihood = -2318.4783                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =    500
+                                                        LR chi2(6)    = 141.07
+Log likelihood = -2318.4783                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 fem_educ     |
         kids |   .1755926   .0845501     2.08   0.038     .0098775    .3413077
@@ -129,12 +129,12 @@ Fitting constant-only model for LR test of overall model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =        500
-                                                LR chi2(4)        =     356.31
-Log likelihood = -1038.4289                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =    500
+                                                        LR chi2(4)    = 356.31
+Log likelihood = -1038.4289                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 kids         |
      fem_inc |  -.0237664   .0048065    -4.94   0.000    -.0331869   -.0143459
@@ -148,7 +148,7 @@ fem_work     |
 -------------+----------------------------------------------------------------
     /lnsig_1 |   .2849607   .0316228     9.01   0.000      .222981    .3469403
     /lnsig_2 |   -.183551   .5726942    -0.32   0.749    -1.306011     .938909
-/atanhrho_12 |  -1.507716   .6323634    -2.38   0.017    -2.747126   -.2683068
+/atanhrho_12 |  -1.507716   .6323635    -2.38   0.017    -2.747126   -.2683068
 -------------+----------------------------------------------------------------
        sig_1 |    1.32971   .0420492                      1.249797    1.414732
        sig_2 |   .8323094   .4766588                      .2708985     2.55719
@@ -164,12 +164,12 @@ Fitting constant-only model for LR test of overall model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =        500
-                                                LR chi2(4)        =     356.77
-Log likelihood = -1038.1999                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =    500
+                                                        LR chi2(4)    = 356.77
+Log likelihood = -1038.1999                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 kids         |
      fem_inc |  -.0187422   .0043993    -4.26   0.000    -.0273647   -.0101198
@@ -199,12 +199,12 @@ Fitting constants-only model for LR test of overall model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =        500
-                                                LR chi2(2)        =      14.81
-Log likelihood = -222.11678                     Prob > chi2       =     0.0006
+Mixed-process regression                                Number of obs =    500
+                                                        LR chi2(2)    =  14.81
+Log likelihood = -222.11678                             Prob > chi2   = 0.0006
 
 ------------------------------------------------------------------------------
-        kids |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+        kids | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 kids         |
      fem_inc |  -.0189857   .0049976    -3.80   0.000    -.0287808   -.0091905
@@ -216,15 +216,15 @@ kids         |
 
 . margins, dydx(*) predict(pr)
 
-Average marginal effects                        Number of obs     =        500
-Model VCE    : OIM
+Average marginal effects                                   Number of obs = 500
+Model VCE: OIM
 
-Expression   : Pr(kids), predict(pr)
-dy/dx w.r.t. : fem_inc male_educ
+Expression: Pr(kids), predict(pr)
+dy/dx wrt:  fem_inc male_educ
 
 ------------------------------------------------------------------------------
              |            Delta-method
-             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
      fem_inc |  -.0046772   .0011955    -3.91   0.000    -.0070204    -.002334
    male_educ |  -.0106583   .0064587    -1.65   0.099    -.0233171    .0020006
@@ -239,12 +239,12 @@ Fitting constants-only model for LR test of overall model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =        500
-                                                LR chi2(2)        =      24.40
-Log likelihood = -788.56366                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =    500
+                                                        LR chi2(2)    =  24.40
+Log likelihood = -788.56366                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-        kids |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+        kids | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 kids         |
      fem_inc |  -.0190885   .0039024    -4.89   0.000    -.0267371   -.0114398
@@ -258,15 +258,15 @@ kids         |
 
 . margins, dydx(*) predict(eq(#1) outcome(#2) pr)
 
-Average marginal effects                        Number of obs     =        500
-Model VCE    : OIM
+Average marginal effects                                   Number of obs = 500
+Model VCE: OIM
 
-Expression   : Pr(kids=1), predict(eq(#1) outcome(#2) pr)
-dy/dx w.r.t. : fem_inc male_educ
+Expression: Pr(kids=1), predict(eq(#1) outcome(#2) pr)
+dy/dx wrt:  fem_inc male_educ
 
 ------------------------------------------------------------------------------
              |            Delta-method
-             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
      fem_inc |   .0025021   .0005424     4.61   0.000     .0014391    .0035652
    male_educ |   .0039217   .0024177     1.62   0.105    -.0008169    .0086603
@@ -286,13 +286,13 @@ Iteration 1:   log likelihood = -222.14481
 Iteration 2:   log likelihood = -222.11678  
 Iteration 3:   log likelihood = -222.11678  
 
-Probit regression                               Number of obs     =        500
-                                                LR chi2(2)        =      14.81
-                                                Prob > chi2       =     0.0006
-Log likelihood = -222.11678                     Pseudo R2         =     0.0323
+Probit regression                                       Number of obs =    500
+                                                        LR chi2(2)    =  14.81
+                                                        Prob > chi2   = 0.0006
+Log likelihood = -222.11678                             Pseudo R2     = 0.0323
 
 ------------------------------------------------------------------------------
-     anykids |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+     anykids | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
      fem_inc |  -.0189857   .0049976    -3.80   0.000    -.0287808   -.0091905
    male_educ |  -.0432639   .0263379    -1.64   0.100    -.0948853    .0083574
@@ -304,13 +304,13 @@ Iteration 1:   log likelihood = -327.72272
 Iteration 2:   log likelihood =  -327.7042  
 Iteration 3:   log likelihood =  -327.7042  
 
-Probit regression                               Number of obs     =        500
-                                                LR chi2(1)        =      33.86
-                                                Prob > chi2       =     0.0000
-Log likelihood =  -327.7042                     Pseudo R2         =     0.0491
+Probit regression                                       Number of obs =    500
+                                                        LR chi2(1)    =  33.86
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -327.7042                              Pseudo R2     = 0.0491
 
 ------------------------------------------------------------------------------
-    fem_work |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+    fem_work | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
    male_educ |  -.1267233    .022085    -5.74   0.000    -.1700091   -.0834375
        _cons |   1.400186   .2690126     5.20   0.000     .8729312    1.927441
@@ -324,12 +324,12 @@ Iteration 0:   log likelihood =  -549.7811
 Iteration 1:   log likelihood = -549.72147  
 Iteration 2:   log likelihood = -549.72146  
 
-Mixed-process regression                        Number of obs     =        500
-                                                LR chi2(3)        =      42.31
-Log likelihood = -549.72146                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =    500
+                                                        LR chi2(3)    =  42.31
+Log likelihood = -549.72146                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 anykids      |
      fem_inc |  -.0169214   .0068244    -2.48   0.013     -.030297   -.0035458
@@ -354,17 +354,17 @@ fem_work     |
 (272 real changes made)
 
 . margins, dydx(fem_inc) expression(exp(predict(lnl))) force // marginal effect on probability of (1,1)
-(note: expression is a function of possibly stochastic quantities other than e(b))
+note: expression is a function of possibly stochastic quantities other than e(b).
 
-Average marginal effects                        Number of obs     =        500
-Model VCE    : OIM
+Average marginal effects                                   Number of obs = 500
+Model VCE: OIM
 
-Expression   : exp(predict(lnl))
-dy/dx w.r.t. : fem_inc
+Expression: exp(predict(lnl))
+dy/dx wrt:  fem_inc
 
 ------------------------------------------------------------------------------
              |            Delta-method
-             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
      fem_inc |  -.0019524   .0006673    -2.93   0.003    -.0032603   -.0006446
 ------------------------------------------------------------------------------
@@ -378,12 +378,12 @@ Fitting individual models as starting point for full model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =        500
-                                                Wald chi2(0)      =          .
-Log likelihood = -570.87444                     Prob > chi2       =          .
+Mixed-process regression                                   Number of obs = 500
+                                                           Wald chi2(0)  =   .
+Log likelihood = -570.87444                                Prob > chi2   =   .
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 anykids      |
        _cons |   .9462914   .0661961    14.30   0.000     .8165493    1.076033
@@ -408,13 +408,13 @@ Iteration 1:   log likelihood = -255.36855
 Iteration 2:   log likelihood = -255.31444  
 Iteration 3:   log likelihood = -255.31444  
 
-Probit regression                               Number of obs     =        500
-                                                LR chi2(3)        =     178.64
-                                                Prob > chi2       =     0.0000
-Log likelihood = -255.31444                     Pseudo R2         =     0.2592
+Probit regression                                       Number of obs =    500
+                                                        LR chi2(3)    = 178.64
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -255.31444                             Pseudo R2     = 0.2592
 
 ------------------------------------------------------------------------------
-    fem_work |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+    fem_work | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
    other_inc |  -.0382429    .004075    -9.38   0.000    -.0462297   -.0302561
     fem_educ |   .2175954   .0266075     8.18   0.000     .1654458    .2697451
@@ -435,7 +435,7 @@ See cmp tips.
        Total |  167745.542       499  336.163411   Root MSE        =    16.733
 
 ------------------------------------------------------------------------------
-   other_inc |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+   other_inc | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
 -------------+----------------------------------------------------------------
     fem_educ |   .3351866   .2837344     1.18   0.238    -.2222829    .8926562
         kids |   .8329056   .5497701     1.52   0.130    -.2472597    1.913071
@@ -458,12 +458,12 @@ Iteration 2:   log likelihood = -2368.2515
 Iteration 3:   log likelihood = -2368.2064  
 Iteration 4:   log likelihood = -2368.2062  
 
-Mixed-process regression                        Number of obs     =        500
-                                                LR chi2(6)        =     191.16
-Log likelihood = -2368.2062                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =    500
+                                                        LR chi2(6)    = 191.16
+Log likelihood = -2368.2062                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 fem_work     |
    other_inc |  -.0542757   .0060854    -8.92   0.000    -.0662028   -.0423486
@@ -485,17 +485,17 @@ other_inc    |
 ------------------------------------------------------------------------------
 
 . margins, predict(pr) dydx(*) force
-(note: prediction is a function of possibly stochastic quantities other than e(b))
+note: prediction is a function of possibly stochastic quantities other than e(b).
 
-Average marginal effects                        Number of obs     =        500
-Model VCE    : OIM
+Average marginal effects                                   Number of obs = 500
+Model VCE: OIM
 
-Expression   : Pr(fem_work), predict(pr)
-dy/dx w.r.t. : other_inc fem_educ kids male_educ
+Expression: Pr(fem_work), predict(pr)
+dy/dx wrt:  other_inc fem_educ kids male_educ
 
 ------------------------------------------------------------------------------
              |            Delta-method
-             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
    other_inc |   -.014015   .0009836   -14.25   0.000    -.0159428   -.0120872
     fem_educ |   .0545128   .0066007     8.26   0.000     .0415757    .0674499
@@ -512,12 +512,12 @@ Fitting constant-only model for LR test of overall model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =        500
-                                                LR chi2(4)        =      93.37
-Log likelihood = -2417.1007                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =    500
+                                                        LR chi2(4)    =  93.37
+Log likelihood = -2417.1007                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 other_inc    |
     fem_educ |   1.191099   .2863871     4.16   0.000     .6297904    1.752407
@@ -545,12 +545,12 @@ Fitting constants-only model for LR test of overall model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =        500
-                                                LR chi2(2)        =      59.33
-Log likelihood = -1188.5826                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =    500
+                                                        LR chi2(2)    =  59.33
+Log likelihood = -1188.5826                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-     fem_inc |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+     fem_inc | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 fem_inc      |
         kids |  -4.135794   .8287292    -4.99   0.000    -5.760073   -2.511514
@@ -564,15 +564,15 @@ fem_inc      |
 
 . margins, dydx(*) predict(pr(17 .))
 
-Average marginal effects                        Number of obs     =        500
-Model VCE    : OIM
+Average marginal effects                                   Number of obs = 500
+Model VCE: OIM
 
-Expression   : predict(pr(17 .))
-dy/dx w.r.t. : kids male_educ
+Expression: predict(pr(17 .))
+dy/dx wrt:  kids male_educ
 
 ------------------------------------------------------------------------------
              |            Delta-method
-             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
         kids |  -.0649911   .0122597    -5.30   0.000    -.0890197   -.0409625
    male_educ |  -.0401192   .0061783    -6.49   0.000    -.0522286   -.0280099
@@ -585,17 +585,17 @@ Fitting individual models as starting point for full model fit.
 Note: For programming reasons, these initial estimates may deviate from your specification.
       For exact fits of each equation alone, run cmp separately on each.
 
-Tobit regression                                Number of obs     =        500
-                                                   Uncensored     =        227
-Limits: lower = 10                                 Left-censored  =        272
-        upper = 84.61                              Right-censored =          1
+Tobit regression                                    Number of obs     =    500
+                                                           Uncensored =    227
+Limits: Lower =    10                                   Left-censored =    272
+        Upper = 84.61                                  Right-censored =      1
 
-                                                LR chi2(2)        =      59.41
-                                                Prob > chi2       =     0.0000
-Log likelihood = -1186.6643                     Pseudo R2         =     0.0244
+                                                    LR chi2(2)        =  59.41
+                                                    Prob > chi2       = 0.0000
+Log likelihood = -1186.6643                         Pseudo R2         = 0.0244
 
 ------------------------------------------------------------------------------
-     fem_inc |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+     fem_inc | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
 -------------+----------------------------------------------------------------
         kids |  -4.155063   .8331107    -4.99   0.000    -5.791908   -2.518218
    male_educ |  -2.569653   .4333412    -5.93   0.000    -3.421055   -1.718251
@@ -612,7 +612,7 @@ Log likelihood = -1186.6643                     Pseudo R2         =     0.0244
        Total |    3478.422       499  6.97078557   Root MSE        =    2.3979
 
 ------------------------------------------------------------------------------
-   male_educ |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+   male_educ | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
 -------------+----------------------------------------------------------------
         kids |  -.1230899   .0800727    -1.54   0.125    -.2804134    .0342336
    other_inc |   .0519343   .0063989     8.12   0.000      .039362    .0645066
@@ -638,12 +638,12 @@ Iteration 10:  log likelihood = -2066.0937
 Iteration 11:  log likelihood = -2065.9115  
 Iteration 12:  log likelihood = -2065.9114  
 
-Mixed-process regression                        Number of obs     =        500
-                                                LR chi2(5)        =     659.40
-Log likelihood = -2065.9114                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =    500
+                                                        LR chi2(5)    = 659.40
+Log likelihood = -2065.9114                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 fem_inc      |
         kids |  -6.207803   2.710826    -2.29   0.022    -11.52093   -.8946812
@@ -677,12 +677,12 @@ Fitting constants-only model for LR test of overall model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =        488
-                                                LR chi2(6)        =     221.61
-Log likelihood = -856.33293                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =    488
+                                                        LR chi2(6)    = 221.61
+Log likelihood = -856.33293                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 wage1        |
          age |   .7914438   .4433604     1.79   0.074    -.0775265    1.660414
@@ -709,12 +709,12 @@ Fitting constants-only model for LR test of overall model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =        150
-                                                LR chi2(4)        =      12.43
-Log likelihood = -1200.9157                     Prob > chi2       =     0.0144
+Mixed-process regression                                Number of obs =    150
+                                                        LR chi2(4)    =  12.43
+Log likelihood = -1200.9157                             Prob > chi2   = 0.0144
 
 ------------------------------------------------------------------------------
-        whrs |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+        whrs | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 whrs         |
          kl6 |  -803.0036    321.361    -2.50   0.012     -1432.86   -173.1476
@@ -739,13 +739,13 @@ Fitting individual models as starting point for full model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =      4,075
-                                                Wald chi2(4)      =     695.89
-Log pseudolikelihood = -1681.9607               Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =  4,075
+                                                        Wald chi2(4)  = 695.89
+Log pseudolikelihood = -1681.9607                       Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
              |               Robust
-       prate |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+       prate | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 prate        |
        mrate |   .5955725    .038756    15.37   0.000     .5196122    .6715328
@@ -759,15 +759,15 @@ prate        |
 
 . margins, dydx(mrate) predict(pr)
 
-Average marginal effects                        Number of obs     =      4,075
-Model VCE    : Robust
+Average marginal effects                                 Number of obs = 4,075
+Model VCE: Robust
 
-Expression   : Pr(prate), predict(pr)
-dy/dx w.r.t. : mrate
+Expression: Pr(prate), predict(pr)
+dy/dx wrt:  mrate
 
 ------------------------------------------------------------------------------
              |            Delta-method
-             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
        mrate |   .1362769   .0088064    15.47   0.000     .1190166    .1535372
 ------------------------------------------------------------------------------
@@ -782,13 +782,13 @@ Fitting individual models as starting point for full model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =        615
-                                                Wald chi2(10)     =      40.18
-Log likelihood = -534.52833                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =    615
+                                                        Wald chi2(10) =  40.18
+Log likelihood = -534.52833                             Prob > chi2   = 0.0000
 
  ( 1)  [Indemnity]_cons = 0
 ------------------------------------------------------------------------------
-      insure |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+      insure | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 Indemnity    |
        _cons |          0  (omitted)
@@ -812,15 +812,15 @@ Uninsure     |
 
 . margins, dydx(nonwhite) predict(eq(#2) pr)
 
-Average marginal effects                        Number of obs     =        615
-Model VCE    : OIM
+Average marginal effects                                   Number of obs = 615
+Model VCE: OIM
 
-Expression   : predict(eq(#2) pr)
-dy/dx w.r.t. : nonwhite
+Expression: predict(eq(#2) pr)
+dy/dx wrt:  nonwhite
 
 ------------------------------------------------------------------------------
              |            Delta-method
-             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
     nonwhite |   .2203455   .0499824     4.41   0.000     .1223818    .3183092
 ------------------------------------------------------------------------------
@@ -831,12 +831,12 @@ dy/dx w.r.t. : nonwhite
 . drop invehiclecost traveltime partysize
 
 . reshape wide choice termtime travelcost, i(id) j(mode)
-(note: j = 1 2 3 4)
+(j = 1 2 3 4)
 
-Data                               long   ->   wide
+Data                               Long   ->   Wide
 -----------------------------------------------------------------------------
-Number of obs.                      840   ->     210
-Number of variables                   6   ->      14
+Number of observations              840   ->   210         
+Number of variables                   6   ->   14          
 j variable (4 values)              mode   ->   (dropped)
 xij variables:
                                  choice   ->   choice1 choice2 ... choice4
@@ -870,12 +870,12 @@ Iteration 2:   log likelihood = -89.138921
 Iteration 3:   log likelihood = -89.138524  
 Iteration 4:   log likelihood = -89.138524  
 
-Probit regression                               Number of obs     =        210
-                                                Wald chi2(2)      =      87.01
-Log likelihood = -89.138524                     Prob > chi2       =     0.0000
+Probit regression                                       Number of obs =    210
+                                                        Wald chi2(2)  =  87.01
+Log likelihood = -89.138524                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-     choice1 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+     choice1 | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
    termtime1 |  -.0397394   .0049624    -8.01   0.000    -.0494655   -.0300134
  travelcost1 |    .016428   .0027707     5.93   0.000     .0109975    .0218586
@@ -892,13 +892,13 @@ Iteration 2:   log likelihood = -99.360435
 Iteration 3:   log likelihood = -99.359774  
 Iteration 4:   log likelihood = -99.359774  
 
-Probit regression                               Number of obs     =        210
-                                                LR chi2(3)        =      57.84
-                                                Prob > chi2       =     0.0000
-Log likelihood = -99.359774                     Pseudo R2         =     0.2255
+Probit regression                                       Number of obs =    210
+                                                        LR chi2(3)    =  57.84
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -99.359774                             Pseudo R2     = 0.2255
 
 ------------------------------------------------------------------------------
-     choice2 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+     choice2 | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
       income |  -.0273942   .0057295    -4.78   0.000    -.0386238   -.0161647
    termtime2 |   -.031246   .0078369    -3.99   0.000    -.0466061   -.0158859
@@ -917,13 +917,13 @@ Iteration 2:   log likelihood = -55.564291
 Iteration 3:   log likelihood = -55.561526  
 Iteration 4:   log likelihood = -55.561526  
 
-Probit regression                               Number of obs     =        210
-                                                LR chi2(3)        =      61.13
-                                                Prob > chi2       =     0.0000
-Log likelihood = -55.561526                     Pseudo R2         =     0.3549
+Probit regression                                       Number of obs =    210
+                                                        LR chi2(3)    =  61.13
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -55.561526                             Pseudo R2     = 0.3549
 
 ------------------------------------------------------------------------------
-     choice3 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+     choice3 | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
       income |  -.0014197   .0070947    -0.20   0.841    -.0153251    .0124858
    termtime3 |  -.0802714   .0129349    -6.21   0.000    -.1056233   -.0549195
@@ -936,19 +936,19 @@ This might prevent convergence. If it does, and if you have not done so already,
 collinear regressors to achieve convergence. Or you may need to add a nrtolerance(#) or nonrtolerance option to the command line.
 See cmp tips.
 
-note: termtime4 omitted because of collinearity
+note: termtime4 omitted because of collinearity.
 Iteration 0:   log likelihood = -124.70862  
 Iteration 1:   log likelihood = -117.48714  
 Iteration 2:   log likelihood = -117.45123  
 Iteration 3:   log likelihood = -117.45123  
 
-Probit regression                               Number of obs     =        210
-                                                LR chi2(2)        =      14.51
-                                                Prob > chi2       =     0.0007
-Log likelihood = -117.45123                     Pseudo R2         =     0.0582
+Probit regression                                       Number of obs =    210
+                                                        LR chi2(2)    =  14.51
+                                                        Prob > chi2   = 0.0007
+Log likelihood = -117.45123                             Pseudo R2     = 0.0582
 
 ------------------------------------------------------------------------------
-     choice4 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+     choice4 | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
       income |    .017514   .0049475     3.54   0.000     .0078172    .0272109
    termtime4 |          0  (omitted)
@@ -1000,9 +1000,9 @@ Iteration 28:  log likelihood = -190.11316
 Iteration 29:  log likelihood = -190.11312  
 Iteration 30:  log likelihood = -190.11311  
 
-Mixed-process regression                        Number of obs     =        210
-                                                Wald chi2(5)      =      32.43
-Log likelihood = -190.11311                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =    210
+                                                        Wald chi2(5)  =  32.43
+Log likelihood = -190.11311                             Prob > chi2   = 0.0000
 
  ( 1)  [air]termtime1 - [train]termtime2 = 0
  ( 2)  [train]termtime2 - [bus]termtime3 = 0
@@ -1011,7 +1011,7 @@ Log likelihood = -190.11311                     Prob > chi2       =     0.0000
  ( 5)  [train]travelcost2 - [bus]travelcost3 = 0
  ( 6)  [bus]travelcost3 - [car]travelcost4 = 0
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 air          |
    termtime1 |  -.0378668   .0094329    -4.01   0.000     -.056355   -.0193787
@@ -1061,12 +1061,12 @@ car          |
 (1992 Wisconsin Longitudinal Study data on job values)
 
 . reshape wide rank high low, i(id) j(jobchar)
-(note: j = 1 2 3 4)
+(j = 1 2 3 4)
 
-Data                               long   ->   wide
+Data                               Long   ->   Wide
 -----------------------------------------------------------------------------
-Number of obs.                    12904   ->    3226
-Number of variables                   8   ->      16
+Number of observations           12,904   ->   3,226       
+Number of variables                   8   ->   16          
 j variable (4 values)           jobchar   ->   (dropped)
 xij variables:
                                    rank   ->   rank1 rank2 ... rank4
@@ -1103,7 +1103,7 @@ Note: For programming reasons, these initial estimates may deviate from your spe
        Total |       30786     3,226  9.54308741   Root MSE        =    2.3723
 
 ------------------------------------------------------------------------------
-       rank1 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+       rank1 | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
 -------------+----------------------------------------------------------------
        high1 |   2.740167   .0819013    33.46   0.000     2.579583    2.900751
         low1 |   3.014327   .0897933    33.57   0.000     2.838269    3.190384
@@ -1117,7 +1117,7 @@ Note: For programming reasons, these initial estimates may deviate from your spe
        Total |  2563.35183     3,225  .794837776   Root MSE        =    .88006
 
 ------------------------------------------------------------------------------
-       rank2 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+       rank2 | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
 -------------+----------------------------------------------------------------
       female |   .0192768   .0310695     0.62   0.535    -.0416412    .0801948
        score |  -.0408149   .0161852    -2.52   0.012    -.0725492   -.0090806
@@ -1134,7 +1134,7 @@ Note: For programming reasons, these initial estimates may deviate from your spe
        Total |  3562.80967     3,225  1.10474718   Root MSE        =    1.0459
 
 ------------------------------------------------------------------------------
-       rank3 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+       rank3 | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
 -------------+----------------------------------------------------------------
       female |   .0213184   .0368782     0.58   0.563    -.0509887    .0936255
        score |  -.0330876   .0188468    -1.76   0.079    -.0700405    .0038654
@@ -1151,7 +1151,7 @@ Note: For programming reasons, these initial estimates may deviate from your spe
        Total |  3809.43707     3,225   1.1812208   Root MSE        =    1.0766
 
 ------------------------------------------------------------------------------
-       rank4 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+       rank4 | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
 -------------+----------------------------------------------------------------
       female |  -.1158504   .0380414    -3.05   0.002    -.1904382   -.0412625
        score |   .1431453   .0193333     7.40   0.000     .1052384    .1810522
@@ -1207,9 +1207,9 @@ Iteration 32:  log likelihood =  -6016.164
 Iteration 33:  log likelihood = -6016.1639  
 Iteration 34:  log likelihood = -6016.1639  
 
-Mixed-process regression                        Number of obs     =      3,226
-                                                Wald chi2(8)      =     119.14
-Log likelihood = -6016.1639                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =  3,226
+                                                        Wald chi2(8)  = 119.14
+Log likelihood = -6016.1639                             Prob > chi2   = 0.0000
 
  ( 1)  [esteem]high1 - [variety]high2 = 0
  ( 2)  [esteem]high1 - [autonomy]high3 = 0
@@ -1218,7 +1218,7 @@ Log likelihood = -6016.1639                     Prob > chi2       =     0.0000
  ( 5)  [esteem]low1 - [autonomy]low3 = 0
  ( 6)  [esteem]low1 - [security]low4 = 0
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 esteem       |
        high1 |   .1801095   .0370241     4.86   0.000     .1075436    .2526753
@@ -1276,13 +1276,13 @@ Fitting individual models as starting point for full model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =      2,500
-                                                Wald chi2(13)     =    1523.23
-Log pseudolikelihood = -2792.9016               Prob > chi2       =     0.0000
+Mixed-process regression                               Number of obs =   2,500
+                                                       Wald chi2(13) = 1523.23
+Log pseudolikelihood = -2792.9016                      Prob > chi2   =  0.0000
 
 ----------------------------------------------------------------------------------
                  |               Robust
-                 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+                 | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
 -----------------+----------------------------------------------------------------
 graduate         |
 program#c.income |
@@ -1342,12 +1342,12 @@ Fitting individual models as starting point for full model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =      2,000
-                                                Wald chi2(6)      =     904.92
-Log likelihood = -5178.3045                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =  2,000
+                                                        Wald chi2(6)  = 904.92
+Log likelihood = -5178.3045                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 wage         |
    education |   .9899532   .0532565    18.59   0.000     .8855724    1.094334
@@ -1370,15 +1370,15 @@ selectvar    |
 
 . margins, dydx(*) predict(e eq(wage) condition(0 ., eq(selectvar)))
 
-Average marginal effects                        Number of obs     =      2,000
-Model VCE    : OIM
+Average marginal effects                                 Number of obs = 2,000
+Model VCE: OIM
 
-Expression   : E(wage), predict(e eq(wage) condition(0 ., eq(selectvar)))
-dy/dx w.r.t. : education age married children
+Expression: E(wage), predict(e eq(wage) condition(0 ., eq(selectvar)))
+dy/dx wrt:  education age married children
 
 ------------------------------------------------------------------------------
              |            Delta-method
-             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
    education |     .87699   .0497459    17.63   0.000     .7794898    .9744903
          age |   .1391275   .0192435     7.23   0.000     .1014109    .1768442
@@ -1388,15 +1388,15 @@ dy/dx w.r.t. : education age married children
 
 . margins, dydx(*) expression(predict(e eq(wage) cond(0 ., eq(selectvar))) * predict(pr eq(selectvar)) )
 
-Average marginal effects                        Number of obs     =      2,000
-Model VCE    : OIM
+Average marginal effects                                 Number of obs = 2,000
+Model VCE: OIM
 
-Expression   : predict(e eq(wage) cond(0 ., eq(selectvar))) * predict(pr eq(selectvar))
-dy/dx w.r.t. : education age married children
+Expression: predict(e eq(wage) cond(0 ., eq(selectvar))) * predict(pr eq(selectvar))
+dy/dx wrt:  education age married children
 
 ------------------------------------------------------------------------------
              |            Delta-method
-             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
    education |   .9757962   .0780941    12.50   0.000     .8227347    1.128858
          age |    .346573   .0290423    11.93   0.000     .2896511     .403495
@@ -1423,12 +1423,12 @@ Fitting constant-only model for LR test of overall model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =      2,000
-                                                LR chi2(6)        =     713.57
-Log likelihood = -1723.0234                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =  2,000
+                                                        LR chi2(6)    = 713.57
+Log likelihood = -1723.0234                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 wage2        |
    education |   .1752309    .013998    12.52   0.000     .1477954    .2026664
@@ -1449,15 +1449,15 @@ selectvar    |
 
 . margins, dydx(*) predict(pr eq(wage2) condition(0 ., eq(selectvar)))
 
-Average marginal effects                        Number of obs     =      2,000
-Model VCE    : OIM
+Average marginal effects                                 Number of obs = 2,000
+Model VCE: OIM
 
-Expression   : predict(pr eq(wage2) condition(0 ., eq(selectvar)))
-dy/dx w.r.t. : education age married children
+Expression: predict(pr eq(wage2) condition(0 ., eq(selectvar)))
+dy/dx wrt:  education age married children
 
 ------------------------------------------------------------------------------
              |            Delta-method
-             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
    education |   .0535012   .0041124    13.01   0.000     .0454409    .0615614
          age |   .0063115   .0015761     4.00   0.000     .0032224    .0094006
@@ -1475,12 +1475,12 @@ Fitting individual models as starting point for full model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =      2,000
-                                                Wald chi2(6)      =     526.50
-Log likelihood =  -1570.966                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =  2,000
+                                                        Wald chi2(6)  = 526.50
+Log likelihood = -1570.966                              Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 wage3        |
    education |   .1599579   .0138796    11.52   0.000     .1327543    .1871615
@@ -1502,7 +1502,7 @@ selectvar    |
 
 . 
 . sysuse auto, clear
-(1978 Automobile Data)
+(1978 automobile data)
 
 . 
 . cmp (price = foreign#) (foreign = mpg), ind($cmp_cont $cmp_cont) nolr
@@ -1519,7 +1519,7 @@ Note: For programming reasons, these initial estimates may deviate from your spe
        Total |   635065396        73  8699525.97   Root MSE        =    2949.5
 
 ------------------------------------------------------------------------------
-       price |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+       price | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
 -------------+----------------------------------------------------------------
        _cons |   6165.257   342.8719    17.98   0.000     5481.914      6848.6
 ------------------------------------------------------------------------------
@@ -1532,7 +1532,7 @@ Note: For programming reasons, these initial estimates may deviate from your spe
        Total |  15.4594595        73  .211773417   Root MSE        =    .42601
 
 ------------------------------------------------------------------------------
-     foreign |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+     foreign | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
 -------------+----------------------------------------------------------------
          mpg |   .0312915   .0086182     3.63   0.001     .0141114    .0484716
        _cons |  -.3691266   .1901085    -1.94   0.056    -.7481011    .0098478
@@ -1548,12 +1548,12 @@ Iteration 4:   log likelihood = -724.20587
 Iteration 5:   log likelihood = -724.20415  
 Iteration 6:   log likelihood = -724.20414  
 
-Mixed-process regression                        Number of obs     =         74
-                                                Wald chi2(1)      =      13.55
-Log likelihood = -724.20414                     Prob > chi2       =     0.0002
+Mixed-process regression                                Number of obs =     74
+                                                        Wald chi2(1)  =  13.55
+Log likelihood = -724.20414                             Prob > chi2   = 0.0002
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 price        |
      foreign |  -7634.484    3015.42    -2.53   0.011     -13544.6    -1724.37
@@ -1597,7 +1597,7 @@ Note: For programming reasons, these initial estimates may deviate from your spe
        Total |   635065396        73  8699525.97   Root MSE        =    2949.5
 
 ------------------------------------------------------------------------------
-       price |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+       price | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
 -------------+----------------------------------------------------------------
        _cons |   6165.257   342.8719    17.98   0.000     5481.914      6848.6
 ------------------------------------------------------------------------------
@@ -1607,13 +1607,13 @@ Iteration 1:   log likelihood = -39.264978
 Iteration 2:   log likelihood = -39.258972  
 Iteration 3:   log likelihood = -39.258972  
 
-Probit regression                               Number of obs     =         74
-                                                LR chi2(1)        =      11.55
-                                                Prob > chi2       =     0.0007
-Log likelihood = -39.258972                     Pseudo R2         =     0.1282
+Probit regression                                       Number of obs =     74
+                                                        LR chi2(1)    =  11.55
+                                                        Prob > chi2   = 0.0007
+Log likelihood = -39.258972                             Pseudo R2     = 0.1282
 
 ------------------------------------------------------------------------------
-     foreign |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+     foreign | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
          mpg |   .0960601   .0301523     3.19   0.001     .0369627    .1551575
        _cons |  -2.635268   .6841462    -3.85   0.000     -3.97617   -1.294366
@@ -1631,12 +1631,12 @@ Iteration 4:   log likelihood = -722.89631
 Iteration 5:   log likelihood = -722.80572  
 Iteration 6:   log likelihood = -722.80565  
 
-Mixed-process regression                        Number of obs     =         74
-                                                LR chi2(2)        =      35.70
-Log likelihood = -722.80565                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =     74
+                                                        LR chi2(2)    =  35.70
+Log likelihood = -722.80565                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 price        |
     foreign# |  -2504.828   1065.679    -2.35   0.019     -4593.52   -416.1348
@@ -1673,7 +1673,7 @@ Note: For programming reasons, these initial estimates may deviate from your spe
        Total |   372473341        53  7027798.89   Root MSE        =      2651
 
 ------------------------------------------------------------------------------
-       price |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+       price | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
 -------------+----------------------------------------------------------------
        _cons |   6093.444   360.7554    16.89   0.000     5369.861    6817.028
 ------------------------------------------------------------------------------
@@ -1683,13 +1683,13 @@ Iteration 1:   log likelihood = -31.372525
 Iteration 2:   log likelihood = -31.364321  
 Iteration 3:   log likelihood =  -31.36432  
 
-Probit regression                               Number of obs     =         54
-                                                LR chi2(1)        =      10.27
-                                                Prob > chi2       =     0.0014
-Log likelihood =  -31.36432                     Pseudo R2         =     0.1407
+Probit regression                                       Number of obs =     54
+                                                        LR chi2(1)    =  10.27
+                                                        Prob > chi2   = 0.0014
+Log likelihood = -31.36432                              Pseudo R2     = 0.1407
 
 ------------------------------------------------------------------------------
-     foreign |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+     foreign | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
          mpg |    .099871   .0337355     2.96   0.003     .0337506    .1659915
        _cons |  -2.415232   .7566186    -3.19   0.001    -3.898177   -.9322868
@@ -1707,12 +1707,12 @@ Iteration 4:   log likelihood = -522.55094
 Iteration 5:   log likelihood = -522.54995  
 Iteration 6:   log likelihood = -522.54995  
 
-Mixed-process regression                        Number of obs     =         54
-                                                LR chi2(2)        =      31.01
-Log likelihood = -522.54995                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =     54
+                                                        LR chi2(2)    =  31.01
+Log likelihood = -522.54995                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 price        |
     foreign# |  -1995.122   944.9195    -2.11   0.035     -3847.13    -143.114
@@ -1738,31 +1738,31 @@ Fitting individual models as starting point for full model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =         22
-                                                Wald chi2(3)      =      37.29
-Log likelihood = -98.809615                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =     22
+                                                        Wald chi2(3)  =  37.29
+Log likelihood = -98.809614                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 consump      |
-    wagepriv |   .7561794   .1478911     5.11   0.000     .4663182    1.046041
-    wagegovt |   1.112746   .3427445     3.25   0.001     .4409796    1.784513
-       _cons |   20.56513   4.119055     4.99   0.000     12.49193    28.63833
+    wagepriv |   .7561187   .1478251     5.11   0.000     .4663868    1.045851
+    wagegovt |   1.112824   .3425861     3.25   0.001     .4413677     1.78428
+       _cons |     20.567   4.117891     4.99   0.000     12.49608    28.63791
 -------------+----------------------------------------------------------------
 wagepriv     |
-     consump |   .4299054   .2040542     2.11   0.035     .0299664    .8298444
-        govt |   1.091739   .4735055     2.31   0.021     .1636854    2.019793
-    capital1 |  -.0293811   .0429659    -0.68   0.494    -.1135928    .0548306
-       _cons |   13.82952     11.425     1.21   0.226    -8.563073     36.2221
+     consump |   .4301203   .2037431     2.11   0.035     .0307913    .8294494
+        govt |   1.091156    .472698     2.31   0.021     .1646851    2.017627
+    capital1 |  -.0294533   .0429395    -0.69   0.493    -.1136132    .0547065
+       _cons |   13.83549   11.41972     1.21   0.226    -8.546746    36.21772
 -------------+----------------------------------------------------------------
-    /lnsig_1 |   .6467248   .2867259     2.26   0.024     .0847524    1.208697
-    /lnsig_2 |   .8158494   .3962811     2.06   0.040     .0391526    1.592546
-/atanhrho_12 |   .6575456   .3500009     1.88   0.060    -.0284436    1.343535
+    /lnsig_1 |   .6468688   .2866475     2.26   0.024     .0850499    1.208688
+    /lnsig_2 |    .815462   .3958496     2.06   0.039      .039611    1.591313
+/atanhrho_12 |   .6576766    .350029     1.88   0.060    -.0283676    1.343721
 -------------+----------------------------------------------------------------
-       sig_1 |   1.909277   .5474393                      1.088447    3.349119
-       sig_2 |   2.261095   .8960295                      1.039929    4.916251
-      rho_12 |   .5767277   .2335854                     -.0284359    .8725186
+       sig_1 |   1.909552   .5473684                      1.088771    3.349086
+       sig_2 |    2.26022   .8947071                      1.040406    4.910192
+      rho_12 |   .5768151   .2335688                     -.0283599     .872563
 ------------------------------------------------------------------------------
 
 . 
@@ -1774,78 +1774,78 @@ Fitting individual models as starting point for full model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =         49
-                                                Wald chi2(3)      =      43.24
-Log likelihood = -194.26517                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =     49
+                                                        Wald chi2(3)  =  43.24
+Log likelihood = -194.26517                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 price        |
-    quantity |  -.9868064   .3647622    -2.71   0.007    -1.701727   -.2718856
-    pcompete |   .2590026   .1282719     2.02   0.043     .0075943    .5104109
-      income |   .5208385   .1328711     3.92   0.000      .260416     .781261
-       _cons |   39.55595   4.337729     9.12   0.000     31.05416    48.05774
+    quantity |  -.9868107   .3647649    -2.71   0.007    -1.701737   -.2718847
+    pcompete |   .2589975   .1282711     2.02   0.043     .0075907    .5104043
+      income |   .5208301   .1328699     3.92   0.000     .2604099    .7812503
+       _cons |   39.55611    4.33781     9.12   0.000     31.05416    48.05806
 -------------+----------------------------------------------------------------
 quantity     |
-       price |   .5728341   .1767618     3.24   0.001     .2263875    .9192808
-        praw |  -.7809458   .1320553    -5.91   0.000    -1.039769   -.5221222
-       _cons |  -2.416662   5.325814    -0.45   0.650    -12.85507    8.021741
+       price |   .5728263   .1767664     3.24   0.001     .2263704    .9192821
+        praw |  -.7809401   .1320583    -5.91   0.000     -1.03977   -.5221106
+       _cons |  -2.416431    5.32595    -0.45   0.650     -12.8551    8.022239
 -------------+----------------------------------------------------------------
-    /lnsig_1 |   1.305321   .2308528     5.65   0.000     .8528582    1.757785
-    /lnsig_2 |    .562127   .1112599     5.05   0.000     .3440616    .7801923
-/atanhrho_12 |   .8029918   .3091089     2.60   0.009     .1971495    1.408834
+    /lnsig_1 |   1.305325   .2308546     5.65   0.000     .8528583    1.757792
+    /lnsig_2 |   .5621327   .1112616     5.05   0.000     .3440639    .7802015
+/atanhrho_12 |   .8030077   .3091192     2.60   0.009     .1971453     1.40887
 -------------+----------------------------------------------------------------
-       sig_1 |   3.688875   .8515872                      2.346343    5.799575
-       sig_2 |     1.7544   .1951943                      1.410666    2.181892
-      rho_12 |   .6657061   .1721228                      .1946344    .8872463
+       sig_1 |   3.688888   .8515965                      2.346344    5.799615
+       sig_2 |    1.75441   .1951985                      1.410669    2.181912
+      rho_12 |   .6657149   .1721249                      .1946303     .887254
 ------------------------------------------------------------------------------
 
 . cmp, resultsform(reduced)
 
-Mixed-process regression                        Number of obs     =         49
-                                                Wald chi2(3)      =      43.24
-Log likelihood = -194.26517                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =     49
+                                                        Wald chi2(3)  =  43.24
+Log likelihood = -194.26517                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 price        |
-    pcompete |   .1654677   .0749957     2.21   0.027     .0184788    .3124565
-      income |   .3327454   .0628746     5.29   0.000     .2095135    .4559773
-        praw |   .4923362   .0897075     5.49   0.000     .3165127    .6681598
-       _cons |   26.79446   .8094625    33.10   0.000     25.20794    28.38097
+    pcompete |    .165465   .0749956     2.21   0.027     .0184763    .3124536
+      income |   .3327411   .0628746     5.29   0.000     .2095093     .455973
+        praw |   .4923365   .0897074     5.49   0.000     .3165132    .6681598
+       _cons |   26.79451   .8094576    33.10   0.000       25.208    28.38102
 -------------+----------------------------------------------------------------
 quantity     |
-    pcompete |   .0947855   .0570317     1.66   0.097    -.0169946    .2065657
-      income |   .1906079   .0750686     2.54   0.011     .0434762    .3377396
-        praw |  -.4989188   .1113392    -4.48   0.000    -.7171395    -.280698
-       _cons |   12.93212   .9755866    13.26   0.000        11.02    14.84423
+    pcompete |   .0947827   .0570316     1.66   0.097    -.0169971    .2065625
+      income |   .1906029   .0750693     2.54   0.011     .0434698    .3377359
+        praw |  -.4989168   .1113395    -4.48   0.000    -.7171382   -.2806955
+       _cons |   12.93217   .9755819    13.26   0.000     11.02006    14.84427
 -------------+----------------------------------------------------------------
-    /lnsig_1 |   .5980366   .2332463     2.56   0.010     .1408823    1.055191
-    /lnsig_2 |   .8139495   .1830278     4.45   0.000     .4552216    1.172677
-/atanhrho_12 |   .7917426   .2923751     2.71   0.007     .2186979    1.364787
+    /lnsig_1 |   .5980356   .2332472     2.56   0.010     .1408795    1.055192
+    /lnsig_2 |   .8139524   .1830302     4.45   0.000     .4552198    1.172685
+/atanhrho_12 |   .7917422   .2923816     2.71   0.007     .2186849      1.3648
 -------------+----------------------------------------------------------------
-       sig_1 |   1.818545   .4241688                      1.151289    2.872524
-       sig_2 |   2.256804   .4130578                      1.576523    3.230631
-      rho_12 |   .6593951   .1652499                      .2152767    .8774988
+       sig_1 |   1.818543   .4241701                      1.151286    2.872526
+       sig_2 |    2.25681   .4130644                       1.57652    3.230655
+      rho_12 |   .6593949   .1652536                      .2152642    .8775016
 ------------------------------------------------------------------------------
 
 . margins, dydx(*) predict(eq(quantity))
 
-Average marginal effects                        Number of obs     =         49
-Model VCE    : OIM
+Average marginal effects                                    Number of obs = 49
+Model VCE: OIM
 
-Expression   : Linear prediction, predict(eq(quantity))
-dy/dx w.r.t. : pcompete income praw
+Expression: Linear prediction, predict(eq(quantity))
+dy/dx wrt:  pcompete income praw
 
 ------------------------------------------------------------------------------
              |            Delta-method
-             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
-    pcompete |   .0947855   .0570317     1.66   0.097    -.0169946    .2065657
-      income |   .1906079   .0750686     2.54   0.011     .0434762    .3377396
-        praw |  -.4989188   .1113392    -4.48   0.000    -.7171395    -.280698
+    pcompete |   .0947827   .0570316     1.66   0.097    -.0169971    .2065625
+      income |   .1906029   .0750693     2.54   0.011     .0434698    .3377359
+        praw |  -.4989168   .1113395    -4.48   0.000    -.7171382   -.2806955
 ------------------------------------------------------------------------------
 
 . 
@@ -1859,12 +1859,12 @@ Fitting individual models as starting point for full model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =         49
-                                                Wald chi2(3)      =      12.13
-Log likelihood =  -118.1489                     Prob > chi2       =     0.0070
+Mixed-process regression                                Number of obs =     49
+                                                        Wald chi2(3)  =  12.13
+Log likelihood = -118.1489                              Prob > chi2   = 0.0070
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 price        |
    quantity# |  -.4818737   .1069342    -4.51   0.000    -.6914609   -.2722865
@@ -1893,12 +1893,12 @@ quantity     |
 
 . cmp, resultsform(reduced)
 
-Mixed-process regression                        Number of obs     =         49
-                                                Wald chi2(3)      =      12.13
-Log likelihood =  -118.1489                     Prob > chi2       =     0.0070
+Mixed-process regression                                Number of obs =     49
+                                                        Wald chi2(3)  =  12.13
+Log likelihood = -118.1489                              Prob > chi2   = 0.0070
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 price        |
     pcompete |   .0181752   .0227495     0.80   0.424     -.026413    .0627635
@@ -1930,15 +1930,15 @@ quantity     |
 
 . margins, dydx(praw) predict(outcome(3) eq(quantity) pr)
 
-Average marginal effects                        Number of obs     =         49
-Model VCE    : OIM
+Average marginal effects                                    Number of obs = 49
+Model VCE: OIM
 
-Expression   : Pr(quantityO=3), predict(outcome(3) eq(quantity) pr)
-dy/dx w.r.t. : praw
+Expression: Pr(quantityO=3), predict(outcome(3) eq(quantity) pr)
+dy/dx wrt:  praw
 
 ------------------------------------------------------------------------------
              |            Delta-method
-             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             |      dy/dx   std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
         praw |   .0107512      .0121     0.89   0.374    -.0129645    .0344668
 ------------------------------------------------------------------------------
@@ -1959,12 +1959,12 @@ Fitting constants-only model for LR test of overall model fit.
 Fitting full model.
 Random effects/coefficients modeled with Gauss-Hermite quadrature with 12 integration points.
 
-Mixed-process multilevel regression             Number of obs     =     26,200
-                                                LR chi2(6)        =     225.92
-Log likelihood = -10552.225                     Prob > chi2       =     0.0000
+Mixed-process multilevel regression                     Number of obs = 26,200
+                                                        LR chi2(6)    = 225.92
+Log likelihood = -10552.225                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-       union |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+       union | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 union        |
          age |    .008298   .0084646     0.98   0.327    -.0082924    .0248884
@@ -2007,12 +2007,12 @@ Fitting individual models as starting point for full model fit.
 Fitting full model.
 Random effects/coefficients modeled with Gauss-Hermite quadrature with 12 integration points.
 
-Mixed-process multilevel regression             Number of obs     =     19,224
-                                                Wald chi2(7)      =    2925.53
-Log likelihood = -6814.4603                     Prob > chi2       =     0.0000
+Mixed-process multilevel regression                    Number of obs =  19,224
+                                                       Wald chi2(7)  = 2925.53
+Log likelihood = -6814.4603                            Prob > chi2   =  0.0000
 
 ------------------------------------------------------------------------------
-     ln_wage |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+     ln_wage | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 ln_wage      |
        union |   .1430531   .0069718    20.52   0.000     .1293886    .1567176
@@ -2054,12 +2054,12 @@ Fitting individual models as starting point for full model fit.
 Fitting full model.
 Random effects/coefficients modeled with Gauss-Hermite quadrature with 12 integration points.
 
-Mixed-process multilevel regression             Number of obs     =     19,151
-                                                Wald chi2(7)      =    2523.76
-Log likelihood = -23174.356                     Prob > chi2       =     0.0000
+Mixed-process multilevel regression                    Number of obs =  19,151
+                                                       Wald chi2(7)  = 2523.76
+Log likelihood = -23174.356                            Prob > chi2   =  0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 ln_wage1     |
        union |   .1441857   .0094253    15.30   0.000     .1257125    .1626588
@@ -2101,12 +2101,12 @@ Fitting full model.
 Random effects/coefficients for level 2 modeled with Gauss-Hermite quadrature with 7 integration points.
 Random effects/coefficients for level 1 modeled with Gauss-Hermite quadrature with 7 integration points.
 
-Mixed-process multilevel regression             Number of obs     =      1,600
-                                                Wald chi2(4)      =     124.18
-Log likelihood = -2116.6982                     Prob > chi2       =     0.0000
+Mixed-process multilevel regression                     Number of obs =  1,600
+                                                        Wald chi2(4)  = 124.18
+Log likelihood = -2116.6982                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-         thk |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+         thk | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 thk          |
       prethk |   .2388382   .0231444    10.32   0.000      .193476    .2842004
@@ -2157,7 +2157,7 @@ Note: For programming reasons, these initial estimates may deviate from your spe
        Total |   849.80888       815  1.04271028   Root MSE        =    .08542
 
 ------------------------------------------------------------------------------
-         gsp |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+         gsp | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
 -------------+----------------------------------------------------------------
      private |    .312023   .0110875    28.14   0.000     .2902594    .3337867
          emp |   .5496954   .0155369    35.38   0.000     .5191981    .5801928
@@ -2212,12 +2212,12 @@ Iteration 27:  log likelihood =  984.47368
 Iteration 28:  log likelihood =   984.4737  
 Iteration 29:  log likelihood =  984.47371  
 
-Mixed-process multilevel regression             Number of obs     =        816
-                                                Wald chi2(6)      =  244243.55
-Log likelihood =  984.47371                     Prob > chi2       =     0.0000
+Mixed-process multilevel regression                  Number of obs =       816
+                                                     Wald chi2(6)  = 244243.55
+Log likelihood = 984.47371                           Prob > chi2   =    0.0000
 
 ------------------------------------------------------------------------------
-         gsp |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+         gsp | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 gsp          |
      private |   .3017608   .0081834    36.87   0.000     .2857216       .3178
@@ -2267,13 +2267,13 @@ Iteration 2:   log likelihood = -3492.9672
 Iteration 3:   log likelihood = -3492.9445  
 Iteration 4:   log likelihood = -3492.9445  
 
-Probit regression                               Number of obs     =      7,200
-                                                LR chi2(5)        =    2789.76
-                                                Prob > chi2       =     0.0000
-Log likelihood = -3492.9445                     Pseudo R2         =     0.2854
+Probit regression                                      Number of obs =   7,200
+                                                       LR chi2(5)    = 2789.76
+                                                       Prob > chi2   =  0.0000
+Log likelihood = -3492.9445                            Pseudo R2     =  0.2854
 
 ------------------------------------------------------------------------------------
-          goodhlth |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+          goodhlth | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------------+----------------------------------------------------------------
 insured#c.exercise |
               yes  |  -.0566883    .089773    -0.63   0.528    -.2326402    .1192636
@@ -2298,13 +2298,13 @@ Iteration 2:   log likelihood = -3477.7418
 Iteration 3:   log likelihood = -3477.6874  
 Iteration 4:   log likelihood = -3477.6874  
 
-Probit regression                               Number of obs     =      7,200
-                                                LR chi2(2)        =    1500.65
-                                                Prob > chi2       =     0.0000
-Log likelihood = -3477.6874                     Pseudo R2         =     0.1775
+Probit regression                                      Number of obs =   7,200
+                                                       LR chi2(2)    = 1500.65
+                                                       Prob > chi2   =  0.0000
+Log likelihood = -3477.6874                            Pseudo R2     =  0.1775
 
 ------------------------------------------------------------------------------
-     insured |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+     insured | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
        grade |    .263482      .0079    33.35   0.000     .2479981    .2789658
              |
@@ -2346,12 +2346,12 @@ Iteration 17:  log likelihood =  -6837.068
 Iteration 18:  log likelihood =  -6837.068  
 Iteration 19:  log likelihood =  -6837.068  
 
-Mixed-process multilevel regression             Number of obs     =      7,200
-                                                Wald chi2(7)      =    1245.40
-Log likelihood =  -6837.068                     Prob > chi2       =     0.0000
+Mixed-process multilevel regression                    Number of obs =   7,200
+                                                       Wald chi2(7)  = 1245.40
+Log likelihood = -6837.068                             Prob > chi2   =  0.0000
 
 ------------------------------------------------------------------------------------
-                   |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+                   | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------------+----------------------------------------------------------------
 goodhlth           |
 insured#c.exercise |
@@ -2419,7 +2419,7 @@ Note: For programming reasons, these initial estimates may deviate from your spe
        Total |  40990.6941     1,927  21.2717665   Root MSE        =    2.5988
 
 ------------------------------------------------------------------------------
-        wage |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+        wage | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
 -------------+----------------------------------------------------------------
          age |   .1980708   .0049707    39.85   0.000     .1883223    .2078193
       tenure |    .607086   .0160441    37.84   0.000     .5756204    .6385516
@@ -2431,13 +2431,13 @@ Iteration 1:   log likelihood =  -1109.256
 Iteration 2:   log likelihood = -1108.6542  
 Iteration 3:   log likelihood = -1108.6541  
 
-Probit regression                               Number of obs     =      2,400
-                                                LR chi2(2)        =     162.28
-                                                Prob > chi2       =     0.0000
-Log likelihood = -1108.6541                     Pseudo R2         =     0.0682
+Probit regression                                       Number of obs =  2,400
+                                                        LR chi2(2)    = 162.28
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -1108.6541                             Pseudo R2     = 0.0682
 
 ------------------------------------------------------------------------------
-     working |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+     working | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
          age |  -.0168818   .0020713    -8.15   0.000    -.0209416   -.0128221
       market |   .1509165   .0155727     9.69   0.000     .1203945    .1814385
@@ -2470,12 +2470,12 @@ Iteration 15:  log likelihood = -5464.2374
 Iteration 16:  log likelihood = -5464.2374  
 Iteration 17:  log likelihood = -5464.2374  
 
-Mixed-process multilevel regression             Number of obs     =      2,400
-                                                Wald chi2(4)      =    2822.66
-Log likelihood = -5464.2374                     Prob > chi2       =     0.0000
+Mixed-process multilevel regression                    Number of obs =   2,400
+                                                       Wald chi2(4)  = 2822.66
+Log likelihood = -5464.2374                            Prob > chi2   =  0.0000
 
 -------------------------------------------------------------------------------
-              |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+              | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 --------------+----------------------------------------------------------------
 wage          |
           age |   .1855042   .0070383    26.36   0.000     .1717093     .199299
@@ -2539,12 +2539,12 @@ Using ghk2() to simulate them. Settings:
 Each observation gets different draws, so changing the order of observations in the data set would change the results.
 
 
-Mixed-process regression                        Number of obs     =        500
-                                                Wald chi2(3)      =       0.63
-Log likelihood = -1999.9162                     Prob > chi2       =     0.8892
+Mixed-process regression                                Number of obs =    500
+                                                        Wald chi2(3)  =   0.63
+Log likelihood = -1999.9162                             Prob > chi2   = 0.8892
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 kids         |
     fem_educ |   .0093335   .0175404     0.53   0.595    -.0250451    .0437121
@@ -2587,13 +2587,13 @@ Fitting individual models as starting point for full model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =        500
-                                                Wald chi2(2)      =      18.29
-Log pseudolikelihood = -2455.3039               Prob > chi2       =     0.0001
+Mixed-process regression                                Number of obs =    500
+                                                        Wald chi2(2)  =  18.29
+Log pseudolikelihood = -2455.3039                       Prob > chi2   = 0.0001
 
 ------------------------------------------------------------------------------
              |               Robust
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 other_inc    |
     fem_work |  -12.20545   7.859203    -1.55   0.120     -27.6092    3.198305
@@ -2627,7 +2627,7 @@ Note: For programming reasons, these initial estimates may deviate from your spe
        Total |  167745.542       499  336.163411   Root MSE        =    16.511
 
 ------------------------------------------------------------------------------
-   other_inc |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+   other_inc | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
 -------------+----------------------------------------------------------------
      fem_inc |  -.6416313   .0594465   -10.79   0.000    -.7584288   -.5248339
         kids |   -.493749   .5539133    -0.89   0.373    -1.582049    .5945513
@@ -2642,7 +2642,7 @@ Note: For programming reasons, these initial estimates may deviate from your spe
        Total |  41121.7937       227  181.153276   Root MSE        =    13.477
 
 ------------------------------------------------------------------------------
-     fem_inc |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+     fem_inc | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
 -------------+----------------------------------------------------------------
     fem_educ |   .2317164   .3703267     0.63   0.532    -.4980184    .9614511
        _cons |   24.82736   4.878722     5.09   0.000     15.21375    34.44096
@@ -2658,12 +2658,12 @@ Iteration 2:   log likelihood = -3019.1972
 Iteration 3:   log likelihood = -3019.1947  
 Iteration 4:   log likelihood = -3019.1947  
 
-Mixed-process regression                        Number of obs     =        500
-                                                LR chi2(3)        =      90.21
-Log likelihood = -3019.1947                     Prob > chi2       =     0.0000
+Mixed-process regression                                Number of obs =    500
+                                                        LR chi2(3)    =  90.21
+Log likelihood = -3019.1947                             Prob > chi2   = 0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 other_inc    |
      fem_inc |   -.858467   .0822722   -10.43   0.000    -1.019718   -.6972164
@@ -2702,7 +2702,7 @@ Note: For programming reasons, these initial estimates may deviate from your spe
        Total |  404940.316     4,058  99.7881508   Root MSE        =    8.0544
 
 ------------------------------------------------------------------------------
-        gcse |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+        gcse | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
 -------------+----------------------------------------------------------------
          lrt |   .5950551   .0127301    46.74   0.000     .5700972    .6200131
        _cons |   -.011948   .1264225    -0.09   0.925    -.2598056    .2359095
@@ -2740,12 +2740,12 @@ Iteration 21:  log likelihood = -14004.614
 Iteration 22:  log likelihood = -14004.613  
 Iteration 23:  log likelihood = -14004.613  
 
-Mixed-process multilevel regression             Number of obs     =      4,059
-                                                Wald chi2(1)      =     775.01
-Log likelihood = -14004.613                     Prob > chi2       =     0.0000
+Mixed-process multilevel regression                     Number of obs =  4,059
+                                                        Wald chi2(1)  = 775.01
+Log likelihood = -14004.613                             Prob > chi2   = 0.0000
 
 ----------------------------------------------------------------------------------
-            gcse |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+            gcse | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -----------------+----------------------------------------------------------------
 gcse             |
              lrt |   .5566694    .019996    27.84   0.000     .5174779     .595861
@@ -2784,13 +2784,13 @@ Note: For programming reasons, these initial estimates may deviate from your spe
 Iteration 0:   log likelihood = -739.16886  
 Iteration 1:   log likelihood = -739.16886  
 
-Probit regression                               Number of obs     =      1,313
-                                                LR chi2(0)        =       0.00
-                                                Prob > chi2       =          .
-Log likelihood = -739.16886                     Pseudo R2         =     0.0000
+Probit regression                                       Number of obs =  1,313
+                                                        LR chi2(0)    =   0.00
+                                                        Prob > chi2   =      .
+Log likelihood = -739.16886                             Pseudo R2     = 0.0000
 
 ------------------------------------------------------------------------------
-  _mp_cmp_y1 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+  _mp_cmp_y1 | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
        _cons |  -.6726933   .0375882   -17.90   0.000    -.7463647   -.5990219
 ------------------------------------------------------------------------------
@@ -2799,13 +2799,13 @@ Iteration 0:   log likelihood = -909.39801
 Iteration 1:   log likelihood = -909.35643  
 Iteration 2:   log likelihood = -909.35643  
 
-Probit regression                               Number of obs     =      1,313
-                                                LR chi2(1)        =       0.08
-                                                Prob > chi2       =     0.7731
-Log likelihood = -909.35643                     Pseudo R2         =     0.0000
+Probit regression                                       Number of obs =  1,313
+                                                        LR chi2(1)    =   0.08
+                                                        Prob > chi2   = 0.7731
+Log likelihood = -909.35643                             Pseudo R2     = 0.0000
 
 ------------------------------------------------------------------------------
-  _mp_cmp_y2 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+  _mp_cmp_y2 | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
          sex |  -.0199575   .0692043    -0.29   0.773    -.1555954    .1156805
        _cons |   .0509084   .0486243     1.05   0.295    -.0443935    .1462104
@@ -2816,13 +2816,13 @@ Iteration 1:   log likelihood = -700.51801
 Iteration 2:   log likelihood = -700.50211  
 Iteration 3:   log likelihood = -700.50211  
 
-Probit regression                               Number of obs     =      1,313
-                                                LR chi2(1)        =      24.76
-                                                Prob > chi2       =     0.0000
-Log likelihood = -700.50211                     Pseudo R2         =     0.0174
+Probit regression                                       Number of obs =  1,313
+                                                        LR chi2(1)    =  24.76
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -700.50211                             Pseudo R2     = 0.0174
 
 ------------------------------------------------------------------------------
-  _mp_cmp_y3 |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+  _mp_cmp_y3 | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
          sex |   .3824272   .0772356     4.95   0.000     .2310483    .5338061
        _cons |  -.9309495   .0570867   -16.31   0.000    -1.042837   -.8190616
@@ -2850,13 +2850,13 @@ Iteration 11:  log likelihood = -1299.4863
 Iteration 12:  log likelihood = -1299.4863  
 Iteration 13:  log likelihood = -1299.4863  
 
-Mixed-process multilevel regression             Number of obs     =      1,313
-                                                Wald chi2(2)      =      40.49
-Log likelihood = -1299.4863                     Prob > chi2       =     0.0000
+Mixed-process multilevel regression                     Number of obs =  1,313
+                                                        Wald chi2(2)  =  40.49
+Log likelihood = -1299.4863                             Prob > chi2   = 0.0000
 
  ( 1)  [_outcome_1_1]_cons = 0
 -------------------------------------------------------------------------------
-          tby |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+          tby | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 --------------+----------------------------------------------------------------
 _outcome_1_1  |
         _cons |          0  (omitted)
@@ -2911,13 +2911,13 @@ Iteration 1:   log likelihood = -13795.751
 Iteration 2:   log likelihood = -13795.698  
 Iteration 3:   log likelihood = -13795.698  
 
-Probit regression                               Number of obs     =     26,200
-                                                LR chi2(2)        =     137.06
-                                                Prob > chi2       =     0.0000
-Log likelihood = -13795.698                     Pseudo R2         =     0.0049
+Probit regression                                       Number of obs = 26,200
+                                                        LR chi2(2)    = 137.06
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -13795.698                             Pseudo R2     = 0.0049
 
 ------------------------------------------------------------------------------
-       union |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+       union | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
          age |     .00726   .0013364     5.43   0.000     .0046406    .0098793
     not_smsa |  -.2063254   .0197442   -10.45   0.000    -.2450233   -.1676275
@@ -2929,13 +2929,13 @@ Iteration 1:   log likelihood = -14408.353
 Iteration 2:   log likelihood = -14405.674  
 Iteration 3:   log likelihood = -14405.674  
 
-Probit regression                               Number of obs     =     26,200
-                                                LR chi2(2)        =    1985.40
-                                                Prob > chi2       =     0.0000
-Log likelihood = -14405.674                     Pseudo R2         =     0.0645
+Probit regression                                      Number of obs =  26,200
+                                                       LR chi2(2)    = 1985.40
+                                                       Prob > chi2   =  0.0000
+Log likelihood = -14405.674                            Pseudo R2     =  0.0645
 
 ------------------------------------------------------------------------------
-       black |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+       black | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 south#c.year |
           0  |  -.0056099   .0014376    -3.90   0.000    -.0084277   -.0027922
@@ -2967,12 +2967,12 @@ Iteration 12:  log likelihood = -24911.061
 Iteration 13:  log likelihood = -24911.061  
 Iteration 14:  log likelihood = -24911.061  
 
-Mixed-process multilevel regression             Number of obs     =     26,200
-                                                Wald chi2(4)      =    1953.26
-Log likelihood = -24911.061                     Prob > chi2       =     0.0000
+Mixed-process multilevel regression                    Number of obs =  26,200
+                                                       Wald chi2(4)  = 1953.26
+Log likelihood = -24911.061                            Prob > chi2   =  0.0000
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 union        |
       black# |  -.4352072   .0318649   -13.66   0.000    -.4976612   -.3727532
@@ -3019,12 +3019,12 @@ Fitting individual models as starting point for full model fit.
 
 Fitting full model.
 
-Mixed-process regression                        Number of obs     =        500
-                                                Wald chi2(2)      =       0.83
-Log likelihood = -1388.3493                     Prob > chi2       =     0.6597
+Mixed-process regression                                Number of obs =    500
+                                                        Wald chi2(2)  =   0.83
+Log likelihood = -1388.3493                             Prob > chi2   = 0.6597
 
 ------------------------------------------------------------------------------
-             |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 kids         |
     fem_educ |   .0152958   .0176905     0.86   0.387    -.0193769    .0499685

@@ -104,7 +104,7 @@ The syntax of {help predict} following {cmd:cmp} is{p_end}
 [{cmd:,} {it:statistic} {cmdab:eq:uation(}[{cmd:#}{it:eqno}|{it:eqname} {cmd:#}{it:eqno}|{it:eqname}...]{cmd:)}
 {opt o:utcome}{cmd:(}{it:outcome}{cmd:)} {opt nooff:set} {opt red:ucedform} {cmdab:cond:ition(}{it:a b} [, {cmdab:eq:uation(#}{it:eqno}|{it:eqname}{cmd:)}]{cmd:)}]
 
-{phang2}where {it:statistic} is {opt xb}, {opt stdp}, {opt stddp}, {opt re:siduals}, {opt lnl}, {opt sc:ores}, 
+{phang}where {it:statistic} is {opt xb}, {opt stdp}, {opt stddp}, {opt re:siduals}, {opt lnl}, {opt sc:ores}, 
 {cmd:pr}[{cmd:(}{it:a b}{cmd:)}], {cmd:e}[{cmd:(}{it:a b}{cmd:)}], or {cmd:ystar(}{it:a b}{cmd:)}; and {it:a} and {it:b} 
 may be numbers or variables; {it:a} missing ({it:a} {ul:>} {cmd:.}) means minus infinity, and {it:b} missing ({it:b} {ul:>} {cmd:.}) means plus infinity; see {help missing}.
 
