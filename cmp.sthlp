@@ -606,7 +606,7 @@ syntax documented above also includes a {opt cov:ariance()} option. With the sam
 {phang}{opt inter:active} makes {cmd:cmp} fit the full model in {help ml:ml}'s interactive mode.
 This allows the user to interrupt the model fit with Ctrl-Break or its equivalent, view and adjust the trial solution with such 
 commands as {help ml:ml plot}, then restart optimization by typing {help ml:ml max}. See {help ml:help ml}, {bf:[R] ml}, and 
-{browse "http://books.google.com/books?id=tNhbjQIOKVYC&printsec=frontcover":Gould, Pitblado, and Sribney (2006)} for 
+{browse "https://www.amazon.com/Maximum-Likelihood-Estimation-Stata-Third/dp/1597180122":Gould, Pitblado, and Sribney (2006)} for 
 details. {cmd:cmp} runs more slowly in interactive mode.
 
 {phang}{opt init(vector)} and {opt from(vector)} are synonyms. They pass a row vector of user-chosen starting values for the full model fit, in the manner of the {help ml: ml init, copy} 

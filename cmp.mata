@@ -1,4 +1,4 @@
-/* cmp 8.5.3 30 April 2021
+/* cmp 8.5.3 2 May 2021
    Copyright (C) 2007-21 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -130,6 +130,7 @@ struct RE { // info associated with given level of model. Top level also holds v
 	real rowvector lnnormaldenQuadX
 	transmorphic scalar QuadXAdapt // asarray("real", l), one set of adaptive shifters per multi-level draw combination; first index is always 1, to prevent vector length 0
 	real scalar AdaptivePhaseThisIter, AdaptiveShift
+  real matrix Rho
 }
 
 class cmp_model {
@@ -1196,10 +1197,9 @@ void cmp_model::_st_view(real matrix V, real scalar missing, string rowvector va
 
 
 
-
 // main evaluator routine
 void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
-	real matrix Rho, t, L_g, invGamma, C, dOmega_dSig, Subscript
+	real matrix t, L_g, invGamma, C, dOmega_dSig, Subscript
 	real scalar e, c, i, j, k, l, m, _l, r, d, L, tEq, EUncensEq, ECensEq, FCensEq, NewIter, eq, eq1, eq2, _eq, c1, c2, cut, lnsigWithin, lnsigAccross, atanhrhoAccross, atanhrhoWithin, Iter
 	real colvector shift, lnLmin, lnLmax, lnL, out, iota
 	pointer(struct subview scalar) scalar v
@@ -1309,26 +1309,26 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 		if (RE->d == 1)
 			RE->Sig = (RE->T = RE->sig) * RE->sig
 		else {
-			Rho = I(RE->d); k = 0
+			k = 0
 			for (j=1; j<=RE->d; j++)
 				for (i=j+1; i<=RE->d; i++)
 					if (mod->SigXform)
 						if (RE->rho[++k]>100)
-							Rho[i,j] = 1
+							RE->Rho[i,j] = 1
 						else if (RE->rho[k]<-100)
-							Rho[i,j] = -1
+							RE->Rho[i,j] = -1
 						else
-							Rho[i,j] = tanh(RE->rho[k])
+  						RE->Rho[i,j] = tanh(RE->rho[k])
 					else
-						Rho[i,j] = RE->rho[++k]
-			_makesymmetric(Rho)
-			RE->T = cholesky(Rho)' :* RE->sig
+						RE->Rho[i,j] = RE->rho[++k]
+			_makesymmetric(RE->Rho)
+			RE->T = cholesky(RE->Rho)' :* RE->sig
 			if (RE->T[1,1] == .) return
-			RE->Sig = quadcross(RE->sig,RE->sig) :* Rho
+			RE->Sig = quadcross(RE->sig,RE->sig) :* RE->Rho
 		}
 
 		if (todo)
-			RE->D = dSigdsigrhos(mod->SigXform, RE->sig, RE->Sig, RE->rho, Rho) * RE->dSigdParams
+			RE->D = dSigdsigrhos(mod->SigXform, RE->sig, RE->Sig, RE->rho, RE->Rho) * RE->dSigdParams
 
 		if (mod->HasGamma)
 			RE->invGamma = invGamma[RE->Eqs,RE->GammaEqs]
@@ -1772,6 +1772,7 @@ void cmp_model::cmp_init(transmorphic M) {
 		RE->GammaEqs = HasGamma? cmp_selectindex((GammaId * Eqs[,l])') : RE->Eqs
 		RE->one2d = 1..( RE->d = rowsum(RE->NEff) )
 		RE->theta = smatrix(d)
+    RE->Rho = I(RE->d)
 		RE->d2 = RE->d * (RE->d + 1) * .5
 		RE->covAcross = cross( st_global("cmp_cov"+strofreal(l)) :== ("exchangeable"\"unstructured"\"independent"), 0::2 ) 
 		for (i=d; i; i--)
