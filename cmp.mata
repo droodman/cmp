@@ -1,4 +1,4 @@
-/* cmp 8.5.3 2 May 2021
+/* cmp 8.5.4 2 May 2021
    Copyright (C) 2007-21 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -59,7 +59,7 @@ struct subview { // info associated with subsets of data defined by given combin
 	real colvector CensLTInds // indexes of lower triangle of a vectorized square matrix of dimension d_cens
 	real colvector WeightProduct
 	real rowvector TheseInds // user-provided indicator values
-	real rowvector uncens, two_cens, oprobit, cens, cens_nonrobase,trunc, one2d_trunc, frac, censnonfrac
+	real rowvector uncens, two_cens, oprobit, cens, cens_nonrobase, trunc, one2d_trunc, frac, censnonfrac
 	real rowvector cens_uncens // one_cens, oprobit, uncens
 	real rowvector SigIndsUncens // Indexes, within the vectorized upper triangle of Sig, entries for the eqs uncens at these obs
 	real rowvector SigIndsTrunc // Ditto for trunc obs
@@ -1662,7 +1662,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 							for (c=1; c<=mod->G[m]; c++) {
 								if (v->TheseInds[m])
 									S[v->SubsampleInds, mod->Scores.GammaScores[i].M]  = rows(v->WeightProduct)? 
-										(sGammaScores[i].M + sTScores[L].M * v->dOmega_dGamma[m,c].M):*v->WeightProduct :
+										(sGammaScores[i].M + sTScores[L].M * v->dOmega_dGamma[m,c].M) :* v->WeightProduct :
 										 sGammaScores[i].M + sTScores[L].M * v->dOmega_dGamma[m,c].M
 								else
 									S[v->SubsampleInds, mod->Scores.GammaScores[i].M] = v->J_N_1_0
@@ -1712,7 +1712,7 @@ void cmp_gf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 		lnf = *(mod->REs->plnL)
 		if (todo) {
 			IDRanges = mod->REs->IDRanges
-			K = cols(b); n=moptimize_init_eq_n(M) // numbers of eqs (inluding auxiliary parameters); number of parameters
+			K = cols(b); n = moptimize_init_eq_n(M)  // numbers of eqs (inluding auxiliary parameters); number of parameters
 			d = mod->base->d
 			S = J(rows(lnf), K, 0)
 			if (length(mod->X)==0) {
@@ -1736,7 +1736,7 @@ void cmp_gf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 
 
 void cmp_model::cmp_init(transmorphic M) {
-	real scalar i, l, ghk_nobs, eq1, eq2, c, m, j, r, k, d_oprobit, d_mprobit, d_roprobit, start, stop, PrimeIndex, Hammersley, NDraws, HasRE, cols, d2
+	real scalar i, l, ghk_nobs, d_ghk, eq1, eq2, c, m, j, r, k, d_oprobit, d_mprobit, d_roprobit, start, stop, PrimeIndex, Hammersley, NDraws, HasRE, cols, d2
 	real matrix Yi, U
 	real colvector remaining, S
 	real rowvector mprobit, Primes, t, one2d
@@ -2002,7 +2002,7 @@ void cmp_model::cmp_init(transmorphic M) {
 
 	ghk_nobs = 0; v = NULL
 	remaining = 1::base->N
-	d_cens = 0
+	d_cens = d_ghk = 0
 	while (t = max(remaining)) { // build linked list of subviews onto data, each a set of rows with same indicator combination
 		next = v; (v = &(subview()))->next = next  // add new subview to linked list
 		remaining = remaining :* !(v->subsample = rowmin(indicators :== (v->TheseInds = indicators[t,])))
@@ -2019,6 +2019,7 @@ void cmp_model::cmp_init(transmorphic M) {
 		v->censnonfrac           = cmp_selectindex(v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<mprobit_ind_base :| v->TheseInds:>=roprobit_ind_base) :& v->TheseInds:!=10)
 		v->d_frac = cols(v->frac = cols(v->cens)? cmp_selectindex(v->TheseInds[v->cens]:==10) : J(1,0,0))
 		d_cens = max((d_cens, v->d_cens))
+    d_ghk = max((d_ghk, v->d_trunc, v->d_cens))
 		v->dCensNonrobase = cols(v->cens_nonrobase = cmp_selectindex(NonbaseCases :& (v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<mprobit_ind_base :| v->TheseInds:>=roprobit_ind_base))))
 
 		if (v->d_cens)
@@ -2223,7 +2224,7 @@ void cmp_model::cmp_init(transmorphic M) {
 	subviews = v
 
 	if (todo)
-		for (l=L-1; l; l--)
+		for (l=L-1;l;l--)
 			BuildXU(l)
 
 	if (ghk_nobs) {
@@ -2236,12 +2237,12 @@ void cmp_model::cmp_init(transmorphic M) {
 		printf("    Number of draws per observation = %f\n", ghkDraws)
 		printf("    Include antithetic draws = %s\n", ghkAnti? "yes" : "no")
 		printf("    Scramble = %s\n", ("no", "square root", "negative square root", "Faure-Lemieux")[1+ghkScramble])
-		printf("    Prime bases = %s\n", invtokens(strofreal(Primes[PrimeIndex..PrimeIndex-2+d_cens])))
+		printf("    Prime bases = %s\n", invtokens(strofreal(Primes[PrimeIndex..PrimeIndex-2+d_ghk])))
 		if (ghkType=="random" | ghkType=="ghalton")
 			printf(`"    Initial {stata "help mf_uniform" :seed string} = %s\n"', uniformseed())
 		printf(`"Each observation gets different draws, so changing the order of observations in the data set would change the results.\n\n"')
 		
-		ghk2DrawSet = ghk2setup(ghk_nobs, ghkDraws, d_cens, ghkType, PrimeIndex, (NULL, &ghk2SqrtScrambler(), &ghk2NegSqrtScrambler(), &ghk2FLScrambler())[1+ghkScramble])
+		ghk2DrawSet = ghk2setup(ghk_nobs, ghkDraws, d_ghk, ghkType, PrimeIndex, (NULL, &ghk2SqrtScrambler(), &ghk2NegSqrtScrambler(), &ghk2FLScrambler())[1+ghkScramble])
 	}
 
 	if ((ghk_nobs & (ghkType=="random" | ghkType=="ghalton")) | (L>1 & (REType=="random" | REType=="ghalton")))

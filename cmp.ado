@@ -1,4 +1,4 @@
-*! cmp 8.5.3 2 May 2021
+*! cmp 8.5.4 3 May 2021
 *! Copyright (C) 2007-21 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -2525,6 +2525,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.5.4 Fixed crash when GHK necessitated only by truncation in >=3 eq
 * 8.5.3 Fixed crash on # reference to m/roprobit base case; fixed crash on hierarchical/svy/redraw(, steps())
 * 8.5.2 Fixed crash on non-hierarchical svy models
 * 8.5.1 Small speed-ups
