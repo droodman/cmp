@@ -1,4 +1,4 @@
-/* cmp 8.5.4 2 May 2021
+/* cmp 8.6.0 20 May 2021
    Copyright (C) 2007-21 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -51,6 +51,9 @@ void setcol(pointer(real matrix) scalar pX, real rowvector c, real colvector v)
 // return pointer to chosen columns of a matrix, but don't duplicate data if return value is whole matrix
 pointer (real matrix) getcol(real matrix A, real vector p)
 	return(length(p)==cols(A)? &A : &A[,p])
+
+real matrix Mdivs(real matrix X, real scalar c)
+  return(c==1? X : (c==-1? -X : X/c))
 
 struct scores {
 	real rowvector ThetaScores, CutScores  // in nonhierarchical models, vectors specifying relevant cols of master score matrix, S
@@ -902,7 +905,7 @@ real colvector vecmultinormal(real matrix E, real matrix F, real matrix Sig, rea
 		real scalar sqrtSig
 		sqrtSig = sqrt(Sig[1,1])
 		if (cols(bounded)) {
-			Phi = normal2(*getcol(F,1)/sqrtSig, *getcol(E,1)/sqrtSig)
+			Phi = normal2(Mdivs(*getcol(F,1), sqrtSig), Mdivs(*getcol(E,1), sqrtSig))
 			if (todo) {  // Compute partial deriv w.r.t. sig^2 in 1/sqrt(sig^2) term in normal dist
 				if (N_perm == 1) {
 					dPhi_dE =  editmissing(normalden(E, 0, sqrtSig), 0) :/ Phi  // only as of Stata 13 can 0 args to normalden be dropped
@@ -911,7 +914,7 @@ real colvector vecmultinormal(real matrix E, real matrix F, real matrix Sig, rea
 				dPhi_dSig = (rowsum(dPhi_dE :* E) + rowsum(dPhi_dF :* F)) / (-2 * Sig)
 			}
 		} else {
-			Phi = normal(E / sqrtSig)
+			Phi = normal(Mdivs(E, sqrtSig))
 			if (todo) {
 				if (N_perm == 1) dPhi_dE = editmissing(normalden(E, 0, sqrtSig), 0) :/ Phi
 				dPhi_dSig = dPhi_dE :* E / (-2 * Sig)

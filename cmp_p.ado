@@ -1,5 +1,5 @@
-*! cmp 8.5.0 13 November 2020
-*! Copyright (C) 2007-20 David Roodman
+*! cmp 8.6.0 20 May 2021
+*! Copyright (C) 2007-21 David Roodman
 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -143,7 +143,7 @@ program define cmp_p
 			else mata `ghk2DrawSet' = .
 			gen `vartype' `_varlist' = . in 1
 			mata st_view(`pr'=., ., "`_varlist'", "`touse'")
-			mata `pr'[,] = vecmultinormal(`E', J(0,0,0), `Sigma', cols(`Sigma'), J(1,0,0), (1::rows(`E')), 0, `t1', `t1', `t1', `ghk2DrawSet', 0`e(ghkanti)', ., .)
+			mata `pr'[,] = vecmultinormal(`E', J(0,0,0), `Sigma', cols(`Sigma'), J(1,0,0), ., 0, `t1', `t1', `t1', `ghk2DrawSet', 0`e(ghkanti)', ., .)
 			mata mata drop `t1' `d' `M' `E' `ghk2DrawSet' `pr'
 			exit
 		}
