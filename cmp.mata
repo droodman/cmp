@@ -1220,7 +1220,7 @@ void cmp_model::_st_view(real matrix V, real scalar missing, string rowvector va
 
 // main evaluator routine
 void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
-	real matrix t, L_g, invGamma, C, dOmega_dSig, Subscript
+	real matrix t, L_g, invGamma, C, dOmega_dSig
 	real scalar e, c, i, j, k, l, m, _l, r, d, L, tEq, EUncensEq, ECensEq, FCensEq, NewIter, eq, eq1, eq2, _eq, c1, c2, cut, lnsigWithin, lnsigAccross, atanhrhoAccross, atanhrhoWithin, Iter
 	real colvector shift, lnLmin, lnLmax, lnL, out, Fi
 	pointer(struct subview scalar) scalar v
