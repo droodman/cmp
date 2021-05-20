@@ -18,7 +18,7 @@ mata
 mata clear
 mata set matastrict on
 mata set mataoptimize on
-mata set matalnum off
+mata set matalnum on
 
 struct smatrix {
 	real matrix M
@@ -47,6 +47,10 @@ void setcol(pointer(real matrix) scalar pX, real rowvector c, real colvector v)
     pX = &v
   else
     (*pX)[,c] = v
+
+// return pointer to chosen columns of a matrix, but don't duplicate data if return value is whole matrix
+pointer (real matrix) pcol(real matrix A, real vector p)
+	return(length(p)==cols(A)? &A : &A[,p])
 
 struct scores {
 	real rowvector ThetaScores, CutScores  // in nonhierarchical models, vectors specifying relevant cols of master score matrix, S
@@ -119,7 +123,7 @@ struct RE { // info associated with given level of model. Top level also holds v
 	real rowvector NEff // number of effects/coefficients by equation, one entry for each eq that has any effects
 	struct smatrix colvector X // NEq-vector of data matrices for variables with random coefficients
 	struct smatrix rowvector U // draws/observation-vector of N_g x d sets of draws
-	struct smatrix matrix XU // draws/observation x d matrix of matrices of X, U products; coefficients on these, elements of T, set contribution to simulated error 
+	pointer(real matrix) matrix pXU // draws/observation x d matrix of matrices of X, U products; coefficients on these, elements of T, set contribution to simulated error 
 	struct smatrix matrix TotalEffect // matrices of, for each draw set and equation, total simulated effects at this level: RE + RC*(RC vars)
 	real matrix Sig, T, invGamma
 	real matrix D // derivative of vech(Sig) w.r.t lnsigs and atanhrhos
@@ -1181,26 +1185,26 @@ void cmp_model::BuildXU(real scalar l) {
 			for (eq1=1; eq1<=RE->NEq; eq1++)
 				for (c=1; c<=cols(RE->X[eq1].M)+anyof(RE->REEqs, eq1); c++) {
 					e++
-					RE->XU[r,++k].M = c<=cols(RE->X[eq1].M)? RE->U[r].M[base->one2N,e]:*RE->X[eq1].M[|.,c\.,.|] : base->J_N_0_0
+					RE->pXU[r,++k] = &( c<=cols(RE->X[eq1].M)? *pcol(RE->U[r].M,e) :* RE->X[eq1].M[|.,c\.,.|] : base->J_N_0_0 )
 					if (anyof(RE->REEqs, eq1))
-						RE->XU[r,k].M = RE->XU[r,k].M, RE->U[r].M[base->one2N,e]
+						RE->pXU[r,k] = &( *RE->pXU[r,k], *pcol(RE->U[r].M, e) )
 					for (eq2=eq1+1; eq2<=RE->NEq; eq2++) {
-						RE->XU[r,++k].M = cols(RE->X[eq2].M)? RE->U[r].M[base->one2N,e] :*RE->X[eq2].M            : base->J_N_0_0
+						RE->pXU[r,++k] = &(  cols(RE->X[eq2].M)? *pcol(RE->U[r].M ,e) :*RE->X[eq2].M            : base->J_N_0_0)
 						if (anyof(RE->REEqs, eq2))
-							RE->XU[r,k].M = RE->XU[r,k].M, RE->U[r].M[base->one2N,e]
+							RE->pXU[r,k] = &( *RE->pXU[r,k], *pcol(RE->U[r].M ,e) )  // XXX avoid concatenation?
 					}
 				}
 		}
 	else
 		for (r=RE->R; r; r--)  // simpler form works when just REs
 			for (j=RE->d; j; j--)
-				RE->XU[r,j].M = RE->U[r].M[base->one2N,j]
+				RE->pXU[r,j] = pcol(RE->U[r].M, j)
 
 	for (v = subviews; v!=NULL; v = v->next)
 		for (r=RE->R; r; r--)
 			for (j=cols(v->XU[l].M); j; j--)
-				if (cols(RE->XU[r,j].M))
-					v->XU[l].M[r,j].M = (RE->XU[r,j].M)[v->SubsampleInds,]
+				if (RE->pXU[r,j])
+					v->XU[l].M[r,j].M = (*RE->pXU[r,j])[v->SubsampleInds,]
 }
 
 void cmp_model::_st_view(real matrix V, real scalar missing, string rowvector vars) {
@@ -1983,7 +1987,7 @@ void cmp_model::cmp_init(transmorphic M) {
 		RE->one2R = 1..(RE->R = NumREDraws[l+1])
 		RE->U = smatrix(RE->R)
 		RE->TotalEffect = smatrix(RE->R, d)
- 		RE->XU          = smatrix(RE->R, sum((RE->NEq..1) :* RE->NEff))
+ 		RE->pXU         = J(RE->R, sum((RE->NEq..1) :* RE->NEff), NULL)
 
 		S = ((1::RE->N) * NDraws)[RE->id]
 		for (r=NDraws; r; r--) {
@@ -2157,7 +2161,7 @@ void cmp_model::cmp_init(transmorphic M) {
 		if (todo) {
 			v->XU = ssmatrix(L-1)
 			for (l=L-1; l; l--)
-				v->XU[l].M = smatrix(rows((*REs)[l].XU), cols((*REs)[l].XU))
+				v->XU[l].M = smatrix(rows((*REs)[l].pXU), cols((*REs)[l].pXU))
 		}
 
 		if (todo) { // pre-compute stuff for scores
