@@ -33,6 +33,21 @@ struct mprobit_group {
 	real rowvector in, res // eqs of remaining alternatives; indices in ECens to hold relative differences
 }
 
+/*real matrix smat2mat(struct smatrix vector v) {
+  real scalar i; real matrix retval
+  retval = J(rows(v[1].M), length(v), 0)
+  for (i=length(v);i;i--)
+    retval[,i] = v[i].M
+  return(retval)
+}*/
+
+
+void setcol(pointer(real matrix) scalar pX, real rowvector c, real colvector v)
+  if (cols(*pX)==cols(c))
+    pX = &v
+  else
+    (*pX)[,c] = v
+
 struct scores {
 	real rowvector ThetaScores, CutScores  // in nonhierarchical models, vectors specifying relevant cols of master score matrix, S
 	struct smatrix vector TScores, SigScores, GammaScores // SigScores only used at top level, to refer to cols of S. In hierarchical models, TScores[L] holds base Sig scores
@@ -43,7 +58,8 @@ struct scorescol {
 }
 
 struct subview { // info associated with subsets of data defined by given combinations of indicator values
-	real matrix ECens, EUncens, F, Et, Ft
+  real matrix EUncens
+  pointer (real matrix) scalar pECens, pF, pEt, pFt
 	struct smatrix colvector theta, y, Lt, Ut, yL
 	struct smatrix matrix dOmega_dGamma
 	struct scorescol rowvector Scores // one col for each level, one col for each draw
@@ -970,7 +986,7 @@ real colvector lnLTrunc(pointer(struct subview scalar) scalar v, pointer (class 
 	real matrix dPhi_dEt, dPhi_dFt, dPhi_dSigt; real colvector Phi
 	pragma unset dPhi_dEt; pragma unset dPhi_dFt; pragma unset dPhi_dSigt
 
-	Phi = vecmultinormal(v->Et, v->Ft, v->Omega[v->trunc,v->trunc], v->d_trunc, v->one2d_trunc, v->one2N, todo, 
+	Phi = vecmultinormal(*v->pEt, *v->pFt, v->Omega[v->trunc,v->trunc], v->d_trunc, v->one2d_trunc, v->one2N, todo, 
 							dPhi_dEt, dPhi_dFt, dPhi_dSigt, mod->ghk2DrawSet, mod->ghkAnti, v->GHKStartTrunc, 1)
 
 	if (todo) {
@@ -997,12 +1013,12 @@ real colvector lnLCensored(pointer(struct subview scalar) scalar v, pointer (cla
 		beta = (invSig_uncens = cholinv(v->Omega[uncens,uncens])) * (Sig_uncens_cens = v->Omega[uncens, cens])
 
 		t = v->EUncens * beta
-		roprobit_pE = fracprobit_pE = pE = &(v->ECens - t)  // partial out errors from upper bounds
-		pF = d_two_cens? &(v->F - t) : &J(0,0,0)  // partial out errors from lower bounds
+		roprobit_pE = fracprobit_pE = pE = &(*v->pECens - t)  // partial out errors from upper bounds
+		pF = d_two_cens? &(*v->pF - t) : &J(0,0,0)  // partial out errors from lower bounds
 		roprobit_pSig = fracprobit_pSig = pSig = v->Omega[cens, cens] - quadcross(Sig_uncens_cens, beta) // corresponding covariance
 	} else {
-		roprobit_pE = fracprobit_pE = pE = &(v->ECens    )
-		pF = d_two_cens? &(v->F    ) : &J(0,0,0)
+		roprobit_pE = fracprobit_pE = pE = v->pECens
+		pF = d_two_cens? v->pF : &J(0,0,0)
 		roprobit_pSig = fracprobit_pSig = pSig = v->Omega[cens,cens]
 	}
 
@@ -1194,14 +1210,11 @@ void cmp_model::_st_view(real matrix V, real scalar missing, string rowvector va
 }
 
 
-
-
-
 // main evaluator routine
 void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
 	real matrix t, L_g, invGamma, C, dOmega_dSig, Subscript
 	real scalar e, c, i, j, k, l, m, _l, r, d, L, tEq, EUncensEq, ECensEq, FCensEq, NewIter, eq, eq1, eq2, _eq, c1, c2, cut, lnsigWithin, lnsigAccross, atanhrhoAccross, atanhrhoWithin, Iter
-	real colvector shift, lnLmin, lnLmax, lnL, out, iota
+	real colvector shift, lnLmin, lnLmax, lnL, out, iota, Fi
 	pointer(struct subview scalar) scalar v
 	pointer(real matrix) scalar pdlnL_dtheta, pdlnL_dSig, pThisQuadXAdapt_j
 	pointer(struct scores scalar) scalar pScores
@@ -1400,62 +1413,64 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 							else {
 								++ECensEq
 								if (v->TheseInds[i]==2 | v->TheseInds[i]==7)
-									v->ECens  [v->one2N,ECensEq  ] = v->y[i].M - v->theta[i].M
+									setcol(v->pECens, ECensEq, v->y[i].M - v->theta[i].M)
 								else if (v->TheseInds[i]==3)
-									v->ECens  [v->one2N,ECensEq  ] =  v->theta[i].M - v->y[i].M
+									setcol(v->pECens, ECensEq, v->theta[i].M - v->y[i].M)
 								else if (v->TheseInds[i]==4)
-									v->ECens  [v->one2N,ECensEq  ] = -v->theta[i].M
-								else if (v->TheseInds[i]==8 || v->TheseInds[i]==10)
-									v->ECens  [v->one2N,ECensEq  ] =  v->theta[i].M
+									setcol(v->pECens, ECensEq, -v->theta[i].M)
+								else if (v->TheseInds[i]==8 | v->TheseInds[i]==10)
+									setcol(v->pECens, ECensEq, v->theta[i].M)
 								else if (v->TheseInds[i]==5) {
 									if (mod->trunceqs[i]) {
 										t = v->y[i].M :> v->vNumCuts[i] // bit of inefficiency in truncated oprobit case
-										v->ECens[v->one2N,ECensEq] = (t :* v->Ut[i].M + (1:-t) :* mod->cuts[v->y[i].M:+1, i]) - v->theta[i].M
+										setcol(v->pECens, ECensEq, (t :* v->Ut[i].M + (1:-t) :* mod->cuts[v->y[i].M:+1, i]) - v->theta[i].M)
 									} else
-										v->ECens[v->one2N,ECensEq] = mod->cuts[v->y[i].M:+1, i] - v->theta[i].M
+										setcol(v->pECens, ECensEq, mod->cuts[v->y[i].M:+1, i] - v->theta[i].M)
 								} else // roprobit
-									v->ECens[v->one2N,ECensEq] = -v->theta[i].M
+									setcol(v->pECens, ECensEq, -v->theta[i].M)
 
-								if (cols(v->F))
+								if (v->pF)
 									if (mod->NonbaseCases[ECensEq]) {
 										++FCensEq
+                    Fi = J(0,0,0)
 										if (v->TheseInds[i]==7)
-											v->F[v->one2N,FCensEq] = v->yL[i].M - v->theta[i].M
+											Fi = v->yL[i].M - v->theta[i].M
 										else if (v->TheseInds[i]==5)
 											if (mod->trunceqs[i]) {
 												t = v->y[i].M
-												v->F[v->one2N,FCensEq] = (t :* v->Lt[i].M + (1:-t) :* mod->cuts[v->y[i].M, i]) - v->theta[i].M
+												Fi = (t :* v->Lt[i].M + (1:-t) :* mod->cuts[v->y[i].M, i]) - v->theta[i].M
 											} else
-												v->F[v->one2N,FCensEq] = mod->cuts[ v->y[i].M, i] - v->theta[i].M
+												Fi = mod->cuts[ v->y[i].M, i] - v->theta[i].M
 										else if (mod->trunceqs[i])
 											if (v->TheseInds[i]==2)
-												v->F[v->one2N,FCensEq] = v->Lt[i].M - v->theta[i].M
+												Fi = v->Lt[i].M - v->theta[i].M
 											else if (v->TheseInds[i]==3)
-												v->F[v->one2N,FCensEq] = v->theta[i].M - v->Ut[i].M
+												Fi = v->theta[i].M - v->Ut[i].M
 											else if (v->TheseInds[i]==4)
-												v->F[v->one2N,FCensEq] = v->Lt[i].M - v->theta[i].M
+												Fi = v->Lt[i].M - v->theta[i].M
 											else if (v->TheseInds[i]==8)
-												v->F[v->one2N,FCensEq] = v->theta[i].M - v->Ut[i].M
+												Fi = v->theta[i].M - v->Ut[i].M
+                    if (rows(Fi)) setcol(v->pF, FCensEq, Fi)
 									}
 							}
 
 							if (mod->trunceqs[i]) {
 								++tEq
 								if (v->TheseInds[i]==2) {
-									v->Et[v->one2N,tEq] = v->Ut[i].M - v->theta[i].M
-									v->Ft[v->one2N,tEq] = v->F[v->one2N,i]
+									setcol(v->pEt, tEq, v->Ut[i].M - v->theta[i].M)
+									setcol(v->pFt, tEq, Fi)
 								} else if (v->TheseInds[i]==3) {
-									v->Et[v->one2N,tEq] = v->theta[i].M - v->Lt[i].M
-									v->Ft[v->one2N,tEq] = v->F[v->one2N,i]
+									setcol(v->pEt, tEq, v->theta[i].M - v->Lt[i].M)
+									setcol(v->pFt, tEq, Fi)
 								} else if (v->TheseInds[i]==4) {
-									v->Et[v->one2N,tEq] = v->Ut[i].M - v->theta[i].M
-									v->Ft[v->one2N,tEq] = v->F[v->one2N,i]
+									setcol(v->pEt, tEq, v->Ut[i].M - v->theta[i].M)
+									setcol(v->pFt, tEq, Fi)
 								} else if (v->TheseInds[i]==8) {
-									v->Et[v->one2N,tEq] = v->theta[i].M - v->Lt[i].M
-									v->Ft[v->one2N,tEq] = v->F[v->one2N,i]
+									setcol(v->pEt, tEq, v->theta[i].M - v->Lt[i].M)
+									setcol(v->pFt, tEq, Fi)
 								} else if (anyof((1,5,7), v->TheseInds[i])) {
-									v->Et[v->one2N,tEq] = v->Ut[i].M - v->theta[i].M
-									v->Ft[v->one2N,tEq] = v->Lt[i].M - v->theta[i].M
+									setcol(v->pEt, tEq, v->Ut[i].M - v->theta[i].M)
+									setcol(v->pFt, tEq, v->Lt[i].M - v->theta[i].M)
 								}
 							}
 						}
@@ -1466,13 +1481,13 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 				if (v->mprobit[j].d > 0) {
 					out = base->theta[v->mprobit[j].out].M[v->SubsampleInds]
 					for (i=v->mprobit[j].d; i; i--)
-						v->ECens[v->one2N,(v->mprobit[j].res)[i]] = out - base->theta[(v->mprobit[j].in)[i]].M[v->SubsampleInds]
+						setcol(v->pECens, (v->mprobit[j].res)[i], out - base->theta[(v->mprobit[j].in)[i]].M[v->SubsampleInds])
 				}
 
-			_editmissing(v->ECens,  1.701e+38) // maxfloat()--just a big number
-			_editmissing(v->F    , -1.701e+38)
-			_editmissing(v->Et   ,  1.701e+38)
-			_editmissing(v->Ft   , -1.701e+38)
+			if (v->pECens) _editmissing(*v->pECens,  1.701e+38) // maxfloat()--just a big number
+			if (v->pF    ) _editmissing(*v->pF    , -1.701e+38)
+			if (v->pEt   ) _editmissing(*v->pEt   ,  1.701e+38)
+			if (v->pFt   ) _editmissing(*v->pFt   , -1.701e+38)
 
 			if (v->d_cens) {
 				lnL = lnLCensored(v, mod, todo)
@@ -1493,11 +1508,11 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 						pdlnL_dSig =  &(v->dphi_dSig + v->dPhi_dSig)
 					} else {
 						pdlnL_dtheta = &(v->dPhi_dE)
-						pdlnL_dSig =  &(v->dPhi_dSig)
+						pdlnL_dSig   =  &(v->dPhi_dSig)
 					}
 				else {
 					pdlnL_dtheta = &(v->dphi_dE)
-					pdlnL_dSig = &(v->dphi_dSig)
+					pdlnL_dSig   = &(v->dphi_dSig)
 				}
 				if (v->d_trunc) {
 					pdlnL_dtheta = &(*pdlnL_dtheta - v->dPhi_dEt)
@@ -1575,6 +1590,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 						asarray(RE->QuadXAdapt, mod->ThisDraw[|.\l|], smatrix(RE->N))
 						pThisQuadXAdapt = &asarray(RE->QuadXAdapt, mod->ThisDraw[|.\l|])
 					}
+
 					for (j=RE->N; j; j--)
 						if (RE->ToAdapt[j]) {
               pThisQuadXAdapt_j = &((*pThisQuadXAdapt)[j].M); if (rows(*pThisQuadXAdapt_j)==0) pThisQuadXAdapt_j = &(RE->QuadX)
@@ -1601,7 +1617,8 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
               for (r=RE->R; r; r--)
                 RE->U[r].M[|Subscript|] = iota # (*pThisQuadXAdapt_j)[r,]
 						}
-					if (RE->AdaptivePhaseThisIter = any(RE->ToAdapt) * mod(RE->AdaptivePhaseThisIter-1, mod->QuadIter)) {  // not converged and haven't hit max number of adaptations?
+
+          if (RE->AdaptivePhaseThisIter = any(RE->ToAdapt) * mod(RE->AdaptivePhaseThisIter-1, mod->QuadIter)) {  // not converged and haven't hit max number of adaptations?
 						mod->BuildTotalEffects(l)
 						if (mod->todo)
 							mod->BuildXU(l)
@@ -2042,12 +2059,12 @@ void cmp_model::cmp_init(transmorphic M) {
 			v->GHKStart = ghk_nobs + 1
 			ghk_nobs = ghk_nobs + v->N
 		}
-		if (v->d_uncens) v->EUncens = J(v->N, v->d_uncens, 0)
-		if (v->d_cens)   v->ECens   = J(v->N, v->d_cens  , 0)
+		if (v->d_uncens) v->EUncens =  J(v->N, v->d_uncens, 0)
+		if (v->d_cens)   v->pECens  = &J(v->N, v->d_cens  , 0)
 		if (NumCuts | sum(intregeqs) | sum(trunceqs)) {
-			v->F = J(v->N, v->dCensNonrobase, .)
+			v->pF = &J(v->N, v->dCensNonrobase, .)
 			if (sum(trunceqs))
-				v->Et = v->Ft = J(v->N, v->d_trunc, .)
+				v->pEt = v->pFt = &J(v->N, v->d_trunc, .)
 		}
 
 		if (v->d_frac) {
