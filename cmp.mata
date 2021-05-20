@@ -18,7 +18,7 @@ mata
 mata clear
 mata set matastrict on
 mata set mataoptimize on
-mata set matalnum on
+mata set matalnum off
 
 struct smatrix {
 	real matrix M
@@ -49,7 +49,7 @@ void setcol(pointer(real matrix) scalar pX, real rowvector c, real colvector v)
     (*pX)[,c] = v
 
 // return pointer to chosen columns of a matrix, but don't duplicate data if return value is whole matrix
-pointer (real matrix) pcol(real matrix A, real vector p)
+pointer (real matrix) getcol(real matrix A, real vector p)
 	return(length(p)==cols(A)? &A : &A[,p])
 
 struct scores {
@@ -133,6 +133,7 @@ struct RE { // info associated with given level of model. Top level also holds v
 	real matrix IDRanges // id ranges for each group in data set, as returned by panelsetup()
 	real colvector IDRangeLengths // lengths of those ranges
 	real matrix IDRangesGroup // N x 1, id ranges for each group's subgroups in the next level down
+  struct smatrix rowvector iota, Subscript
 	real matrix id // group id var
 	real rowvector sig, rho // vector of error variances only, and atanhrho's
 	real scalar covAcross // cross- and within-eq covariance type: unstructured, exchangeable, independent; indexed by *included* equations at this level
@@ -901,7 +902,7 @@ real colvector vecmultinormal(real matrix E, real matrix F, real matrix Sig, rea
 		real scalar sqrtSig
 		sqrtSig = sqrt(Sig[1,1])
 		if (cols(bounded)) {
-			Phi = normal2(F[,1]/sqrtSig, E[,1]/sqrtSig)
+			Phi = normal2(*getcol(F,1)/sqrtSig, *getcol(E,1)/sqrtSig)
 			if (todo) {  // Compute partial deriv w.r.t. sig^2 in 1/sqrt(sig^2) term in normal dist
 				if (N_perm == 1) {
 					dPhi_dE =  editmissing(normalden(E, 0, sqrtSig), 0) :/ Phi  // only as of Stata 13 can 0 args to normalden be dropped
@@ -1091,10 +1092,10 @@ real colvector lnLCensored(pointer(struct subview scalar) scalar v, pointer (cla
 			} else if (ThisFracComb == 1) {
 				Phi = SS_Phi + Phi :* v->yProd[ThisFracComb].M
 				if (todo) {
-					dPhi_dpE   = SS_dPhi_dpE   + (dPhi_dpE   :* v->yProd[ThisFracComb].M) * v->frac_QE  [ThisFracComb].M
-					dPhi_dpSig = SS_dPhi_dpSig + (dPhi_dpSig :* v->yProd[ThisFracComb].M) * v->frac_QSig[ThisFracComb].M
+					dPhi_dpE      = SS_dPhi_dpE   + (dPhi_dpE   :* v->yProd[ThisFracComb].M) * v->frac_QE  [ThisFracComb].M
+					dPhi_dpSig    = SS_dPhi_dpSig + (dPhi_dpSig :* v->yProd[ThisFracComb].M) * v->frac_QSig[ThisFracComb].M
 					if (d_two_cens)
-						pdPhi_dpF = &(SS_dPhi_dpF + (*pdPhi_dpF   :* v->yProd[ThisFracComb].M) * v->frac_QE  [ThisFracComb].M)
+						pdPhi_dpF = &(SS_dPhi_dpF   + (*pdPhi_dpF   :* v->yProd[ThisFracComb].M) * v->frac_QE  [ThisFracComb].M)
 				}
 			} else {
 				SS_Phi = SS_Phi + Phi :* v->yProd[ThisFracComb].M
@@ -1154,25 +1155,25 @@ real colvector lnLCensored(pointer(struct subview scalar) scalar v, pointer (cla
 
 // translate draws or nodes at a given level, possibly adaptively shifted, into total effects of random effects and coefficients
 void cmp_model::BuildTotalEffects(real scalar l) {
-	real scalar r, eq; real matrix UT; pointer (struct RE scalar) scalar RE
+	real scalar r, eq; pointer(real matrix) scalar pUT; pointer (struct RE scalar) scalar RE
 	RE = &((*REs)[l])
 	for (r=NumREDraws[l+1]; r; r--) {
 		if (RE->HasRC) {
-			UT = RE->J_N_NEq_0
+			pUT = &RE->J_N_NEq_0
 			if (cols(RE->REInds))
-			  UT[base->one2N, RE->REEqs] = RE->U[r].M * RE->T[, RE->REInds] // REs
+			  setcol(pUT, RE->REEqs, RE->U[r].M * RE->T[, RE->REInds]) // REs
 		} else
-			UT                           = RE->U[r].M * RE->T               // REs
+			pUT                              = & (RE->U[r].M * RE->T)     // REs
 
 		for (eq=RE->NEq; eq; eq--)               // RCs
 			if (cols(RE->X[eq].M))
-				UT[base->one2N,eq] = UT[base->one2N,eq] + quadrowsum((RE->U[r].M * RE->T[, RE->RCInds[eq].M]) :* RE->X[eq].M) // RCs * X
+				setcol(pUT, eq, *getcol(*pUT, eq) + quadrowsum((RE->U[r].M * RE->T[, RE->RCInds[eq].M]) :* RE->X[eq].M)) // RCs * X
 		if (HasGamma)
 			for (eq=cols(RE->GammaEqs); eq; eq--)
-				RE->TotalEffect[r,RE->GammaEqs[eq]].M = UT * RE->invGamma[,eq]
+				RE->TotalEffect[r,RE->GammaEqs[eq]].M = *pUT * RE->invGamma[,eq]
 		else
 			for (eq=cols(RE->GammaEqs); eq; eq--)
-				RE->TotalEffect[r,RE->GammaEqs[eq]].M = UT[base->one2N,eq]
+				RE->TotalEffect[r,RE->GammaEqs[eq]].M = *getcol(*pUT, eq)
 	}
 }
 
@@ -1183,22 +1184,22 @@ void cmp_model::BuildXU(real scalar l) {
 		for (r=RE->R; r; r--) {  // pre-compute X-U products in order most convenient for computing scores w.r.t upper-level T's
 			k = e = 0
 			for (eq1=1; eq1<=RE->NEq; eq1++)
-				for (c=1; c<=cols(RE->X[eq1].M)+anyof(RE->REEqs, eq1); c++) {
+				for (c=1; c<=cols(RE->X[eq1].M) + anyof(RE->REEqs, eq1); c++) {
 					e++
-					RE->pXU[r,++k] = &( c<=cols(RE->X[eq1].M)? *pcol(RE->U[r].M,e) :* RE->X[eq1].M[|.,c\.,.|] : base->J_N_0_0 )
+					RE->pXU[r,++k] = &( c<=cols(RE->X[eq1].M)? *getcol(RE->U[r].M,e) :* *getcol(RE->X[eq1].M, c..cols(RE->X[eq1].M)) : base->J_N_0_0 )
 					if (anyof(RE->REEqs, eq1))
-						RE->pXU[r,k] = &( *RE->pXU[r,k], *pcol(RE->U[r].M, e) )
+						RE->pXU[r,k] = &( *RE->pXU[r,k], *getcol(RE->U[r].M, e) )
 					for (eq2=eq1+1; eq2<=RE->NEq; eq2++) {
-						RE->pXU[r,++k] = &(  cols(RE->X[eq2].M)? *pcol(RE->U[r].M ,e) :*RE->X[eq2].M            : base->J_N_0_0)
+						RE->pXU[r,++k] = &(  cols(RE->X[eq2].M)? *getcol(RE->U[r].M ,e) :*RE->X[eq2].M            : base->J_N_0_0)
 						if (anyof(RE->REEqs, eq2))
-							RE->pXU[r,k] = &( *RE->pXU[r,k], *pcol(RE->U[r].M ,e) )  // XXX avoid concatenation?
+							RE->pXU[r,k] = &( *RE->pXU[r,k], *getcol(RE->U[r].M ,e) )  // XXX avoid concatenation?
 					}
 				}
 		}
 	else
 		for (r=RE->R; r; r--)  // simpler form works when just REs
 			for (j=RE->d; j; j--)
-				RE->pXU[r,j] = pcol(RE->U[r].M, j)
+				RE->pXU[r,j] = getcol(RE->U[r].M, j)
 
 	for (v = subviews; v!=NULL; v = v->next)
 		for (r=RE->R; r; r--)
@@ -1218,7 +1219,7 @@ void cmp_model::_st_view(real matrix V, real scalar missing, string rowvector va
 void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
 	real matrix t, L_g, invGamma, C, dOmega_dSig, Subscript
 	real scalar e, c, i, j, k, l, m, _l, r, d, L, tEq, EUncensEq, ECensEq, FCensEq, NewIter, eq, eq1, eq2, _eq, c1, c2, cut, lnsigWithin, lnsigAccross, atanhrhoAccross, atanhrhoWithin, Iter
-	real colvector shift, lnLmin, lnLmax, lnL, out, iota, Fi
+	real colvector shift, lnLmin, lnLmax, lnL, out, Fi
 	pointer(struct subview scalar) scalar v
 	pointer(real matrix) scalar pdlnL_dtheta, pdlnL_dSig, pThisQuadXAdapt_j
 	pointer(struct scores scalar) scalar pScores
@@ -1547,7 +1548,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 					for (i=m=1; m<=d; m++)
 						if (v->TheseInds[m])
 							for (c=1; c<=mod->G[m]; c++)
-								pScores->GammaScores[i++].M  = (*pdlnL_dtheta)[v->one2N,m] :* v->theta[(*mod->GammaIndByEq[m])[c]].M
+								pScores->GammaScores[i++].M  = *getcol(*pdlnL_dtheta,m) :* v->theta[(*mod->GammaIndByEq[m])[c]].M
 						else
 							i = i + mod->G[m]
 
@@ -1559,9 +1560,9 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 								for (c=1; c<=cols(RE->RCInds[eq1].M)+anyof(RE->REEqs, eq1); c++)
 									for (eq2=eq1; eq2<=RE->NEq; eq2++)
 										PasteAndAdvance(pScores->TScores[l].M, k, 
-											(v->XU[l].M[mod->ThisDraw[l+1], e++].M) :* pScores->ThetaScores[v->one2N, RE->Eqs[eq2]])
+											(v->XU[l].M[mod->ThisDraw[l+1], e++].M) :* *getcol(pScores->ThetaScores, RE->Eqs[eq2]))
 							else
-								PasteAndAdvance(pScores->TScores[l].M, k, (v->XU[l].M[mod->ThisDraw[l+1], eq1].M) :* pScores->ThetaScores[v->one2N, RE->Eqs[|eq1 \ .|]])
+								PasteAndAdvance(pScores->TScores[l].M, k, (v->XU[l].M[mod->ThisDraw[l+1], eq1].M) :* *getcol(pScores->ThetaScores, RE->Eqs[|eq1 \ .|]))
 					}
 				}
 			}
@@ -1616,10 +1617,8 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
                 RE->AdaptiveShift[j,] = quadrowsum_lnnormalden(t, quadcolsum(ln(RE->QuadSD[j].M),1))' - RE->lnnormaldenQuadX
               }
 
-              Subscript = RE->IDRanges[j,]', (.\.)
-              iota = J(RE->IDRangeLengths[j],1,1)
               for (r=RE->R; r; r--)
-                RE->U[r].M[|Subscript|] = iota # (*pThisQuadXAdapt_j)[r,]
+                RE->U[r].M[|RE->Subscript[j].M|] = RE->iota[j].M # (*pThisQuadXAdapt_j)[r,]
 						}
 
           if (RE->AdaptivePhaseThisIter = any(RE->ToAdapt) * mod(RE->AdaptivePhaseThisIter-1, mod->QuadIter)) {  // not converged and haven't hit max number of adaptations?
@@ -1703,7 +1702,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 			}
 			RE->plnL = &(ln(*(RE->plnL)) - shift)
 			if (mod->Quadrature==0)
-				RE->plnL = &(*(RE->plnL) :- RE->lnNumREDraws)
+				RE->plnL = &(*(RE->plnL) :- RE->lnNumREDraws)  // in simulation (vs quadrature), average unweighted evaluations rather than summing weighted ones
 		}
 	} while (l) // exit when adding one more draw causes carrying all the way accross the draw counters, back to 1, 1, 1...
 
@@ -1924,8 +1923,16 @@ void cmp_model::cmp_init(transmorphic M) {
 		if (RE->HasRC) RE->J_N_NEq_0 = J(base->N, RE->NEq, 0)
 
 		RE->IDRanges = panelsetup(RE->id, 1)
-    RE->IDRangeLengths = RE->IDRanges[,2] - RE->IDRanges[,1] :+ 1
 		RE->IDRangesGroup = l==L-1? RE->IDRanges : panelsetup(RE->id[(*REs)[l+1].IDRanges[,1]], 1)
+    RE->IDRangeLengths = RE->IDRanges[,2] - RE->IDRanges[,1] :+ 1
+
+    if (Quadrature) {
+      RE->iota = RE->Subscript = smatrix(RE->N)
+      for (j=RE->N;j;j--) {
+        RE->iota[j].M = J(RE->IDRangeLengths[j],1,1)
+        RE->Subscript[j].M = RE->IDRanges[j,]', (.\.)
+      }
+    }
 
 		Hammersley = REType=="hammersley" & l==1
 		
