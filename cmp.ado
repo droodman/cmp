@@ -1,4 +1,4 @@
-*! cmp 8.6.0 20 May 2021
+*! cmp 8.6.1 23 May 2021
 *! Copyright (C) 2007-21 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -662,7 +662,7 @@ program define _cmp
 		drop `_touse'
 
 		global cmpHasGamma 0
-		tempname Gamma GammaINobs GammaI GammaId
+		tempname GammaINobs GammaI GammaId
 		mat `GammaI'     = I($cmp_d)
 		mat `GammaINobs' = I($cmp_d)
 		forvalues eq1=1/$cmp_d {
@@ -929,7 +929,11 @@ program define _cmp
 		mata moptimize_init_userinfo($ML_M, 1, &_mod)
 		mata (void) cmp_lf1($ML_M, "`scores'"!="", st_matrix("e(b)"), _lnf, _S, _H)
 		if "`lnl'"!="" mata st_view(_H, ., "`lnl'"   , st_global("ML_samp")); _H[,] = _lnf
-		  else         mata st_view(_H, ., "`scores'", st_global("ML_samp")); _H[,] = _S[,"`equation'"==""?.:strtoreal(tokens("`equation'"))]
+    else {  // scores requested
+      mata st_view(_H, ., "`scores'", st_global("ML_samp"))
+      if "`e(resultsform)'" == "reduced" mata _H[,] = _S * ("`equation'" == ""? st_matrix("e(dbr_db)") : st_matrix("e(dbr_db)")[`equation',])'
+        else                             mata _H[,] =       "`equation'" == ""? _S                     : _S[,`equation']
+    }
 		cmp_clear
 		exit
 	}
@@ -1339,7 +1343,7 @@ program define cmp_full_model, eclass
 		if $cmpHasGamma { // prepare to build reduced-form b and V
 			mat cmpGammaInd = .,. \ cmpGammaInd[1..rowsof(cmpGammaInd), 1...]
 
-			tempname b beq Beta Gamma
+			tempname b beq Beta
 			mat `b' = e(b)
 			if "`xvarsall'" != "" mat `Beta'  = J($cmp_d, `:word count `xvarsall'', 0)
 			mat cmpBetaInd  = .,.
@@ -1424,7 +1428,7 @@ program define cmp_full_model, eclass
 			}
 		}
 
-		if "`svy'" != "" & "`: char _dta[_svy_wvar]'" != "" { // compensate for bug in Stata 14, 15 in which ml model, svy puts references to temp var in these macros
+		if "`svy'" != "" & "`: char _dta[_svy_wvar]'" != "" { // compensate for bug in Stata 14, 15 because of which ml model, svy puts references to temp var in these macros
 			ereturn local wvar: char _dta[_svy_wvar]
 			ereturn local wexp "= `e(wvar)'"
 		}
@@ -2219,7 +2223,7 @@ program Display, eclass
 					}
 					foreach t in `macros' {
 						tempname `t'
-						local ``t'' `e(`t')'
+						local ``t'' `"`e(`t')'"'
 					}
 					foreach t in `matrices' {
 						tempname `t'
@@ -2248,7 +2252,7 @@ program Display, eclass
 						ereturn scalar `t' = ``t''
 					}
 					foreach t in `macros' {
-						ereturn local `t' ```t'''
+						ereturn local `t' `"```t'''"'
 					}
 					foreach t in `matrices' {
 						cap ereturn mat `t' = ``t'' // matrices already stored in lines above will be gone and cause errors here
@@ -2525,6 +2529,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.6.1 Fixed crash in margins after resultsform(reduced) and observation weights, and crash in svy: , resultsform(reduced)
 * 8.6.0 Added optimizations for 1-eq models
 * 8.5.4 Fixed crash when GHK necessitated only by truncation in >=3 eq
 * 8.5.3 Fixed crash on # reference to m/roprobit base case; fixed crash on hierarchical/svy/redraw(, steps())

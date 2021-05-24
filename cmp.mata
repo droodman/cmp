@@ -1,4 +1,4 @@
-/* cmp 8.6.0 20 May 2021
+/* cmp 8.6.1 23 May 2021
    Copyright (C) 2007-21 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -2311,8 +2311,9 @@ void cmpSaveSomeResults(pointer(class cmp_model scalar) scalar mod) {
 		if (rows(mod->WeightProduct))
 			st_numscalar("e(N)", sum(mod->WeightProduct))
 	}
+
 	if (mod->HasGamma) {
-		real scalar eq, d, k, NumCoefs
+		real scalar eq, d, k, NumCoefs, rows_dbr_db, cols_dbr_db, k_gamma
 		real matrix Beta, BetaInd, GammaInd, REInd, dBeta_dB, dBeta_dGamma, dbr_db, dOmega_dSig, V, br, sig, rho, Rho, invGamma, Omega, NumEff
 		real rowvector eb, p
 		real colvector keep
@@ -2327,7 +2328,7 @@ void cmpSaveSomeResults(pointer(class cmp_model scalar) scalar mod) {
 		d = rows(Beta); k = cols(Beta)
 		br = colshape(Beta,1)
 		eb = st_matrix("e(b)")
-		k_aux_nongamma = st_numscalar("e(k_aux)")-st_numscalar("e(k_gamma)")
+		k_aux_nongamma = st_numscalar("e(k_aux)")-(k_gamma = st_numscalar("e(k_gamma)"))
 		dBeta_dB = invGamma # I(k); dBeta_dGamma = invGamma # Beta'
 
 		dbr_db = J(rows(dBeta_dB), 0, 0)
@@ -2339,6 +2340,8 @@ void cmpSaveSomeResults(pointer(class cmp_model scalar) scalar mod) {
 		keep = cmp_selectindex(rowsum(dbr_db:!=0):>0)
 		br = br[keep]'
 		dbr_db = dbr_db[keep,]
+    rows_dbr_db = rows(dbr_db); cols_dbr_db = cols(dbr_db)
+
 		eqnames = tokens(st_global("cmp_eq"))
 		for (eq=d; eq; eq--)
 			colstripe = J(k, 1, eqnames[eq]) \ colstripe
@@ -2394,6 +2397,8 @@ void cmpSaveSomeResults(pointer(class cmp_model scalar) scalar mod) {
 		st_matrixcolstripe("e(br)", colstripe)
 		st_matrixcolstripe("e(Vr)", colstripe)
 		st_matrixrowstripe("e(Vr)", colstripe)
+    st_matrix("e(invGamma)", (*REs)[L].invGamma)
+    st_matrix("e(dbr_db)", k_aux_nongamma? blockdiag(blockdiag(invGamma, J(0, k_gamma, 0)), dbr_db[|rows_dbr_db+1, cols_dbr_db+1 \ .,.|]) : invGamma)
 	}
 }
 
