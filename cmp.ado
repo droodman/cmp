@@ -1,4 +1,4 @@
-*! cmp 8.6.1 23 May 2021
+*! cmp 8.6.1 27 May 2021
 *! Copyright (C) 2007-21 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -919,23 +919,24 @@ program define _cmp
 	if "`predict'" != "" {
 		local 0 `predict'
 		syntax if/, [lnl(varname) scores(varlist) EQuation(string)]
+		local s = cond(0`e(k_gamma)'`e(k_gamma_reducedform)', "s", "")  // for gamma models, make sure to use structural parameter set
 		tempname hold
-		_est hold `hold', copy restore
+    _est hold `hold', copy restore
 		local model `e(model)'
 		version 11: ml model `:subinstr local model ": . =" ": _cmp_ind1 =", all' if e(sample) & `if', collinear missing
 		mata _mod.set_todo("`scores'"!=""); _mod.cmp_init($ML_M)
 		_est unhold `hold'
-		mata _lnf=_S=_H=.
+		mata _lnf = _S = _H = .
 		mata moptimize_init_userinfo($ML_M, 1, &_mod)
-		mata (void) cmp_lf1($ML_M, "`scores'"!="", st_matrix("e(b)"), _lnf, _S, _H)
-		if "`lnl'"!="" mata st_view(_H, ., "`lnl'"   , st_global("ML_samp")); _H[,] = _lnf
+    mata (void) cmp_lf1($ML_M, "`scores'"!="", st_matrix("e(b`s')"), _lnf, _S, _H)
+		if "`lnl'" != "" mata st_view(_H, ., "`lnl'", st_global("ML_samp")); _H[,] = _lnf
     else {  // scores requested
       mata st_view(_H, ., "`scores'", st_global("ML_samp"))
       if "`e(resultsform)'" == "reduced" mata _H[,] = _S * ("`equation'" == ""? st_matrix("e(dbr_db)") : st_matrix("e(dbr_db)")[`equation',])'
-        else                             mata _H[,] =       "`equation'" == ""? _S                     : _S[,`equation']
+        else                             mata _H[,] =       "`equation'" == ""? _S                     : _S                    [,`equation']
     }
 		cmp_clear
-		exit
+		exit 0
 	}
 
 	tempname b cmpInitFull
@@ -1429,7 +1430,8 @@ program define cmp_full_model, eclass
 		}
 
 		if "`svy'" != "" & "`: char _dta[_svy_wvar]'" != "" { // compensate for bug in Stata 14, 15 because of which ml model, svy puts references to temp var in these macros
-			ereturn local wvar: char _dta[_svy_wvar]
+			ereturn local wtype: char _dta[_svy_wtype]
+			ereturn local wvar : char _dta[_svy_wvar]
 			ereturn local wexp "= `e(wvar)'"
 		}
 		else if "$parse_wexpL"!="" ereturn local wexp `"= $parse_wexpL"'
@@ -2529,7 +2531,9 @@ program define cmp_error
 end
 
 * Version history
-* 8.6.1 Fixed crash in margins after resultsform(reduced) and observation weights, and crash in svy: , resultsform(reduced)
+* 8.6.1 Fixed crash in margins after resultsform(reduced) and observation weights, and crash in svy: , resultsform(reduced).
+*       Fixed computational bug affecting predict, lnl and predict, scores after resultsform(reduced) and thus standard errors from svy: , resultsform(reduced).
+*       Fixed crashes in margins, vce(unconditional) after svy estimation
 * 8.6.0 Added optimizations for 1-eq models
 * 8.5.4 Fixed crash when GHK necessitated only by truncation in >=3 eq
 * 8.5.3 Fixed crash on # reference to m/roprobit base case; fixed crash on hierarchical/svy/redraw(, steps())

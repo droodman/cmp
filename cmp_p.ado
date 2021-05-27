@@ -1,4 +1,4 @@
-*! cmp 8.6.0 20 May 2021
+*! cmp 8.6.1 27 May 2021
 *! Copyright (C) 2007-21 David Roodman
 
 * This program is free software: you can redistribute it and/or modify
@@ -52,7 +52,8 @@ program define cmp_p
 		foreach var of newlist `_varlist' {
 			gen `vartype' `var' = . in 1
 		}
-		`e(cmdline)' predict(if `touse', `scores'`lnl'(`_varlist') eq(`_eqspec'))
+
+		`=cond("`e(command)'"=="", "`e(cmdline)'", "`e(command)'")' predict(if `touse', `scores'`lnl'(`_varlist') eq(`_eqspec'))
 		exit
 	}
 
@@ -270,6 +271,7 @@ program define cmp_p
 		}
 		macro shift
 	}
+set trace off
 end
 
 cap program drop Predict

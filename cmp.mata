@@ -114,7 +114,7 @@ struct subview { // info associated with subsets of data defined by given combin
 struct RE { // info associated with given level of model. Top level also holds various globals as an alternative to storing them as separate externals, references to which are slow
 	real scalar R // number of draws. (*REs)[l].R = NumREDraws[l+1]
 	real scalar d, d2 // number of RCs and REs, corresponding triangular number
-	real rowvector one2d, one2R
+	real rowvector one2d, one2R, J1R
 	real scalar HasRC
 	real matrix J_N_NEq_0
 	real rowvector REInds // indexes, within vector of effects, of random effects
@@ -132,11 +132,11 @@ struct RE { // info associated with given level of model. Top level also holds v
 	real matrix D // derivative of vech(Sig) w.r.t lnsigs and atanhrhos
 	real matrix dSigdParams // derivative of sig, vech(rho) vector w.r.t. vector of actual sig, rho parameters, reflecting "exchangeable" and "independent" options
 	real scalar N // number of groups at this level
-	real colvector one2N, J_N_1_0, J_N_1_1, J_N_0_0
+	real colvector one2N, J_N_1_0, J_N_0_0
 	real matrix IDRanges // id ranges for each group in data set, as returned by panelsetup()
 	real colvector IDRangeLengths // lengths of those ranges
 	real matrix IDRangesGroup // N x 1, id ranges for each group's subgroups in the next level down
-  struct smatrix rowvector iota, Subscript
+  struct smatrix rowvector Subscript
 	real matrix id // group id var
 	real rowvector sig, rho // vector of error variances only, and atanhrho's
 	real scalar covAcross // cross- and within-eq covariance type: unstructured, exchangeable, independent; indexed by *included* equations at this level
@@ -554,7 +554,7 @@ pointer (real matrix) rowvector SpGr(real scalar dim, real scalar k) {
 		nodes = *GQNn1d()[k]; weights = *GQNw1d()[k] // use non-nested nodes
 		nodes = nodes \ -nodes[|1+mod(k,2)\.|]; weights = weights \ weights[|1+mod(k,2)\.|]
 		return (dim==1? (&              nodes          , & weights         ) :
-		                (&(J(k,1,1)#nodes,nodes#J(k,1,1)), &(weights#weights))) // Kronecker square of non-nested nodes
+		                (&(J(k,1,nodes),nodes#J(k,1,1)), &(weights#weights))) // Kronecker square of non-nested nodes
 	}
 	
 	w1d = KPNw1d(); n1d = KPNn1d()
@@ -1231,7 +1231,8 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 	pointer(class cmp_model scalar) scalar mod
 	pointer(struct smatrix colvector) scalar pThisQuadXAdapt
 	pragma unset out; pragma unused H
-	mod = moptimize_init_userinfo(M, 1)
+
+  mod = moptimize_init_userinfo(M, 1)
 	REs = mod->REs
 	base = mod->base
 	lnf = .
@@ -1240,7 +1241,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 
 	for (i=1; i<=d; i++) {
 		REs->theta[i].M = moptimize_util_xb(M, b, i)
-		if (rows(REs->theta[i].M)==1) REs->theta[i].M = base->J_N_1_1 # REs->theta[i].M
+		if (rows(REs->theta[i].M)==1) REs->theta[i].M = J(base->N, 1, REs->theta[i].M)
 	}
 
 	for (j=1; j<=rows(mod->GammaInd); j++)
@@ -1304,9 +1305,8 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 	if (mod->HasGamma) {
 		invGamma = luinv(I(d) - mod->Gamma)
 		if (invGamma[1,1] == .) return
-		for (eq1=d; eq1; eq1--)
-			mod->Theta[base->one2N,eq1] = REs->theta[eq1].M // XXX is this faster than manually multipling invGamma by the individual theta columns and summing?
-		_editmissing(mod->Theta, 0) // only time missing values would appear and be used is when multiplied by invGamma with 0's in corresponding entries
+		for (eq1=d; eq1; eq1--)  // XXX is this faster than manually multipling invGamma by the individual theta columns and summing?
+			mod->Theta[base->one2N,eq1] = editmissing(REs->theta[eq1].M, 0)  // only time missing values would appear and be used is when multiplied by invGamma with 0's in corresponding entries
 		for (eq1=d; eq1; eq1--)
 			REs->theta[eq1].M = mod->Theta * invGamma[,eq1]
 	}
@@ -1557,7 +1557,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 
 					for (l=1; l<L; l++) {
 						RE = &((*REs)[l])
-						 // dlnL/dSigparams = dlnL/dE^ * dE^/dE * dE/dT * dT/dOmega * dOmega/dSig * dSig/dSigparams=dlnL/dE * QE * {X*U} * dT_dSig * dOmega_dSig * D. Last 3 terms draw-invariant, so saved for end
+						 // dlnL/dSigparams = dlnL/dE^ * dE^/dE * dE/dT * dT/dOmega * dOmega/dSig * dSig/dSigparams = dlnL/dE * QE * {X*U} * dT_dSig * dOmega_dSig * D. Last 3 terms draw-invariant, so saved for end
 						for (e=k=eq1=1; eq1<=RE->NEq; eq1++)
 							if (RE->HasRC)
 								for (c=1; c<=cols(RE->RCInds[eq1].M)+anyof(RE->REEqs, eq1); c++)
@@ -1585,12 +1585,12 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 				t = RE->lnLlimits :- rowminmax(RE->lnLByDraw)  // In summing groups' Ls, shift just enough to prevent underflow in exp(), but if necessary even less to avoid overflow
 				lnLmin = t[,1]; lnLmax = t[,2]
 				t = lnLmin:*(lnLmin:>0) - lnLmax; shift = t:*(t :< 0) + lnLmax // parallelizes better than rowminmax()
-				_editmissing( L_g=exp(RE->lnLByDraw:+shift), 0)  // un-log likelihood for each group & draw; lnL=. => L=0
+				L_g = editmissing(exp(RE->lnLByDraw:+shift), 0)  // un-log likelihood for each group & draw; lnL=. => L=0
 				if (mod->Quadrature)
 					L_g = L_g :* RE->QuadW
 				RE->plnL = &quadrowsum(L_g)  // in non-quadrature case, sum rather than average of likelihoods across draws
 				if (todo | (mod->AdaptivePhaseThisEst & mod->WillAdapt))
-					_editmissing(L_g = L_g :/ *(RE->plnL), 0)  // normalize L_g's as weights for obs-level scores or for use in Naylor-Smith adaptation
+					L_g = editmissing(L_g :/ *(RE->plnL), 0)  // normalize L_g's as weights for obs-level scores or for use in Naylor-Smith adaptation
 
 				if (mod->AdaptivePhaseThisEst & NewIter) {
 					pThisQuadXAdapt = &asarray(RE->QuadXAdapt, mod->ThisDraw[|.\l|])
@@ -1621,7 +1621,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
               }
 
               for (r=RE->R; r; r--)
-                RE->U[r].M[|RE->Subscript[j].M|] = RE->iota[j].M # (*pThisQuadXAdapt_j)[r,]
+                RE->U[r].M[|RE->Subscript[j].M|] = J(RE->IDRangeLengths[j], 1, (*pThisQuadXAdapt_j)[r,])
 						}
 
           if (RE->AdaptivePhaseThisIter = any(RE->ToAdapt) * mod(RE->AdaptivePhaseThisIter-1, mod->QuadIter)) {  // not converged and haven't hit max number of adaptations?
@@ -1784,7 +1784,7 @@ void cmp_model::cmp_init(transmorphic M) {
 		Idd = I(d*d)
 		vLd = rowsum(Lmatrix(d) :*(1..d*d)) // X[vLd,] = L*X, but faster
 		vKd = colsum(Kmatrix(d,d) :* (1::d*d))
-		vIKI = colsum((I(d) # Kmatrix(d,d) # I(d)) :*(1::d^4))
+		vIKI = colsum((I(d) # Kmatrix(d,d) # I(d)) :* (1::d^4))
 	}
 	ThisDraw = J(1, L, 1)
 
@@ -1808,7 +1808,6 @@ void cmp_model::cmp_init(transmorphic M) {
 	base->N = rows(indicators)
 	base->one2N = base->N<10000? 1::base->N : .
 	base->J_N_1_0 = J(base->N, 1, 0)
-	base->J_N_1_1 = J(base->N, 1, 1)
   base->J_N_0_0 = J(base->N, 0, 0)
 	Theta = J(base->N,d,0)
 
@@ -1917,7 +1916,7 @@ void cmp_model::cmp_init(transmorphic M) {
 				RE->REEqs = RE->REEqs, j
 			if (strlen(varnames = st_global("cmp_rc"+strofreal(l)+"_"+strofreal(RE->Eqs[j])))) {
 				RE->HasRC = 1
-				_editmissing(RE->X[j].M = st_data(., varnames, st_global("ML_samp")), 0) // missing values in X can occur if there's a random coefficient on a var used in one eq and not another, with a distinct sample
+				RE->X[j].M = editmissing(st_data(., varnames, st_global("ML_samp")), 0) // missing values in X can occur if there's a random coefficient on a var used in one eq and not another, with a distinct sample
 				stop = start + cols(tokens(varnames))
 				RE->RCInds[j].M = start..stop-1
 				start = stop + HasRE
@@ -1930,11 +1929,9 @@ void cmp_model::cmp_init(transmorphic M) {
     RE->IDRangeLengths = RE->IDRanges[,2] - RE->IDRanges[,1] :+ 1
 
     if (Quadrature) {
-      RE->iota = RE->Subscript = smatrix(RE->N)
-      for (j=RE->N;j;j--) {
-        RE->iota[j].M = J(RE->IDRangeLengths[j],1,1)
+      RE->Subscript = smatrix(RE->N)
+      for (j=RE->N;j;j--)
         RE->Subscript[j].M = RE->IDRanges[j,]', (.\.)
-      }
     }
 
 		Hammersley = REType=="hammersley" & l==1
@@ -1964,7 +1961,7 @@ void cmp_model::cmp_init(transmorphic M) {
 			NDraws = NumREDraws[l+1] = rows(*QuadData[1])
 			if (WillAdapt==0) printf("Number of integration points = %f.\n\n", NDraws)
 // inefficiently duplicates draws over groups then parcels them out below
-			U = J(RE->N, 1, 1) # (*QuadData[1])
+			U = J(RE->N, 1, *QuadData[1])
 			RE->QuadX = *QuadData[1]
 			RE->QuadW = *QuadData[2]'
 			if (WillAdapt) {
@@ -1985,7 +1982,7 @@ void cmp_model::cmp_init(transmorphic M) {
 			else if (REType=="halton" | Hammersley) {
 				U = J(RE->N * NDraws, RE->d, 0)
 				if (Hammersley)
-					U[,1] = invnormal(J(RE->N,1,1) # (0.5::NDraws)/NDraws)
+					U[,1] = invnormal(J(RE->N, 1, (0.5::NDraws)/NDraws))
 				for (r=1+Hammersley; r<=cols(U); r++)
 					U[,r] = invnormal(halton2(rows(U), Primes[PrimeIndex++], (NULL, &ghk2SqrtScrambler(), &ghk2NegSqrtScrambler(), &ghk2FLScrambler())[1+REScramble]))
 			} else {
@@ -1995,6 +1992,7 @@ void cmp_model::cmp_init(transmorphic M) {
 			}
 		}
 		RE->one2R = 1..(RE->R = NumREDraws[l+1])
+    if (WillAdapt) RE->J1R = J(1, RE->R, 0)
 		RE->U = smatrix(RE->R)
 		RE->TotalEffect = smatrix(RE->R, d)
  		RE->pXU         = J(RE->R, sum((RE->NEq..1) :* RE->NEff), NULL)
@@ -2363,8 +2361,7 @@ void cmpSaveSomeResults(pointer(class cmp_model scalar) scalar mod) {
 			Rho = corr(Omega); rho = rows(Rho)>1? vech(Rho[|2,1 \ .,cols(Rho)-1|])' : J(1,0,0)
 			sig = sqrt(diagonal(Omega))'
 			dOmega_dSig = edittozero(pinv(editmissing(dSigdsigrhos(mod->SigXform, sig, Omega, rho, Rho),0)),10) * QE2QSig(dOmega_dSig) * dSigdsigrhos(mod->SigXform, RE->sig, RE->Sig, RE->rho, Rho) * RE->dSigdParams
-
-			keep = cmp_selectindex((((sig:!=.) :* (sig:>0)), (rho:!=.)))'
+			keep = cmp_selectindex((((sig:!=.) :* (sig:>0)), (rho:!=.)) :* (rowsum(dOmega_dSig:!=0):>0)')'
 			br = br, (mod->SigXform? ln(sig), atanh(rho) : sig, rho)[keep]
 			_colstripe = _colstripe \ ((tokens(st_local("sigparams"+strofreal(l)))' \ tokens(st_local("rhoparams"+strofreal(l)))')[keep] , J(rows(keep), 1, "_cons"))
 			dbr_db = blockdiag(dbr_db, dOmega_dSig[keep,])
