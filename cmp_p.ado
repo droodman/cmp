@@ -1,4 +1,4 @@
-*! cmp 8.6.1 27 May 2021
+*! cmp 8.6.2 27 May 2021
 *! Copyright (C) 2007-21 David Roodman
 
 * This program is free software: you can redistribute it and/or modify

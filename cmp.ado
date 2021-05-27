@@ -1,4 +1,4 @@
-*! cmp 8.6.1 27 May 2021
+*! cmp 8.6.2 27 May 2021
 *! Copyright (C) 2007-21 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -2531,9 +2531,9 @@ program define cmp_error
 end
 
 * Version history
+* 8.6.2 Fixed crashes in margins, vce(unconditional) after svy estimation
 * 8.6.1 Fixed crash in margins after resultsform(reduced) and observation weights, and crash in svy: , resultsform(reduced).
 *       Fixed computational bug affecting predict, lnl and predict, scores after resultsform(reduced) and thus standard errors from svy: , resultsform(reduced).
-*       Fixed crashes in margins, vce(unconditional) after svy estimation
 * 8.6.0 Added optimizations for 1-eq models
 * 8.5.4 Fixed crash when GHK necessitated only by truncation in >=3 eq
 * 8.5.3 Fixed crash on # reference to m/roprobit base case; fixed crash on hierarchical/svy/redraw(, steps())
