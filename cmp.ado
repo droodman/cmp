@@ -71,7 +71,7 @@ program define _cmp
 	}
 
 	mata st_local("StataVersion", cmpStataVersion()); st_local("CodeVersion", cmpVersion())
-	if `StataVersion' != c(stata_version) | "`CodeVersion'" < "08.00.00" {
+	if `StataVersion' != c(stata_version) | "`CodeVersion'" < "08.06.02" {
 		cap findfile "lcmp.mlib"
 		while !_rc {
 			erase "`r(fn)'"
@@ -116,9 +116,9 @@ program define _cmp
 
 	local structural = "`structural'" != ""
 	global cmp_reverse = "`reverse'" != ""
-	mata _mod.set_reverse($cmp_reverse)
+	mata _mod.setReverse($cmp_reverse)
 	global cmpSigXform = "`sigxform'" ==""
-	mata _mod.set_SigXform($cmpSigXform)
+	mata _mod.setSigXform($cmpSigXform)
 	if $cmpSigXform {
 		local ln ln
 		local atanh atanh
@@ -173,10 +173,10 @@ program define _cmp
         syntax [anything(name=intmethod)], [TOLerance(real 1e-8) ITERate(integer 1001)]
 				if `tolerance'<=0 cmp_error 198 "Adaptive quadrature tolerance must be positive."
 				if   `iterate'<=0 cmp_error 198 "Maximum adaptive quadrature iterations must be positive."
-				mata _mod.set_QuadTol(`tolerance'); _mod.set_QuadIter(`iterate')
+				mata _mod.setQuadTol(`tolerance'); _mod.setQuadIter(`iterate')
         local iterate `_iterate'
 			}
-			else mata _mod.set_QuadTol(1e-3); _mod.set_QuadIter(1001)
+			else mata _mod.setQuadTol(1e-3); _mod.setQuadIter(1001)
 			if "`intmethod'"'=="" local intmethod mvaghermite
 			local 0, `intmethod'
 			syntax, [Ghermite MVAghermite]
@@ -222,7 +222,7 @@ program define _cmp
 	}
 	if 0`ghkdraws' mata CheckPrime(`ghkdraws')
 	local ghkanti = "`antithetics'`ghkanti'"!=""
-	mata _mod.set_ghkType("`ghktype'"); _mod.set_ghkAnti(`ghkanti'); _mod.set_ghkDraws(0`ghkdraws'); _mod.set_ghkScramble("`scramble'")
+	mata _mod.setGHKType("`ghktype'"); _mod.setGHKAnti(`ghkanti'); _mod.setGHKDraws(0`ghkdraws'); _mod.setGHKScramble("`scramble'")
 	local ghkscramble `scramble'
 
 	if `"`covariance'"' == "" {
@@ -252,7 +252,7 @@ program define _cmp
 	local t : subinstr local indicators "(" "", all
 	if $cmp_d != `:word count `:subinstr local t ")" "", all'' cmp_error 198 `"The {cmdab:ind:icators()} option must contain $cmp_d `=plural($cmp_d,"variable","variables, one for each equation")'. Did you forget to type {stata "cmp setup"}?"'
 
-	mata _mod.set_Quadrature(0); _mod.set_REAnti(1)
+	mata _mod.setQuadrature(0); _mod.setREAnti(1)
 	if $parse_L > 1 {
 		if `"`redraws'"' == "" {
 			if `"`intpoints'"' == "" {
@@ -275,7 +275,7 @@ program define _cmp
 				}
 			}
 			local steps 1
-			mata _mod.set_Quadrature(1); _mod.set_REAnti(1)
+			mata _mod.setQuadrature(1); _mod.setREAnti(1)
 		} 
 		else {
 			if `"`intpoints'"' != "" cmp_error 198 "intpoints() and redraws() options conflict. Use one or neither. (Default: sparse-grid quadrature with precision equivalent to 12 integration points.)"
@@ -307,7 +307,7 @@ program define _cmp
 				local scramble
 			}
 			mata CheckPrime(strtoreal(tokens("`redraws'")))
-			mata _mod.set_REType("`type'"); _mod.set_REAnti(1+("`antithetics'"!= "")); _mod.set_REScramble("`scramble'")
+			mata _mod.setREType("`type'"); _mod.setREAnti(1+("`antithetics'"!= "")); _mod.setREScramble("`scramble'")
 		}
 	}
 	if 0`steps'==0 local steps 1
@@ -653,8 +653,8 @@ program define _cmp
 			global cmp_yL $cmp_yL ${cmp_y`eq'_L}
 			global cmp_ind $cmp_ind _cmp_ind`eq'
 		}
-		mata _mod.set_d($cmp_d); _mod.set_L($parse_L); _mod.set_MaxCuts($cmp_max_cuts)
-		mata _mod.set_UtVars("$cmp_Ut"); _mod.set_LtVars("$cmp_Lt"); _mod.set_yLVars("$cmp_yL"); _mod.set_indVars("$cmp_ind")
+		mata _mod.setd($cmp_d); _mod.setL($parse_L); _mod.setMaxCuts($cmp_max_cuts)
+		mata _mod.setUtVars("$cmp_Ut"); _mod.setLtVars("$cmp_Lt"); _mod.setyLVars("$cmp_yL"); _mod.setindVars("$cmp_ind")
 
 		drop `_touse'
 		egen byte `_touse' = rowmax($cmp_ind) if `touse'
@@ -679,7 +679,7 @@ program define _cmp
 				else cmp_error 111 `"Equation `EndogVar' not found."'
 			}
 		}
-		mata _mod.set_GammaI(st_matrix("`GammaI'")); _mod.set_GammaInd(st_matrix("cmpGammaInd"))
+		mata _mod.setGammaI(st_matrix("`GammaI'")); _mod.setGammaInd(st_matrix("cmpGammaInd"))
 		if $cmpHasGamma {
 			mata st_matrix("`GammaId'", colsum(st_matrix("`GammaI'")))
 			forvalues eq=1/$cmp_d {
@@ -711,14 +711,14 @@ program define _cmp
 			mat `Eqs'[`eq', `l'] = "`id'"=="_n" | cmp_fixed_sigs`l'[1,`eq']>0  // don't simulate REs with variance=0
 		}
 	}
-	mata _mod.set_Eqs(st_matrix("`Eqs'"))
+	mata _mod.setEqs(st_matrix("`Eqs'"))
 	mat cmp_NumEff = J($parse_L, $cmp_d, 0)
 	forvalues l=1/$parse_L {
 		forvalues eq=1/$cmp_d {
 			mat cmp_NumEff[`l', `eq'] = `cmp_NumEff`l'_`eq''
 		}
 	}
-	mata _mod.set_NumEff(st_matrix("cmp_NumEff"))
+	mata _mod.setNumEff(st_matrix("cmp_NumEff"))
 	
 	local technique technique(`technique')
 	_vce_parse, optlist(robust jackknife bootstrap oim opg) argoptlist(cluster) pwallowed(robust jackknife bootstrap cluster oim opg) old: `wgtexp', `robust' cluster(`cluster') vce(`vce')
@@ -830,7 +830,7 @@ program define _cmp
 	qui count if `touse'
 	if r(N)==0 cmp_error 2000 "No observations."
 
-	mata _mod.set_todo("`lf'"=="")
+	mata _mod.settodo("`lf'"=="")
 
 	if "`predict'" != "" {
 		forvalues l=1/$parse_L {
@@ -838,14 +838,14 @@ program define _cmp
 			mat cmpSigScoreInds`l' = e(sig_score_inds`l')
 		}
 		global cmp_num_scores = e(num_scores)
-		mata _mod.set_NumREDraws(strtoreal(tokens("`redraws'"))')
+		mata _mod.setNumREDraws(strtoreal(tokens("`redraws'"))')
 		
 		constraint drop `_constraints' `initconstraints' `1onlyinitconstraints'
 	}
 
-	mata _mod.set_MprobitGroupInds (st_matrix("cmp_mprobit_group_inds" )); _mod.set_RoprobitGroupInds(st_matrix("cmp_roprobit_group_inds"))
-	mata _mod.set_NonbaseCases(st_matrix("cmp_nonbase_cases"))
-	mata _mod.set_vNumCuts(st_matrix("cmp_num_cuts")); _mod.set_trunceqs(st_matrix("cmp_trunceqs")); _mod.set_intregeqs(st_matrix("cmp_intregeqs"))
+	mata _mod.setMprobitGroupInds (st_matrix("cmp_mprobit_group_inds" )); _mod.setRoprobitGroupInds(st_matrix("cmp_roprobit_group_inds"))
+	mata _mod.setNonbaseCases(st_matrix("cmp_nonbase_cases"))
+	mata _mod.setvNumCuts(st_matrix("cmp_num_cuts")); _mod.settrunceqs(st_matrix("cmp_trunceqs")); _mod.setintregeqs(st_matrix("cmp_intregeqs"))
 
 // /lnsigEx_[lev] accross (ergo within too), exchangeable
 // /lnsigEx accross, bottom
@@ -924,7 +924,7 @@ program define _cmp
     _est hold `hold', copy restore
 		local model `e(model)'
 		version 11: ml model `:subinstr local model ": . =" ": _cmp_ind1 =", all' if e(sample) & `if', collinear missing
-		mata _mod.set_todo("`scores'"!=""); _mod.cmp_init($ML_M)
+		mata _mod.settodo("`scores'"!=""); _mod.cmp_init($ML_M)
 		_est unhold `hold'
 		mata _lnf = _S = _H = .
 		mata moptimize_init_userinfo($ML_M, 1, &_mod)
@@ -1006,7 +1006,7 @@ program define _cmp
 		local HasGamma $cmpHasGamma
 		global cmp_num_scores = $cmp_num_scores - $cmpHasGamma
 		global cmpHasGamma 0
-		mata _mod.set_GammaInd(J(0,0,0))
+		mata _mod.setGammaInd(J(0,0,0))
 
 		di as res _n "Fitting " plural($cmp_d>1, "constant") "-only model for LR test of overall model fit."
 		qui InitSearch if `touse' `=cond("`subpop'"!="","& `subpop'","")' `wgtexp', `svy' 1only  auxparams(`auxparams') mlopts(`mlopts')
@@ -1019,7 +1019,7 @@ program define _cmp
 		global cmpHasGamma `HasGamma'
 		global cmp_num_scores = $cmp_num_scores + $cmpHasGamma
 	}
-	mata _mod.set_GammaInd(st_matrix("cmpGammaInd")) // hidden from constants-only fit
+	mata _mod.setGammaInd(st_matrix("cmpGammaInd")) // hidden from constants-only fit
 
 	tempname LeftCens RightCens
 	qui {
@@ -1465,7 +1465,7 @@ program define cmp_full_model, eclass
 		}
 	
 		ereturn scalar num_scores = $cmp_num_scores
-		mata st_local("ghkdraws", strofreal(_mod.get_ghkDraws()))
+		mata st_local("ghkdraws", strofreal(_mod.getGHKDraws()))
 		foreach macro in diparmopt ghkanti ghkdraws ghktype retype reanti intpoints {
 			ereturn local `macro' ``macro''
 		}
@@ -1575,7 +1575,7 @@ program Estimate, eclass
 	}
 
 	tempname b sample
-	mata _mod.set_WillAdapt($cmp_IntMethod)
+	mata _mod.setWillAdapt($cmp_IntMethod)
 
 	if "`psampling'" == "" {
 		local psampling_cutoff 1
@@ -1608,7 +1608,7 @@ program Estimate, eclass
 
 			if "`_init'" != "" local initopt init(`_init', copy)
 
-			mata _mod.set_NumREDraws(ceil(_NumREDraws))
+			mata _mod.setNumREDraws(ceil(_NumREDraws))
 
 			local _if if (`if') `=cond("`psampling'" != "", "& (`psampling_cutoff'>=1 | `u'<=.001+`psampling_cutoff')", "")'
 
@@ -1672,7 +1672,7 @@ program Estimate, eclass
 		_est hold `hold'
 		`quietly' ml model gf`="`lf'"==""' cmp_gf1() `mlmodelcmd' vce(`vce') init(`_init') group(_cmp_id1)
 		mata moptimize_init_userinfo($ML_M, 1, &_mod)
-		quietly ml max, search(off) `mlopts' iter(0) // nooutput
+		quietly ml max, search(off) `mlopts' iter(0) nooutput
 		mat `V' = e(V)
 		local vce `e(vce)'
 		local vcetype `e(vcetype)'

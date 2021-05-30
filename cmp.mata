@@ -156,6 +156,7 @@ struct RE { // info associated with given level of model. Top level also holds v
 	transmorphic scalar QuadXAdapt // asarray("real", l), one set of adaptive shifters per multi-level draw combination; first index is always 1, to prevent vector length 0
 	real scalar AdaptivePhaseThisIter, AdaptiveShift
   real matrix Rho
+  real colvector RCk // number of X vars in each random coefficient
 }
 
 class cmp_model {
@@ -194,17 +195,17 @@ class cmp_model {
 	string rowvector indVars, LtVars, UtVars, yLVars
 	real rowvector ThisDraw
 	real scalar h // if computing 2nd derivatives most recent h used
-	struct smatrix colvector X // NEq-vector of data matrices--needed only  in gfX() estimation, to expands scores to one per regressor
+	struct smatrix colvector X // NEq-vector of data matrices--needed only in gfX() estimation, to expand scores to one per regressor
 
 	void new(), cmp_init(), BuildXU(), BuildTotalEffects(), 
-				set_reverse(), set_SigXform(), set_QuadTol(), set_QuadIter(), set_ghkType(), set_MaxCuts(), set_indVars(), set_LtVars(), set_UtVars(), set_yLVars(), 
-				set_ghkAnti(), set_ghkDraws(), set_ghkScramble(), set_Quadrature(), set_d(), set_L(), set_todo(),
-				set_REAnti(), set_REType(), set_REScramble(), set_Eqs(), set_GammaI(), set_NumEff(), set_NumMprobitGroups(), set_NumRoprobitGroups(),
-				set_MprobitGroupInds(), set_RoprobitGroupInds(), set_NonbaseCases(), set_vNumCuts(), set_trunceqs(), set_intregeqs(), set_NumREDraws(), set_GammaInd(),
-				set_AdaptNow(), set_WillAdapt(), lf1()
+				setReverse(), setSigXform(), setQuadTol(), setQuadIter(), setGHKType(), setMaxCuts(), setindVars(), setLtVars(), setUtVars(), setyLVars(), 
+				setGHKAnti(), setGHKDraws(), setGHKScramble(), setQuadrature(), setd(), setL(), settodo(),
+				setREAnti(), setREType(), setREScramble(), setEqs(), setGammaI(), setNumEff(), setNumMprobitGroups(), setNumRoprobitGroups(),
+				setMprobitGroupInds(), setRoprobitGroupInds(), setNonbaseCases(), setvNumCuts(), settrunceqs(), setintregeqs(), setNumREDraws(), setGammaInd(),
+				setAdaptNow(), setWillAdapt(), lf1()
   real colvector lnLCensored(), lnLTrunc()
 	static void _st_view()
-	real scalar get_ghkDraws()
+	real scalar getGHKDraws()
 }
 
 void cmp_model::new() {
@@ -213,53 +214,53 @@ void cmp_model::new() {
 	Adapted = AdaptivePhaseThisEst = WillAdapt = AdaptNextTime = HasGamma = ghkScramble = REScramble = 0
 }
 
-void cmp_model::set_d       (real scalar t) d  = t
-void cmp_model::set_L       (real scalar t) L  = t
-void cmp_model::set_todo    (real scalar t) _todo  = t
-void cmp_model::set_MaxCuts (real scalar t) MaxCuts  = t
-void cmp_model::set_reverse (real scalar t) reverse  = t
-void cmp_model::set_SigXform(real scalar t) SigXform = t
-void cmp_model::set_QuadTol (real scalar t) QuadTol  = t
-void cmp_model::set_QuadIter(real scalar t) QuadIter = t
-void cmp_model::set_ghkType(string scalar t) ghkType = t
-void cmp_model::set_ghkAnti(real scalar t) ghkAnti = t
-void cmp_model::set_ghkDraws(real scalar t) ghkDraws = t
-real scalar cmp_model::get_ghkDraws() return(ghkDraws)
-void cmp_model::set_ghkScramble(string scalar t) ghkScramble = select(0..3, ("", "sqrt", "negsqrt", "fl"):==t)
-void cmp_model::set_REType    (string scalar t) REType = t
-void cmp_model::set_REAnti    (real scalar t) REAnti = t
-void cmp_model::set_NumREDraws(real colvector t) NumREDraws = 1 \ t*REAnti
-void cmp_model::set_REScramble(string scalar t) REScramble = select(0..3, ("", "sqrt", "negsqrt", "fl"):==t)
-void cmp_model::set_Quadrature(real scalar t) Quadrature = t
-void cmp_model::set_Eqs(real matrix t) Eqs = t
-void cmp_model::set_NumEff(real matrix t) NumEff = t
-void cmp_model::set_NumRoprobitGroups(real matrix t) NumRoprobitGroups = t
-void cmp_model::set_MprobitGroupInds(real matrix t) MprobitGroupInds = t
-void cmp_model::set_RoprobitGroupInds(real matrix t) NumRoprobitGroups = rows(RoprobitGroupInds = t)
-void cmp_model::set_NonbaseCases(real rowvector t) NonbaseCases = t
-void cmp_model::set_vNumCuts(real colvector t) NumCuts=sum(vNumCuts = t)
-void cmp_model::set_trunceqs(real rowvector t) trunceqs = t
-void cmp_model::set_intregeqs(real rowvector t) intregeqs = t
-void cmp_model::set_indVars(string scalar t) indVars = tokens(t)
-void cmp_model::set_yLVars(string scalar t) yLVars = tokens(t)
-void cmp_model::set_LtVars(string scalar t) LtVars = tokens(t)
-void cmp_model::set_UtVars(string scalar t) UtVars = tokens(t)
-void cmp_model::set_AdaptNow(real scalar t) Adapted = AdaptivePhaseThisEst = t
+void cmp_model::setd       (real scalar t) d  = t
+void cmp_model::setL       (real scalar t) L  = t
+void cmp_model::settodo    (real scalar t) _todo  = t
+void cmp_model::setMaxCuts (real scalar t) MaxCuts  = t
+void cmp_model::setReverse (real scalar t) reverse  = t
+void cmp_model::setSigXform(real scalar t) SigXform = t
+void cmp_model::setQuadTol (real scalar t) QuadTol  = t
+void cmp_model::setQuadIter(real scalar t) QuadIter = t
+void cmp_model::setGHKType(string scalar t) ghkType = t
+void cmp_model::setGHKAnti(real scalar t) ghkAnti = t
+void cmp_model::setGHKDraws(real scalar t) ghkDraws = t
+real scalar cmp_model::getGHKDraws() return(ghkDraws)
+void cmp_model::setGHKScramble(string scalar t) ghkScramble = select(0..3, ("", "sqrt", "negsqrt", "fl"):==t)
+void cmp_model::setREType    (string scalar t) REType = t
+void cmp_model::setREAnti    (real scalar t) REAnti = t
+void cmp_model::setNumREDraws(real colvector t) NumREDraws = 1 \ t*REAnti
+void cmp_model::setREScramble(string scalar t) REScramble = select(0..3, ("", "sqrt", "negsqrt", "fl"):==t)
+void cmp_model::setQuadrature(real scalar t) Quadrature = t
+void cmp_model::setEqs(real matrix t) Eqs = t
+void cmp_model::setNumEff(real matrix t) NumEff = t
+void cmp_model::setNumRoprobitGroups(real matrix t) NumRoprobitGroups = t
+void cmp_model::setMprobitGroupInds(real matrix t) MprobitGroupInds = t
+void cmp_model::setRoprobitGroupInds(real matrix t) NumRoprobitGroups = rows(RoprobitGroupInds = t)
+void cmp_model::setNonbaseCases(real rowvector t) NonbaseCases = t
+void cmp_model::setvNumCuts(real colvector t) NumCuts=sum(vNumCuts = t)
+void cmp_model::settrunceqs(real rowvector t) trunceqs = t
+void cmp_model::setintregeqs(real rowvector t) intregeqs = t
+void cmp_model::setindVars(string scalar t) indVars = tokens(t)
+void cmp_model::setyLVars(string scalar t) yLVars = tokens(t)
+void cmp_model::setLtVars(string scalar t) LtVars = tokens(t)
+void cmp_model::setUtVars(string scalar t) UtVars = tokens(t)
+void cmp_model::setAdaptNow(real scalar t) Adapted = AdaptivePhaseThisEst = t
 
-void cmp_model::set_WillAdapt(real scalar t) {
+void cmp_model::setWillAdapt(real scalar t) {
 	WillAdapt  = t
 	Adapted = AdaptivePhaseThisEst = AdaptNextTime = 0
 	Lastb = J(1,0,0)
 }
 
-void cmp_model::set_GammaI(real matrix t) { // infinite loop if d is not set
+void cmp_model::setGammaI(real matrix t) { // infinite loop if d is not set
 	real scalar i
 	GammaId = t
 	for (i=d-2; i>0; i--)
 		GammaId = GammaId * t
 }
 
-void cmp_model::set_GammaInd(real matrix t) {
+void cmp_model::setGammaInd(real matrix t) {
 	real scalar i
 	GammaInd = t
 	if (HasGamma = rows(t)) {
@@ -270,7 +271,7 @@ void cmp_model::set_GammaInd(real matrix t) {
 }
 
 string scalar cmpStataVersion() return("`c(stata_version)'")
-string scalar      cmpVersion() return("08.00.00")
+string scalar      cmpVersion() return("08.06.02")
 
 // substitute for built-in Stata command _ms_findomitted, since missing from Stata 11
 void _ms_findomitted(string scalar bname, string scalar Vname) {
@@ -372,12 +373,15 @@ void CheckPrime(real vector v) {
 			}
 }
 
-// paste columns B into matrix A at starting index i, then advance index
+// paste columns B into matrix A at starting index i, then advance index; for efficiency, overwrite A = B when possible
 void PasteAndAdvance(real matrix A, real scalar i, real matrix B) {
 	if (cols(B)) {
 		real scalar t
 		t = i + cols(B)
-		A[|.,i \ .,t-1|] = B
+		if (cols(A) == cols(B))
+      A = B
+    else
+      A[|.,i \ .,t-1|] = B
 		i = t
 	}
 }
@@ -1172,7 +1176,7 @@ void cmp_model::BuildTotalEffects(real scalar l) {
 			pUT                              = & (RE->U[r].M * RE->T)     // REs
 
 		for (eq=RE->NEq; eq; eq--)               // RCs
-			if (cols(RE->X[eq].M))
+			if (RE->RCk[eq])
 				setcol(pUT, eq, *getcol(*pUT, eq) + quadrowsum((RE->U[r].M * RE->T[, RE->RCInds[eq].M]) :* RE->X[eq].M)) // RCs * X
 		if (HasGamma)
 			for (eq=cols(RE->GammaEqs); eq; eq--)
@@ -1184,20 +1188,21 @@ void cmp_model::BuildTotalEffects(real scalar l) {
 }
 
 void cmp_model::BuildXU(real scalar l) {
-	real scalar c, r, j, k, e, eq1, eq2; pointer (struct RE scalar) scalar RE; pointer(struct subview scalar) scalar v
+	real scalar c, r, j, k, e, eq1, eq2; pointer (struct RE scalar) scalar RE; pointer(struct subview scalar) scalar v; real colvector Ue
 	RE = &((*REs)[l])
 	if (RE->HasRC)
 		for (r=RE->R; r; r--) {  // pre-compute X-U products in order most convenient for computing scores w.r.t upper-level T's
 			k = e = 0
 			for (eq1=1; eq1<=RE->NEq; eq1++)
-				for (c=1; c<=cols(RE->X[eq1].M) + anyof(RE->REEqs, eq1); c++) {
-					RE->pXU[r,++k] = &( c <= cols(RE->X[eq1].M)? *getcol(RE->U[r].M, ++e) :* *getcol(RE->X[eq1].M, c..cols(RE->X[eq1].M)) : base->J_N_0_0 )
+				for (c=1; c<=RE->RCk[eq1] + anyof(RE->REEqs, eq1); c++) {
+          Ue = *getcol(RE->U[r].M, ++e)
+					RE->pXU[r,++k] = &( c <= RE->RCk[eq1]? Ue :* *getcol(RE->X[eq1].M, c..RE->RCk[eq1]) : base->J_N_0_0 )
 					if (anyof(RE->REEqs, eq1))
-						RE->pXU[r,k] = &( *RE->pXU[r,k], *getcol(RE->U[r].M, e) )
+						RE->pXU[r,k] = &(*RE->pXU[r,k], Ue)
 					for (eq2=eq1+1; eq2<=RE->NEq; eq2++) {
-						RE->pXU[r,++k] = &(  cols(RE->X[eq2].M)? *getcol(RE->U[r].M ,e) :*RE->X[eq2].M : base->J_N_0_0)
+						RE->pXU[r,++k] = &( RE->RCk[eq2]? Ue :*RE->X[eq2].M : base->J_N_0_0 )
 						if (anyof(RE->REEqs, eq2))
-							RE->pXU[r,k] = &( *RE->pXU[r,k], *getcol(RE->U[r].M ,e) )  // XXX avoid concatenation?
+							RE->pXU[r,k] = &(*RE->pXU[r,k], Ue)  // XXX avoid concatenation?
 					}
 				}
 		}
@@ -1318,7 +1323,7 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
 			LastIter = Iter
 			if (Adapted==0)
 				if (AdaptNextTime) {
-					set_AdaptNow(1)
+					setAdaptNow(1)
 					printf("\n{res}Performing Naylor-Smith adaptive quadrature.\n")
 				} else {
 					if (cols(Lastb))
@@ -1622,7 +1627,7 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
               }
 
               for (r=RE->R; r; r--)
-                RE->U[r].M[|RE->Subscript[j].M|] = J(RE->IDRangeLengths[j], 1, (*pThisQuadXAdapt_j)[r,])
+                RE->U[r].M[|RE->Subscript[j].M|] = J(RE->IDRangeLengths[j], 1, (*pThisQuadXAdapt_j)[r,])  // faster to explode these here than after multiplying by T in BuildTotalEffects(), BuildXU()
 						}
 
           if (RE->AdaptivePhaseThisIter = any(RE->ToAdapt) * mod(RE->AdaptivePhaseThisIter-1, QuadIter)) {  // not converged and haven't hit max number of adaptations?
@@ -1915,13 +1920,15 @@ void cmp_model::cmp_init(transmorphic M) {
 		RE->X = RE->RCInds = smatrix(RE->NEq)
 
 		RE->HasRC = 0
+    RE->RCk = J(RE->NEq, 1, 0)
 		for (start=j=1; j<=RE->NEq; j++) {
 			if (HasRE = st_global("cmp_re"+strofreal(l)+"_"+strofreal(RE->Eqs[j])) != "")
 				RE->REEqs = RE->REEqs, j
 			if (strlen(varnames = st_global("cmp_rc"+strofreal(l)+"_"+strofreal(RE->Eqs[j])))) {
 				RE->HasRC = 1
 				RE->X[j].M = editmissing(st_data(., varnames, st_global("ML_samp")), 0) // missing values in X can occur if there's a random coefficient on a var used in one eq and not another, with a distinct sample
-				stop = start + cols(tokens(varnames))
+				RE->RCk[j] = cols(RE->X[j].M)
+        stop = start + RE->RCk[j]
 				RE->RCInds[j].M = start..stop-1
 				start = stop + HasRE
 			}
