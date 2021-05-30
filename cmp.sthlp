@@ -530,18 +530,20 @@ for confidence intervals of the coefficients; see {help level:help level}. The
 default is set by {help set level:level} and is usually 95.
 
 {phang}{cmdab:result:sform(}{cmdab:struct:ural} | {cmdab:red:uced)} affects how results are stored and displayed after fitting models with
-#-suffixed references to other equations' linear predictors. {cmdab:result:sform(}{cmdab:struct:ural)}, the default, displays results
-corresponding to the specified model. {cmdab:result:sform(}{cmdab:red:uced)} switches to the reduced form, in which dependent variables
-are expressed more fully in terms of the exogenous variables. After estimation,
+#-suffixed references. {cmdab:result:sform(}{cmdab:struct:ural)}, the default, displays results
+corresponding to the specified model. {cmdab:result:sform(}{cmdab:red:uced)} switches to the reduced form, in which #-suffixed references
+are substituted out. After estimation,
 you can switch between the two forms by typing {cmd:cmp, {cmdab:result:sform}{cmd:(}{cmdab:red:uced}{cmd:)}} and 
 {cmd:cmp, {cmdab:result:sform}{cmd:(}{cmdab:struct:ural}{cmd:)}}. The main value of this option is that it allows {cmd:predict} 
 and {cmd:margins} to be executed against the reduced-form 
-results, which capture direct and indirect effects of exogenous regressors on endogenous ones, as they cascade through the stages
-of the model. But note that this option only solves out #-suffixed references. Effects transmitted through censored variables or through uncensored ones
-not referred to with the # suffix are still left out. In the case of {cmd:predict}, the same result can be achieved on the fly by adding a 
+results, which capture direct and indirect effects of exogenous regressors on endogenous ones, as they cascade through the #-references. (Effects 
+transmitted through censored variables or through uncensored ones
+not referred to with the # suffix are still left out.) In the case of {cmd:predict}, the same result can be achieved on the fly by adding a 
 {cmdab:red:ucedform} option to that command
 (see {help cmp##predict:below} for more); this switches to the reduced form just long enough to generate predictions. {cmd:margins}, however,
-can be confused by this sleight of hand--as in {cmd:margins, predict(reducedform)}--and return no results.
+can be confused by this sleight of hand--as in {cmd:margins, predict(reducedform)}--and return no results. To apply this option in {cmd:svy}
+estimation, it is usually best to use {cmd:cmp}'s {cmd:svy} option after the comma (described below) rather than to prefix the {cmd:cmp}
+command with {cmd:svy :}.
 
 {phang}{opt qui:etly} suppresses most output: the results from any single-equation initial fits and the iteration log during the full model fit.
 
@@ -789,11 +791,11 @@ Please cite it as such: {p_end}
 {p 8 8 2}Roodman, D. 2011. Estimating fully observed recursive mixed-process models with cmp. {it:Stata Journal} 11(2): 159-206.{p_end}
 
 {title:Published examples}
-{p 4 8 2}See {browse "http://scholar.google.com/scholar?oi=bibs&hl=en&cites=1278092567509554980":Google Scholar}.
+{p 4 8 2}See {browse "https://scholar.google.com/scholar?cites=18327562785544861015":Google Scholar}.
 
 {title:Introductory examples}
 
-{pstd}The purpose of {cmd:cmp} is not to match standard commands, but to fit models otherwise beyond easy estimation in Stata. But replications 
+{pstd}The purpose of {cmd:cmp} is not to match standard commands. But replications 
 are the best way to introduce how to use {cmd:cmp} (colored text is clickable):
 
 {phang}{cmd:* Define indicator macros for clarity.}{p_end}

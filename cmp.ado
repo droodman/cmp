@@ -932,7 +932,8 @@ program define _cmp
 		if "`lnl'" != "" mata st_view(_H, ., "`lnl'", st_global("ML_samp")); _H[,] = _lnf
     else {  // scores requested
       mata st_view(_H, ., "`scores'", st_global("ML_samp"))
-      if "`e(resultsform)'" == "reduced" mata _H[,] = _S * ("`equation'" == ""? st_matrix("e(dbr_db)") : st_matrix("e(dbr_db)")[`equation',])'
+      if "`e(resultsform)'" == "reduced" di as err "Won't compute scores on reduced-form results. Try estimating with cmp's svy option instead of the svy prefix."
+//      if "`e(resultsform)'" == "reduced" mata _H[,] = _S * ("`equation'" == ""? st_matrix("e(dbr_db)") : st_matrix("e(dbr_db)")[`equation',])'
         else                             mata _H[,] =       "`equation'" == ""? _S                     : _S                    [,`equation']
     }
 		cmp_clear
@@ -1065,7 +1066,7 @@ program define _cmp
 		`quietly' auxparams(`auxparams') cmdline(`"`cmdline'"') resteps(`steps') redraws(`redraws') intpoints(`intpoints') ///
 		vsmp(`vsmp') meff(`meff') ghkanti(`ghkanti') ghkdraws(`ghkdraws') ghktype(`ghktype') ghkscramble(`ghkscramble') diparmopt(`diparmopt') `interactive'
 	constraint drop `_constraints' `initconstraints' `1onlyinitconstraints'
-	
+
 	if e(cmd)=="cmp" Display, `diopts'
 end
 
@@ -2311,171 +2312,173 @@ program Display, eclass
 			}
 		}
 
-		if e(L) == 1 {
-			if `:word count `e(diparmopt)''/3+`:word count `diopts''<=68 ml display, level(`level') `diopts' showeqns `e(diparmopt)'
-																															else ml display, level(`level') `diopts' showeqns
-		}
-		else {
-			tempname t
-			mat `t' = e(num_cuts)' * J(`e(k_dv)', 1, 1)
-			ml display, level(`level') `diopts' showeqns `=cond(e(sigxform) | `t'[1,1], "", "neq(`e(k_dv)')")' // just displaying cuts causes them to be listed as equations, not aux params
-		
-			tempname fixed_sigs fixed_rhos NumEff param se z
-			scalar `z' = invnormal(.5+`level'/200)
-			mat `NumEff' = e(NumEff)
+    if c(noisily) {
+      if e(L) == 1 {
+        if `:word count `e(diparmopt)''/3+`:word count `diopts''<=68 ml display, level(`level') `diopts' showeqns `e(diparmopt)'
+                                                                else ml display, level(`level') `diopts' showeqns
+      }
+      else {
+        tempname t
+        mat `t' = e(num_cuts)' * J(`e(k_dv)', 1, 1)
+        ml display, level(`level') `diopts' showeqns `=cond(e(sigxform) | `t'[1,1], "", "neq(`e(k_dv)')")' // just displaying cuts causes them to be listed as equations, not aux params
+      
+        tempname fixed_sigs fixed_rhos NumEff param se z
+        scalar `z' = invnormal(.5+`level'/200)
+        mat `NumEff' = e(NumEff)
 
-			if e(sigxform) {
-				local exp exp
-				local ln ln
-				local tanh tanh
-				local atanh atanh
-			}
+        if e(sigxform) {
+          local exp exp
+          local ln ln
+          local tanh tanh
+          local atanh atanh
+        }
 
-			di as txt "{hline 36}{c TT}{hline 47}"
-			di "Random effects parameters           {c |}  Estimate    Std. Err.    [`level'% Conf. Interval]"
-			di as txt "{hline 36}{c +}{hline 47}"
+        di as txt "{hline 36}{c TT}{hline 47}"
+        di "Random effects parameters           {c |}  Estimate    Std. Err.    [`level'% Conf. Interval]"
+        di as txt "{hline 36}{c +}{hline 47}"
 
-			forvalues l=1/`=e(L)-1' {
-				local covariance: word `l' of `e(covariance)'
-				di "Level: " as res abbrev("`:word `l' of `e(ivars)''", 15) as txt cond("`covariance'"=="exchangeable", " (exchangeable)", "") _col(37) "{c |}" 
-				mat `fixed_sigs' = e(fixed_sigs`l')
-				mat `fixed_rhos' = e(fixed_rhos`l')
-				if "`covariance'" == "exchangeable" {
-					local paramname /`ln'sigEx_`l'
-					di as txt "    Standard deviations" _col(37) "{c |} " as res %9.0g `exp'(_b[`paramname']) _c
-					if _se[`paramname'] di _col(51) %9.0g exp(e(sigxform)*_b[`paramname'])*_se[`paramname'] _col(64) %9.0g `exp'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `exp'(_b[`paramname']+`z'*_se[`paramname'])
-						else di as res "  " %9.0g . as txt
-					if e(k_dv) > 1 {
-						local paramname /`atanh'rhoEx_`l'
-						di as txt "    Cross-eq " plural(1+(e(k_dv)>2 | (e(k_dv)==2 & (`NumEff'[`l', 1]>1 | `NumEff'[`l', e(k_dv)]>1))), "correlation") _col(37) "{c |} " as res %9.0g `tanh'(_b[`paramname']) _c
-						if _se[`paramname'] di _col(51) %9.0g _se[`paramname']/cosh(e(sigxform)*_b[`paramname'])^2 _col(64) %9.0g `tanh'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `tanh'(_b[`paramname']+`z'*_se[`paramname'])
-							else di as res "  " %9.0g . as txt
-					}
-				}
-				forvalues eq1=1/`=e(k_dv)' {
-					if `NumEff'[`l', `eq1'] {
-						local covariance`eq1': word `l' of `e(covariance`eq1')'
-						if e(k_dv)>1 di as txt "  " as res abbrev("`:word `eq1' of `e(eqnames)''", 15) as txt cond("`covariance`eq1''"=="exchangeable", " (exchangeable)", "") _col(37) "{c |}" 
-						if  "`covariance'" != "exchangeable" {
-							di as txt "    Standard deviations" _col(37) "{c |} " _c as res
-							if "`covariance`eq1''"=="exchangeable" {
-								local paramname /`ln'sigEx_`l'_`eq1'
-								di as res %9.0g `exp'(_b[`paramname']) _c
-								if _se[`paramname'] di _col(51) %9.0g exp(e(sigxform)*_b[`paramname'])*_se[`paramname'] _col(64) %9.0g `exp'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `exp'(_b[`paramname']+`z'*_se[`paramname'])
-									else di "  " %9.0g .
-							}
-							else {
-								di as txt
-								forvalues c=1/`=`NumEff'[`l', `eq1']' {
-									local t = abbrev("`:word `c' of `e(EffNames`l'_`eq1')''", 22)
-									di as txt "      `t'"  _col(37) "{c |} " _c
-									if `fixed_sigs'[1,`eq1'] == . {
-										local paramname /`ln'sig`=cond("`t'"=="_cons","","_`c'")'_`l'_`eq1'
-										di as res %9.0g `exp'(_b[`paramname']) _c
-										if _se[`paramname'] di _col(51) %9.0g exp(e(sigxform)*_b[`paramname'])*_se[`paramname'] _col(64) %9.0g `exp'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `exp'(_b[`paramname']+`z'*_se[`paramname'])
-											else di "  " %9.0g . as txt
-									}
-									else di %9.0g `fixed_sigs'[1,`eq1'] as txt "  (constrained)"
-								}
-							}
-						}
-						if `NumEff'[`l', `eq1'] > 1 & "`covariance`eq1''"!="independent" {
-							di as txt "    Intra-eq " plural(`NumEff'[`l', `eq1']-1, "correlation") _col(37) "{c |} " _c
-							if "`covariance`eq1''"=="exchangeable" {
-								local paramname /`atanh'rhoEx_`l'_`eq1'
-								di %9.0g `tanh'(_b[`paramname']) _c
-								if _se[`paramname'] di _col(51) %9.0g _se[`paramname']/cosh(e(sigxform)*_b[`paramname'])^2 _col(64) %9.0g `tanh'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `tanh'(_b[`paramname']+`z'*_se[`paramname'])
-									else di "  " %9.0g .
-							}	
-							else {
-								di
-								forvalues c1=1/`=`NumEff'[`l', `eq1']' {
-									forvalues c2=`=`c1'+1'/`=`NumEff'[`l', `eq1']' {
-										local t1 = abbrev("`:word `c1' of `e(EffNames`l'_`eq1')''", 15)
-										local t2 = abbrev("`:word `c2' of `e(EffNames`l'_`eq1')''", 15)
-										local paramname /`atanh'rho_`c1'_	`c2'_`l'_`eq1'
-										di as txt "      `t1'" _col(20) "`t2'" _col(37) "{c |} " as res %9.0g `tanh'(_b[`paramname']) _c
-										if _se[`paramname'] di _col(51) %9.0g _se[`paramname']/cosh(e(sigxform)*_b[`paramname'])^2 _col(64) %9.0g `tanh'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `tanh'(_b[`paramname']+`z'*_se[`paramname'])
-											else di "  " %9.0g .
-									}
-								}
-							}
-						}
-					}
-				}
-				if "`:word `l' of `e(covariance)''" == "unstructured" & e(k_dv) > 1 {
-					local needheader 1
-					forvalues eq1=1/`e(k_dv)' {
-						forvalues eq2=`=`eq1'+1'/`e(k_dv)' {
-							if `fixed_rhos'[`eq2',`eq1'] == . & `=`NumEff'[`l', `eq1']' & `=`NumEff'[`l', `eq2']' {
-								if `needheader' di as txt " Cross-eq " plural(1+(e(k_dv)>2 | (e(k_dv)==2 & (`NumEff'[`l', 1]>1 | `NumEff'[`l', e(k_dv)]>1))), "correlation") _col(37) "{c |} "
-								local needheader 0
-								di as txt "  " as res abbrev("`:word `eq1' of `e(eqnames)''", 15) _col(19) abbrev("`:word `eq2' of `e(eqnames)''", 15) as txt _col(37) "{c |}"
-								forvalues c1=1/`=`NumEff'[`l', `eq1']' {
-									forvalues c2=1/`=`NumEff'[`l', `eq2']' {
-										local t1 = abbrev("`:word `c1' of `e(EffNames`l'_`eq1')''", 15)
-										local t2 = abbrev("`:word `c2' of `e(EffNames`l'_`eq2')''", 15)
-										local paramname /`atanh'rho`=cond("`t1'`t2'"=="_cons_cons", "", "_`c1'_`c2'")'_`l'_`eq1'`eq2'
-										di as txt "    `t1'" _col(21) "`t2'" _col(37) "{c |} " as res %9.0g `tanh'(_b[`paramname']) _c
-										if _se[`paramname'] di _col(51) %9.0g _se[`paramname']/cosh(e(sigxform)*_b[`paramname'])^2 _col(64) %9.0g `tanh'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `tanh'(_b[`paramname']+`z'*_se[`paramname'])
-											else di "  " %9.0g .
-									}
-								}
-							}
-						}
-					}
-				}
-				di as txt "{hline 36}{c +}{hline 47}"
-			}
+        forvalues l=1/`=e(L)-1' {
+          local covariance: word `l' of `e(covariance)'
+          di "Level: " as res abbrev("`:word `l' of `e(ivars)''", 15) as txt cond("`covariance'"=="exchangeable", " (exchangeable)", "") _col(37) "{c |}" 
+          mat `fixed_sigs' = e(fixed_sigs`l')
+          mat `fixed_rhos' = e(fixed_rhos`l')
+          if "`covariance'" == "exchangeable" {
+            local paramname /`ln'sigEx_`l'
+            di as txt "    Standard deviations" _col(37) "{c |} " as res %9.0g `exp'(_b[`paramname']) _c
+            if _se[`paramname'] di _col(51) %9.0g exp(e(sigxform)*_b[`paramname'])*_se[`paramname'] _col(64) %9.0g `exp'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `exp'(_b[`paramname']+`z'*_se[`paramname'])
+              else di as res "  " %9.0g . as txt
+            if e(k_dv) > 1 {
+              local paramname /`atanh'rhoEx_`l'
+              di as txt "    Cross-eq " plural(1+(e(k_dv)>2 | (e(k_dv)==2 & (`NumEff'[`l', 1]>1 | `NumEff'[`l', e(k_dv)]>1))), "correlation") _col(37) "{c |} " as res %9.0g `tanh'(_b[`paramname']) _c
+              if _se[`paramname'] di _col(51) %9.0g _se[`paramname']/cosh(e(sigxform)*_b[`paramname'])^2 _col(64) %9.0g `tanh'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `tanh'(_b[`paramname']+`z'*_se[`paramname'])
+                else di as res "  " %9.0g . as txt
+            }
+          }
+          forvalues eq1=1/`=e(k_dv)' {
+            if `NumEff'[`l', `eq1'] {
+              local covariance`eq1': word `l' of `e(covariance`eq1')'
+              if e(k_dv)>1 di as txt "  " as res abbrev("`:word `eq1' of `e(eqnames)''", 15) as txt cond("`covariance`eq1''"=="exchangeable", " (exchangeable)", "") _col(37) "{c |}" 
+              if  "`covariance'" != "exchangeable" {
+                di as txt "    Standard deviations" _col(37) "{c |} " _c as res
+                if "`covariance`eq1''"=="exchangeable" {
+                  local paramname /`ln'sigEx_`l'_`eq1'
+                  di as res %9.0g `exp'(_b[`paramname']) _c
+                  if _se[`paramname'] di _col(51) %9.0g exp(e(sigxform)*_b[`paramname'])*_se[`paramname'] _col(64) %9.0g `exp'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `exp'(_b[`paramname']+`z'*_se[`paramname'])
+                    else di "  " %9.0g .
+                }
+                else {
+                  di as txt
+                  forvalues c=1/`=`NumEff'[`l', `eq1']' {
+                    local t = abbrev("`:word `c' of `e(EffNames`l'_`eq1')''", 22)
+                    di as txt "      `t'"  _col(37) "{c |} " _c
+                    if `fixed_sigs'[1,`eq1'] == . {
+                      local paramname /`ln'sig`=cond("`t'"=="_cons","","_`c'")'_`l'_`eq1'
+                      di as res %9.0g `exp'(_b[`paramname']) _c
+                      if _se[`paramname'] di _col(51) %9.0g exp(e(sigxform)*_b[`paramname'])*_se[`paramname'] _col(64) %9.0g `exp'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `exp'(_b[`paramname']+`z'*_se[`paramname'])
+                        else di "  " %9.0g . as txt
+                    }
+                    else di %9.0g `fixed_sigs'[1,`eq1'] as txt "  (constrained)"
+                  }
+                }
+              }
+              if `NumEff'[`l', `eq1'] > 1 & "`covariance`eq1''"!="independent" {
+                di as txt "    Intra-eq " plural(`NumEff'[`l', `eq1']-1, "correlation") _col(37) "{c |} " _c
+                if "`covariance`eq1''"=="exchangeable" {
+                  local paramname /`atanh'rhoEx_`l'_`eq1'
+                  di %9.0g `tanh'(_b[`paramname']) _c
+                  if _se[`paramname'] di _col(51) %9.0g _se[`paramname']/cosh(e(sigxform)*_b[`paramname'])^2 _col(64) %9.0g `tanh'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `tanh'(_b[`paramname']+`z'*_se[`paramname'])
+                    else di "  " %9.0g .
+                }	
+                else {
+                  di
+                  forvalues c1=1/`=`NumEff'[`l', `eq1']' {
+                    forvalues c2=`=`c1'+1'/`=`NumEff'[`l', `eq1']' {
+                      local t1 = abbrev("`:word `c1' of `e(EffNames`l'_`eq1')''", 15)
+                      local t2 = abbrev("`:word `c2' of `e(EffNames`l'_`eq1')''", 15)
+                      local paramname /`atanh'rho_`c1'_	`c2'_`l'_`eq1'
+                      di as txt "      `t1'" _col(20) "`t2'" _col(37) "{c |} " as res %9.0g `tanh'(_b[`paramname']) _c
+                      if _se[`paramname'] di _col(51) %9.0g _se[`paramname']/cosh(e(sigxform)*_b[`paramname'])^2 _col(64) %9.0g `tanh'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `tanh'(_b[`paramname']+`z'*_se[`paramname'])
+                        else di "  " %9.0g .
+                    }
+                  }
+                }
+              }
+            }
+          }
+          if "`:word `l' of `e(covariance)''" == "unstructured" & e(k_dv) > 1 {
+            local needheader 1
+            forvalues eq1=1/`e(k_dv)' {
+              forvalues eq2=`=`eq1'+1'/`e(k_dv)' {
+                if `fixed_rhos'[`eq2',`eq1'] == . & `=`NumEff'[`l', `eq1']' & `=`NumEff'[`l', `eq2']' {
+                  if `needheader' di as txt " Cross-eq " plural(1+(e(k_dv)>2 | (e(k_dv)==2 & (`NumEff'[`l', 1]>1 | `NumEff'[`l', e(k_dv)]>1))), "correlation") _col(37) "{c |} "
+                  local needheader 0
+                  di as txt "  " as res abbrev("`:word `eq1' of `e(eqnames)''", 15) _col(19) abbrev("`:word `eq2' of `e(eqnames)''", 15) as txt _col(37) "{c |}"
+                  forvalues c1=1/`=`NumEff'[`l', `eq1']' {
+                    forvalues c2=1/`=`NumEff'[`l', `eq2']' {
+                      local t1 = abbrev("`:word `c1' of `e(EffNames`l'_`eq1')''", 15)
+                      local t2 = abbrev("`:word `c2' of `e(EffNames`l'_`eq2')''", 15)
+                      local paramname /`atanh'rho`=cond("`t1'`t2'"=="_cons_cons", "", "_`c1'_`c2'")'_`l'_`eq1'`eq2'
+                      di as txt "    `t1'" _col(21) "`t2'" _col(37) "{c |} " as res %9.0g `tanh'(_b[`paramname']) _c
+                      if _se[`paramname'] di _col(51) %9.0g _se[`paramname']/cosh(e(sigxform)*_b[`paramname'])^2 _col(64) %9.0g `tanh'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `tanh'(_b[`paramname']+`z'*_se[`paramname'])
+                        else di "  " %9.0g .
+                    }
+                  }
+                }
+              }
+            }
+          }
+          di as txt "{hline 36}{c +}{hline 47}"
+        }
 
-			mat `fixed_sigs' = e(fixed_sigs`e(L)')
-			mat `fixed_rhos' = e(fixed_rhos`e(L)')
-			di "Level: " as res "Observations" _col(37) as txt "{c |}"
-			di " Standard " plural(e(k_dv), "deviation") _col(37) "{c |} " as res  _c
-			if "`:word `e(L)' of `e(covariance)''" == "exchangeable" {
-				local paramname /`ln'sigEx
-				di %9.0g `exp'(_b[`paramname']) _c
-				if _se[`paramname'] di _col(51) as res %9.0g exp(e(sigxform)*_b[`paramname'])*_se[`paramname'] _col(64) %9.0g `exp'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `exp'(_b[`paramname']+`z'*_se[`paramname'])
-					else di "  " %9.0g . as txt
-				if e(k_dv) > 1 {
-					di as txt " Cross-eq " plural(e(k_dv)-1, "correlation") _col(37) "{c |} " _c
-					local paramname /`atanh'rhoEx
-					di as res %9.0g `tanh'(_b[`paramname']) _c
-					if _se[`paramname'] di _col(51) as res %9.0g _se[`paramname']/cosh(e(sigxform)*_b[`paramname'])^2 _col(64) %9.0g `tanh'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `tanh'(_b[`paramname']+`z'*_se[`paramname'])
-						else di "  " %9.0g .
-				}
-			}
-			else {
-				if e(k_dv)>1 di
-				forvalues eq1=1/`=e(k_dv)' {
-					if e(k_dv)>1 di as txt "  " as res abbrev("`:word `eq1' of `e(eqnames)''", 24) as txt _col(37) "{c |} " _c
-					if `fixed_sigs'[1,`eq1'] == . {
-						local paramname /`ln'sig_`eq1'
-						di as res %9.0g `exp'(_b[`paramname']) _c
-						if _se[`paramname'] di _col(51) %9.0g exp(e(sigxform)*_b[`paramname'])*_se[`paramname'] _col(64) %9.0g `exp'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `exp'(_b[`paramname']+`z'*_se[`paramname'])
-							else di "  " %9.0g .
-					}
-					else di as res %9.0g `fixed_sigs'[1,`eq1'] as txt "  (constrained)"
-				}
-				if e(k_dv) > 1 & "`:word `e(L)' of `e(covariance)''" == "unstructured" {
-					local needheader 1
-					forvalues eq1=1/`e(k_dv)' {
-						forvalues eq2=`=`eq1'+1'/`e(k_dv)' {
-							if `fixed_rhos'[`eq2',`eq1'] == . {
-								if `needheader' di as txt " Cross-eq " plural(e(k_dv)-1,"correlation") _col(37) "{c |} "
-								local needheader 0
-								di as txt "  " as res abbrev("`:word `eq1' of `e(eqnames)''", 15) _col(19) as res abbrev("`:word `eq2' of `e(eqnames)''", 15) as txt _col(37) "{c |} " _c
-								local paramname /`atanh'rho_`eq1'`eq2'
-								di as res %9.0g `tanh'(_b[`paramname']) _c
-								if _se[`paramname'] di _col(51) %9.0g _se[`paramname']/cosh(e(sigxform)*_b[`paramname'])^2 _col(64) %9.0g `tanh'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `tanh'(_b[`paramname']+`z'*_se[`paramname'])
-									else di "  " %9.0g .
-							}
-						}
-					}
-				}
-			}
-			di as txt "{hline 36}{c BT}{hline 47}"
-		}
+        mat `fixed_sigs' = e(fixed_sigs`e(L)')
+        mat `fixed_rhos' = e(fixed_rhos`e(L)')
+        di "Level: " as res "Observations" _col(37) as txt "{c |}"
+        di " Standard " plural(e(k_dv), "deviation") _col(37) "{c |} " as res  _c
+        if "`:word `e(L)' of `e(covariance)''" == "exchangeable" {
+          local paramname /`ln'sigEx
+          di %9.0g `exp'(_b[`paramname']) _c
+          if _se[`paramname'] di _col(51) as res %9.0g exp(e(sigxform)*_b[`paramname'])*_se[`paramname'] _col(64) %9.0g `exp'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `exp'(_b[`paramname']+`z'*_se[`paramname'])
+            else di "  " %9.0g . as txt
+          if e(k_dv) > 1 {
+            di as txt " Cross-eq " plural(e(k_dv)-1, "correlation") _col(37) "{c |} " _c
+            local paramname /`atanh'rhoEx
+            di as res %9.0g `tanh'(_b[`paramname']) _c
+            if _se[`paramname'] di _col(51) as res %9.0g _se[`paramname']/cosh(e(sigxform)*_b[`paramname'])^2 _col(64) %9.0g `tanh'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `tanh'(_b[`paramname']+`z'*_se[`paramname'])
+              else di "  " %9.0g .
+          }
+        }
+        else {
+          if e(k_dv)>1 di
+          forvalues eq1=1/`=e(k_dv)' {
+            if e(k_dv)>1 di as txt "  " as res abbrev("`:word `eq1' of `e(eqnames)''", 24) as txt _col(37) "{c |} " _c
+            if `fixed_sigs'[1,`eq1'] == . {
+              local paramname /`ln'sig_`eq1'
+              di as res %9.0g `exp'(_b[`paramname']) _c
+              if _se[`paramname'] di _col(51) %9.0g exp(e(sigxform)*_b[`paramname'])*_se[`paramname'] _col(64) %9.0g `exp'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `exp'(_b[`paramname']+`z'*_se[`paramname'])
+                else di "  " %9.0g .
+            }
+            else di as res %9.0g `fixed_sigs'[1,`eq1'] as txt "  (constrained)"
+          }
+          if e(k_dv) > 1 & "`:word `e(L)' of `e(covariance)''" == "unstructured" {
+            local needheader 1
+            forvalues eq1=1/`e(k_dv)' {
+              forvalues eq2=`=`eq1'+1'/`e(k_dv)' {
+                if `fixed_rhos'[`eq2',`eq1'] == . {
+                  if `needheader' di as txt " Cross-eq " plural(e(k_dv)-1,"correlation") _col(37) "{c |} "
+                  local needheader 0
+                  di as txt "  " as res abbrev("`:word `eq1' of `e(eqnames)''", 15) _col(19) as res abbrev("`:word `eq2' of `e(eqnames)''", 15) as txt _col(37) "{c |} " _c
+                  local paramname /`atanh'rho_`eq1'`eq2'
+                  di as res %9.0g `tanh'(_b[`paramname']) _c
+                  if _se[`paramname'] di _col(51) %9.0g _se[`paramname']/cosh(e(sigxform)*_b[`paramname'])^2 _col(64) %9.0g `tanh'(_b[`paramname']-`z'*_se[`paramname']) _col(76) %9.0g `tanh'(_b[`paramname']+`z'*_se[`paramname'])
+                    else di "  " %9.0g .
+                }
+              }
+            }
+          }
+        }
+        di as txt "{hline 36}{c BT}{hline 47}"
+      }
+     }
 		if e(k_gamma) & e(resultsform)=="structural" _estimates unhold `hold'
 	}
 end

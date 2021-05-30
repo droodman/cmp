@@ -114,7 +114,8 @@ struct subview { // info associated with subsets of data defined by given combin
 struct RE { // info associated with given level of model. Top level also holds various globals as an alternative to storing them as separate externals, references to which are slow
 	real scalar R // number of draws. (*REs)[l].R = NumREDraws[l+1]
 	real scalar d, d2 // number of RCs and REs, corresponding triangular number
-	real rowvector one2d, one2R, J1R
+	real rowvector one2d, one2R, J1R0, JN12
+  pointer(real matrix) colvector JN1pQuadX
 	real scalar HasRC
 	real matrix J_N_NEq_0
 	real rowvector REInds // indexes, within vector of effects, of random effects
@@ -162,13 +163,14 @@ class cmp_model {
 	pointer (struct subview scalar) scalar subviews
 	struct smatrix colvector y, Lt, Ut, yL
 	real matrix Theta // individual theta's in one matrix
-	real scalar d, L, todo, ghkDraws, ghkScramble, REScramble, REAnti, NumRoprobitGroups, MaxCuts, NSimEff
+	real scalar d, L, _todo, ghkDraws, ghkScramble, REScramble, REAnti, NumRoprobitGroups, MaxCuts, NSimEff
 	real matrix MprobitGroupInds, RoprobitGroupInds
 	real colvector NumREDraws
 	real rowvector NonbaseCases
 	real scalar reverse
 	string scalar ghkType, REType
-	real matrix Omega, Gamma
+	real matrix Gamma
+  pointer (real matrix) scalar pOmega
 	real matrix dSig_dT // derivative of vech(Sig) w.r.t vech(cholesky(Sig))
 	real colvector WeightProduct // obs-level product of weights at all levels, for weighting scores
 	transmorphic ghk2DrawSet
@@ -199,7 +201,8 @@ class cmp_model {
 				set_ghkAnti(), set_ghkDraws(), set_ghkScramble(), set_Quadrature(), set_d(), set_L(), set_todo(),
 				set_REAnti(), set_REType(), set_REScramble(), set_Eqs(), set_GammaI(), set_NumEff(), set_NumMprobitGroups(), set_NumRoprobitGroups(),
 				set_MprobitGroupInds(), set_RoprobitGroupInds(), set_NonbaseCases(), set_vNumCuts(), set_trunceqs(), set_intregeqs(), set_NumREDraws(), set_GammaInd(),
-				set_AdaptNow(), set_WillAdapt()
+				set_AdaptNow(), set_WillAdapt(), lf1()
+  real colvector lnLCensored(), lnLTrunc()
 	static void _st_view()
 	real scalar get_ghkDraws()
 }
@@ -212,7 +215,7 @@ void cmp_model::new() {
 
 void cmp_model::set_d       (real scalar t) d  = t
 void cmp_model::set_L       (real scalar t) L  = t
-void cmp_model::set_todo    (real scalar t) todo  = t
+void cmp_model::set_todo    (real scalar t) _todo  = t
 void cmp_model::set_MaxCuts (real scalar t) MaxCuts  = t
 void cmp_model::set_reverse (real scalar t) reverse  = t
 void cmp_model::set_SigXform(real scalar t) SigXform = t
@@ -278,7 +281,7 @@ void _ms_findomitted(string scalar bname, string scalar Vname) {
 		if ((st_matrix(bname)[i] & st_matrix(Vname)[i,i])==0) {
 			s = tokens(stripe[i,2], "#")
 			for (j=cols(s); j; j--)
-				if (s[j]!="#" & (strmatch(s[j],"*b*.*") | strmatch(s[j],"*o*.*"))==0) {
+				if (s[j] != "#" & (strmatch(s[j], "*b*.*") | strmatch(s[j], "*o*.*"))==0) {
 					stata("fvexpand o."+s[j])
 					s[j] = st_global("r(varlist)")
 				}
@@ -990,12 +993,12 @@ real colvector lnLContinuous(pointer(struct subview scalar) scalar v, real scala
 }
 
 // log likelihood and scores for likelihood over total range of truncation--denominator of L
-real colvector lnLTrunc(pointer(struct subview scalar) scalar v, pointer (class cmp_model scalar) scalar mod, real scalar todo) {
+real colvector cmp_model::lnLTrunc(pointer(struct subview scalar) scalar v, real scalar todo) {
 	real matrix dPhi_dEt, dPhi_dFt, dPhi_dSigt; real colvector Phi
 	pragma unset dPhi_dEt; pragma unset dPhi_dFt; pragma unset dPhi_dSigt
 
 	Phi = vecmultinormal(*v->pEt, *v->pFt, v->Omega[v->trunc,v->trunc], v->d_trunc, v->one2d_trunc, v->one2N, todo, 
-							dPhi_dEt, dPhi_dFt, dPhi_dSigt, mod->ghk2DrawSet, mod->ghkAnti, v->GHKStartTrunc, 1)
+							dPhi_dEt, dPhi_dFt, dPhi_dSigt, ghk2DrawSet, ghkAnti, v->GHKStartTrunc, 1)
 
 	if (todo) {
 		v->dPhi_dEt[v->one2N,v->trunc] = dPhi_dEt + dPhi_dFt
@@ -1006,7 +1009,7 @@ real colvector lnLTrunc(pointer(struct subview scalar) scalar v, pointer (class 
 
 // log likelihood and scores for cumulative normal
 // returns scores in v->dPhi_dE.M, v->dPhi_dSig.M if requested
-real colvector lnLCensored(pointer(struct subview scalar) scalar v, pointer (class cmp_model scalar) scalar mod, real scalar todo) {
+real colvector cmp_model::lnLCensored(pointer(struct subview scalar) scalar v, real scalar todo) {
 	real matrix t, pSig, roprobit_pSig, fracprobit_pSig, beta, invSig_uncens, Sig_uncens_cens, S_dPhi_dpE, S_dPhi_dpF, S_dPhi_dpSig, SS_dPhi_dpE, SS_dPhi_dpF, SS_dPhi_dpSig, dPhi_dpE, dPhi_dpF, dPhi_dpSig
 	real scalar ThisNumCuts, d_cens, d_two_cens, N_perm, ThisPerm, ThisFracComb
 	real colvector i, j, S_Phi, SS_Phi, Phi
@@ -1015,7 +1018,7 @@ real colvector lnLCensored(pointer(struct subview scalar) scalar v, pointer (cla
 	pragma unset dPhi_dpE; pragma unset dPhi_dpF; pragma unset dPhi_dpSig
 
 	uncens=v->uncens; oprobit=v->oprobit; cens=v->cens; d_cens=v->d_cens; d_two_cens=v->d_two_cens; N_perm=v->N_perm; ThisNumCuts=v->NumCuts
-	pdPhi_dpF = mod->NumRoprobitGroups? &dPhi_dpF : &(v->dPhi_dpF)
+	pdPhi_dpF = NumRoprobitGroups? &dPhi_dpF : &(v->dPhi_dpF)
 
 	if (v->d_uncens) {  // Partial continuous variables out of the censored ones
 		beta = (invSig_uncens = cholinv(v->Omega[uncens,uncens])) * (Sig_uncens_cens = v->Omega[uncens, cens])
@@ -1037,16 +1040,16 @@ real colvector lnLCensored(pointer(struct subview scalar) scalar v, pointer (cla
 		}
 
 		for (ThisPerm = N_perm; ThisPerm; ThisPerm--) {
-			if (mod->NumRoprobitGroups) {
+			if (NumRoprobitGroups) {
 				roprobit_pQE = v->roprobit_QE[ThisPerm]
 				roprobit_pE = &(*fracprobit_pE * *roprobit_pQE)
 				roprobit_pSig = cross(*roprobit_pQE, fracprobit_pSig) * *roprobit_pQE
 			}
 
 			Phi = vecmultinormal(*roprobit_pE, *pF, roprobit_pSig, v->dCensNonrobase, v->two_cens, v->one2N, todo, dPhi_dpE, v->dPhi_dpF, dPhi_dpSig, 
-			                                            mod->ghk2DrawSet, mod->ghkAnti, v->GHKStart, N_perm)
+			                                            ghk2DrawSet, ghkAnti, v->GHKStart, N_perm)
 
-      if (todo & mod->NumRoprobitGroups) {
+      if (todo & NumRoprobitGroups) {
 				dPhi_dpE   = dPhi_dpE   * *roprobit_pQE'
 				dPhi_dpSig = dPhi_dpSig * *v->roprobit_Q_Sig[ThisPerm]
 				if (d_two_cens)
@@ -1188,12 +1191,11 @@ void cmp_model::BuildXU(real scalar l) {
 			k = e = 0
 			for (eq1=1; eq1<=RE->NEq; eq1++)
 				for (c=1; c<=cols(RE->X[eq1].M) + anyof(RE->REEqs, eq1); c++) {
-					e++
-					RE->pXU[r,++k] = &( c<=cols(RE->X[eq1].M)? *getcol(RE->U[r].M,e) :* *getcol(RE->X[eq1].M, c..cols(RE->X[eq1].M)) : base->J_N_0_0 )
+					RE->pXU[r,++k] = &( c <= cols(RE->X[eq1].M)? *getcol(RE->U[r].M, ++e) :* *getcol(RE->X[eq1].M, c..cols(RE->X[eq1].M)) : base->J_N_0_0 )
 					if (anyof(RE->REEqs, eq1))
 						RE->pXU[r,k] = &( *RE->pXU[r,k], *getcol(RE->U[r].M, e) )
 					for (eq2=eq1+1; eq2<=RE->NEq; eq2++) {
-						RE->pXU[r,++k] = &(  cols(RE->X[eq2].M)? *getcol(RE->U[r].M ,e) :*RE->X[eq2].M            : base->J_N_0_0)
+						RE->pXU[r,++k] = &(  cols(RE->X[eq2].M)? *getcol(RE->U[r].M ,e) :*RE->X[eq2].M : base->J_N_0_0)
 						if (anyof(RE->REEqs, eq2))
 							RE->pXU[r,k] = &( *RE->pXU[r,k], *getcol(RE->U[r].M ,e) )  // XXX avoid concatenation?
 					}
@@ -1204,7 +1206,7 @@ void cmp_model::BuildXU(real scalar l) {
 			for (j=RE->d; j; j--)
 				RE->pXU[r,j] = getcol(RE->U[r].M, j)
 
-	for (v = subviews; v!=NULL; v = v->next)
+	for (v = subviews; v; v = v->next)
 		for (r=RE->R; r; r--)
 			for (j=cols(v->XU[l].M); j; j--)
 				if (RE->pXU[r,j])
@@ -1220,39 +1222,39 @@ void cmp_model::_st_view(real matrix V, real scalar missing, string rowvector va
 
 // main evaluator routine
 void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
+  pragma unused H
+  pointer(class cmp_model scalar) scalar mod
+  mod = moptimize_init_userinfo(M, 1)
+  mod->lf1(M, todo, b, lnf, S)
+}
+
+void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S) {
 	real matrix t, L_g, invGamma, C, dOmega_dSig
-	real scalar e, c, i, j, k, l, m, _l, r, d, L, tEq, EUncensEq, ECensEq, FCensEq, NewIter, eq, eq1, eq2, _eq, c1, c2, cut, lnsigWithin, lnsigAccross, atanhrhoAccross, atanhrhoWithin, Iter
+	real scalar e, c, i, j, k, l, m, _l, r, tEq, EUncensEq, ECensEq, FCensEq, NewIter, eq, eq1, eq2, _eq, c1, c2, cut, lnsigWithin, lnsigAccross, atanhrhoAccross, atanhrhoWithin, Iter
 	real colvector shift, lnLmin, lnLmax, lnL, out, Fi
 	pointer(struct subview scalar) scalar v
-	pointer(real matrix) scalar pdlnL_dtheta, pdlnL_dSig, pThisQuadXAdapt_j
+	pointer(real matrix) scalar pdlnL_dtheta, pdlnL_dSig, pThisQuadXAdapt_j, pt
 	pointer(struct scores scalar) scalar pScores
-	pointer (struct RE colvector) scalar REs
-	pointer (struct RE scalar) scalar RE, base
-	pointer(class cmp_model scalar) scalar mod
-	pointer(struct smatrix colvector) scalar pThisQuadXAdapt
-	pragma unset out; pragma unused H
+	pointer (struct RE scalar) scalar RE
+	pointer(pointer (real matrix) colvector) scalar pThisQuadXAdapt
+	pragma unset out
 
-  mod = moptimize_init_userinfo(M, 1)
-	REs = mod->REs
-	base = mod->base
 	lnf = .
-	d = base->d
-	L = mod->L
 
 	for (i=1; i<=d; i++) {
 		REs->theta[i].M = moptimize_util_xb(M, b, i)
 		if (rows(REs->theta[i].M)==1) REs->theta[i].M = J(base->N, 1, REs->theta[i].M)
 	}
 
-	for (j=1; j<=rows(mod->GammaInd); j++)
-		mod->Gamma[|mod->GammaInd[j,]|] = moptimize_util_xb(M, b, i++)
+	for (j=1; j<=rows(GammaInd); j++)
+		Gamma[|GammaInd[j,]|] = -moptimize_util_xb(M, b, i++)
 
 	for (eq1=1; eq1<=d; eq1++)
-		if (mod->vNumCuts[eq1])
-			for (cut=2; cut<=mod->vNumCuts[eq1]+1; cut++) {
-				mod->cuts[cut, eq1] = moptimize_util_xb(M, b, i++)
-				if (mod->trunceqs[eq1])
-					if (any(mod->indicators[,eq1] :& ((mod->Lt[eq1].M :< . & mod->cuts[cut, eq1] :< mod->Lt[eq1].M) :| mod->cuts[cut, eq1]:>mod->Ut[eq1].M)))
+		if (vNumCuts[eq1])
+			for (cut=2; cut<=vNumCuts[eq1]+1; cut++) {
+				cuts[cut, eq1] = moptimize_util_xb(M, b, i++)
+				if (trunceqs[eq1])
+					if (any(indicators[,eq1] :& ((Lt[eq1].M :< . :& cuts[cut, eq1] :< Lt[eq1].M) :| cuts[cut, eq1]:>Ut[eq1].M)))
 						return
 			}
 
@@ -1270,9 +1272,9 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 				if (RE->FixedSigs[RE->Eqs[eq1]] == .) {
 					if (RE->covWithin[RE->Eqs[eq1]] & RE->covAcross)  // exchangeable neither within nor accross?
 						lnsigWithin = moptimize_util_xb(M, b, i++)
-				  if (mod->SigXform==0 & lnsigWithin==0)
+				  if (SigXform==0 & lnsigWithin==0)
 						return
-					RE->sig = RE->sig, (mod->SigXform? exp(lnsigWithin) : lnsigWithin)
+					RE->sig = RE->sig, (SigXform? exp(lnsigWithin) : lnsigWithin)
 				} else
 					RE->sig = RE->sig, RE->FixedSigs[RE->Eqs[eq1]]
 		}
@@ -1302,26 +1304,26 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 		}
 	}
 
-	if (mod->HasGamma) {
-		invGamma = luinv(I(d) - mod->Gamma)
+	if (HasGamma) {
+		invGamma = luinv(Gamma)
 		if (invGamma[1,1] == .) return
 		for (eq1=d; eq1; eq1--)  // XXX is this faster than manually multipling invGamma by the individual theta columns and summing?
-			mod->Theta[base->one2N,eq1] = editmissing(REs->theta[eq1].M, 0)  // only time missing values would appear and be used is when multiplied by invGamma with 0's in corresponding entries
+			Theta[base->one2N,eq1] = editmissing(REs->theta[eq1].M, 0)  // only time missing values would appear and be used is when multiplied by invGamma with 0's in corresponding entries
 		for (eq1=d; eq1; eq1--)
-			REs->theta[eq1].M = mod->Theta * invGamma[,eq1]
+			REs->theta[eq1].M = Theta * invGamma[,eq1]
 	}
 
-	if (mod->WillAdapt)
-		if (NewIter = (Iter = moptimize_result_iterations(M)) != mod->LastIter) {
-			mod->LastIter = Iter
-			if (mod->Adapted==0)
-				if (mod->AdaptNextTime) {
-					mod->set_AdaptNow(1)
+	if (WillAdapt)
+		if (NewIter = (Iter = moptimize_result_iterations(M)) != LastIter) {
+			LastIter = Iter
+			if (Adapted==0)
+				if (AdaptNextTime) {
+					set_AdaptNow(1)
 					printf("\n{res}Performing Naylor-Smith adaptive quadrature.\n")
 				} else {
-					if (cols(mod->Lastb))
-						mod->AdaptNextTime = mreldif(b, mod->Lastb)<.1 // criterion to begin adaptive phase
-					mod->Lastb = b
+					if (cols(Lastb))
+						AdaptNextTime = mreldif(b, Lastb) < .1  // criterion to begin adaptive phase
+					Lastb = b
 				}
 		}
 
@@ -1333,7 +1335,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 			k = 0
 			for (j=1; j<=RE->d; j++)
 				for (i=j+1; i<=RE->d; i++)
-					if (mod->SigXform)
+					if (SigXform)
 						if (RE->rho[++k]>100)
 							RE->Rho[i,j] = 1
 						else if (RE->rho[k]<-100)
@@ -1349,13 +1351,13 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 		}
 
 		if (todo)
-			RE->D = dSigdsigrhos(mod->SigXform, RE->sig, RE->Sig, RE->rho, RE->Rho) * RE->dSigdParams
+			RE->D = dSigdsigrhos(SigXform, RE->sig, RE->Sig, RE->rho, RE->Rho) * RE->dSigdParams
 
-		if (mod->HasGamma)
+		if (HasGamma)
 			RE->invGamma = invGamma[RE->Eqs,RE->GammaEqs]
 
 		if (l < L) {
-			mod->BuildTotalEffects(l)
+			BuildTotalEffects(l)
 			for (eq1=cols(RE->GammaEqs); eq1; eq1--) {  // compute effect of first draws
 				_eq = RE->GammaEqs[eq1]
 				(*REs)[l+1].theta[_eq].M = rows(RE->TotalEffect[1,_eq].M)? RE->theta[_eq].M :+ RE->TotalEffect[1,_eq].M : RE->theta[_eq].M
@@ -1365,33 +1367,32 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 					(*REs)[l+1].theta[eq1].M = RE->theta[eq1].M
 			if (todo)
 				RE->D = ghk2_dTdV(RE->T') * RE->D
-			if (mod->AdaptivePhaseThisEst & NewIter)
-				RE->ToAdapt = J(RE->N, 1, 2)
+			if (AdaptivePhaseThisEst & NewIter)
+				RE->ToAdapt = RE->JN12
 			RE->AdaptivePhaseThisIter = 0
 		}
 	}
 
-	if (mod->HasGamma) {
+	if (HasGamma) {
 		if (todo) {
 			dOmega_dSig = (Lmatrix(cols(invGamma))*(invGamma'#invGamma')*Dmatrix(rows(invGamma))) // QE2QSig(invGamma)
 			t = colshape(invGamma, 1)
-			t = (colshape(base->Sig,1)'#mod->Idd)[mod->vLd,mod->vIKI] * (mod->Idd#t + t#mod->Idd)[,mod->vKd]
+			t = (colshape(base->Sig,1)'#Idd)[vLd,vIKI] * (Idd#t + t#Idd)[,vKd]
 			for (m=d; m; m--)
-				for (c=1; c<=mod->G[m]; c++)
-					mod->dOmega_dGamma[m,c].M = t * invGamma[m,]'#invGamma[,(*mod->GammaIndByEq[m])[c]]
+				for (c=1; c<=G[m]; c++)
+					dOmega_dGamma[m,c].M = t * invGamma[m,]'#invGamma[,(*GammaIndByEq[m])[c]]
 		}
-		mod->Omega = quadcross(invGamma, base->Sig) * invGamma
-	} else
-		mod->Omega = base->Sig
+		pOmega = &(quadcross(invGamma, base->Sig) * invGamma)
+	}
 
-	for (v = mod->subviews; v!=NULL; v = v->next) {
-		v->Omega = quadcross(v->QE, mod->Omega) * v->QE
+	for (v = subviews; v; v = v->next) {
+		v->Omega = quadcross(v->QE, *pOmega) * v->QE
 		if (todo)
-			if (mod->HasGamma) {
+			if (HasGamma) {
 				for (m=d; m; m--) {
-					if (mod->G[m] & v->TheseInds[m])
-						for (c=1; c<=mod->G[m]; c++)
-							v->dOmega_dGamma[m,c].M = v->QSig * mod->dOmega_dGamma[m,c].M
+					if (G[m] & v->TheseInds[m])
+						for (c=1; c<=G[m]; c++)
+							v->dOmega_dGamma[m,c].M = v->QSig * dOmega_dGamma[m,c].M
 				}
 				v->QEinvGamma    = quadcross(v->QE, invGamma')
 				v->invGammaQSigD = quadcross(v->QSig, dOmega_dSig) * base->D
@@ -1402,10 +1403,10 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 	}
 
 	base->plnL = &(lnf = base->J_N_1_0)
-	if (todo) S = mod->S0
+	if (todo) S = S0
 
 	do {  // for each draw combination
-		for (v = mod->subviews; v!=NULL; v = v->next) {
+		for (v = subviews; v; v = v->next) {
 			tEq = EUncensEq = ECensEq = FCensEq = 0
 			for (i=1; i<=d; i++)
 				if (v->TheseInds[i]==6) {  // handle mprobit eqs below
@@ -1429,27 +1430,27 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 								else if (v->TheseInds[i]==8 | v->TheseInds[i]==10)
 									setcol(v->pECens, ECensEq, v->theta[i].M)
 								else if (v->TheseInds[i]==5) {
-									if (mod->trunceqs[i]) {
+									if (trunceqs[i]) {
 										t = v->y[i].M :> v->vNumCuts[i] // bit of inefficiency in truncated oprobit case
-										setcol(v->pECens, ECensEq, (t :* v->Ut[i].M + (1:-t) :* mod->cuts[v->y[i].M:+1, i]) - v->theta[i].M)
+										setcol(v->pECens, ECensEq, (t :* v->Ut[i].M + (1:-t) :* cuts[v->y[i].M:+1, i]) - v->theta[i].M)
 									} else
-										setcol(v->pECens, ECensEq, mod->cuts[v->y[i].M:+1, i] - v->theta[i].M)
+										setcol(v->pECens, ECensEq, cuts[v->y[i].M:+1, i] - v->theta[i].M)
 								} else // roprobit
 									setcol(v->pECens, ECensEq, -v->theta[i].M)
 
 								if (v->pF)
-									if (mod->NonbaseCases[ECensEq]) {
+									if (NonbaseCases[ECensEq]) {
 										++FCensEq
                     Fi = J(0,0,0)
 										if (v->TheseInds[i]==7)
 											Fi = v->yL[i].M - v->theta[i].M
 										else if (v->TheseInds[i]==5)
-											if (mod->trunceqs[i]) {
+											if (trunceqs[i]) {
 												t = v->y[i].M
-												Fi = (t :* v->Lt[i].M + (1:-t) :* mod->cuts[v->y[i].M, i]) - v->theta[i].M
+												Fi = (t :* v->Lt[i].M + (1:-t) :* cuts[v->y[i].M, i]) - v->theta[i].M
 											} else
-												Fi = mod->cuts[ v->y[i].M, i] - v->theta[i].M
-										else if (mod->trunceqs[i])
+												Fi = cuts[ v->y[i].M, i] - v->theta[i].M
+										else if (trunceqs[i])
 											if (v->TheseInds[i]==2)
 												Fi = v->Lt[i].M - v->theta[i].M
 											else if (v->TheseInds[i]==3)
@@ -1462,7 +1463,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 									}
 							}
 
-							if (mod->trunceqs[i]) {
+							if (trunceqs[i]) {
 								++tEq
 								if (v->TheseInds[i]==2) {
 									setcol(v->pEt, tEq, v->Ut[i].M - v->theta[i].M)
@@ -1485,7 +1486,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 					}
 				}
 
-			for (j=rows(mod->MprobitGroupInds); j; j--) // relative-difference mprobit errors
+			for (j=rows(MprobitGroupInds); j; j--) // relative-difference mprobit errors
 				if (v->mprobit[j].d > 0) {
 					out = base->theta[v->mprobit[j].out].M[v->SubsampleInds]
 					for (i=v->mprobit[j].d; i; i--)
@@ -1498,14 +1499,14 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 			if (v->pFt   ) _editmissing(*v->pFt   , -1.701e+38)
 
 			if (v->d_cens) {
-				lnL = lnLCensored(v, mod, todo)
+				lnL = lnLCensored(v, todo)
 				if (v->d_uncens)
 					lnL = lnL + lnLContinuous(v, todo)
 			} else
 				lnL = lnLContinuous(v, todo)
 
 			if (v->d_trunc)
-				lnL = lnL - lnLTrunc(v, mod, todo)
+				lnL = lnL - lnLTrunc(v, todo)
 
 			(*(base->plnL))[v->SubsampleInds] = lnL
 
@@ -1530,13 +1531,13 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 				pdlnL_dtheta = &(*pdlnL_dtheta * v->QEinvGamma)
 
 				if (L == 1) {
-					                   S[v->SubsampleInds, mod->Scores.ThetaScores  ] = *pdlnL_dtheta
-					if (mod->NumCuts)  S[v->SubsampleInds, mod->Scores.  CutScores  ] = v->dPhi_dcuts
-					if (cols(base->D)) S[v->SubsampleInds, mod->Scores.  SigScores.M] = *pdlnL_dSig * v->invGammaQSigD
+					                   S[v->SubsampleInds, Scores.ThetaScores  ] = *pdlnL_dtheta
+					if (NumCuts)  S[v->SubsampleInds, Scores.  CutScores  ] = v->dPhi_dcuts
+					if (cols(base->D)) S[v->SubsampleInds, Scores.  SigScores.M] = *pdlnL_dSig * v->invGammaQSigD
 					for (i=m=1; m<=d; m++)
-						for (c=1; c<=mod->G[m]; c++)
-   						S[v->SubsampleInds, mod->Scores.GammaScores[i++].M] = v->TheseInds[m]? 
-								(v->NotBaseEq[(*mod->GammaIndByEq[m])[c]] ? *pdlnL_dSig*v->dOmega_dGamma[m,c].M + (*pdlnL_dtheta)[v->one2N,m]:*v->theta[(*mod->GammaIndByEq[m])[c]].M :
+						for (c=1; c<=G[m]; c++)
+   						S[v->SubsampleInds, Scores.GammaScores[i++].M] = v->TheseInds[m]? 
+								(v->NotBaseEq[(*GammaIndByEq[m])[c]] ? *pdlnL_dSig*v->dOmega_dGamma[m,c].M + (*pdlnL_dtheta)[v->one2N,m]:*v->theta[(*GammaIndByEq[m])[c]].M :
                                                             *pdlnL_dSig*v->dOmega_dGamma[m,c].M                                                                        ) :
                 v->J_N_1_0
 				} else {
@@ -1544,16 +1545,16 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 					_editmissing(v->dPhi_dcuts, 0)
 					_editmissing(*pdlnL_dSig, 0)
 
-					pScores = &(v->Scores[L].M[mod->ThisDraw[L]])
+					pScores = &(v->Scores[L].M[ThisDraw[L]])
 					                   pScores->ThetaScores  = *pdlnL_dtheta
-					if (mod->NumCuts)  pScores->CutScores    = v->dPhi_dcuts
+					if (NumCuts)  pScores->CutScores    = v->dPhi_dcuts
 					if (cols(base->D)) pScores->TScores[L].M = *pdlnL_dSig
 					for (i=m=1; m<=d; m++)
 						if (v->TheseInds[m])
-							for (c=1; c<=mod->G[m]; c++)
-								pScores->GammaScores[i++].M  = *getcol(*pdlnL_dtheta,m) :* v->theta[(*mod->GammaIndByEq[m])[c]].M
+							for (c=1; c<=G[m]; c++)
+								pScores->GammaScores[i++].M  = *getcol(*pdlnL_dtheta,m) :* v->theta[(*GammaIndByEq[m])[c]].M
 						else
-							i = i + mod->G[m]
+							i = i + G[m]
 
 					for (l=1; l<L; l++) {
 						RE = &((*REs)[l])
@@ -1563,9 +1564,9 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 								for (c=1; c<=cols(RE->RCInds[eq1].M)+anyof(RE->REEqs, eq1); c++)
 									for (eq2=eq1; eq2<=RE->NEq; eq2++)
 										PasteAndAdvance(pScores->TScores[l].M, k, 
-											(v->XU[l].M[mod->ThisDraw[l+1], e++].M) :* *getcol(pScores->ThetaScores, RE->Eqs[eq2]))
+											(v->XU[l].M[ThisDraw[l+1], e++].M) :* *getcol(pScores->ThetaScores, RE->Eqs[eq2]))
 							else
-								PasteAndAdvance(pScores->TScores[l].M, k, (v->XU[l].M[mod->ThisDraw[l+1], eq1].M) :* *getcol(pScores->ThetaScores, RE->Eqs[|eq1 \ .|]))
+								PasteAndAdvance(pScores->TScores[l].M, k, (v->XU[l].M[ThisDraw[l+1], eq1].M) :* *getcol(pScores->ThetaScores, RE->Eqs[|eq1 \ .|]))
 					}
 				}
 			}
@@ -1574,11 +1575,11 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 		for (l=L-1; l; l--) {  // If L=1, sets l=0 as needed to terminate do loop. Usually this loop runs once.
 			RE = &((*REs)[l])
 
-			RE->lnLByDraw[RE->one2N, mod->ThisDraw[l+1]] = cmp_panelsum(*((*REs)[l+1].plnL), (*REs)[l+1].Weights, RE->IDRangesGroup)
-			if (mod->ThisDraw[l+1] < RE->R)
-				mod->ThisDraw[l+1] = mod->ThisDraw[l+1] + 1
+			RE->lnLByDraw[RE->one2N, ThisDraw[l+1]] = cmp_panelsum(*((*REs)[l+1].plnL), (*REs)[l+1].Weights, RE->IDRangesGroup)
+			if (ThisDraw[l+1] < RE->R)
+				ThisDraw[l+1] = ThisDraw[l+1] + 1
 			else {
-				if (mod->Adapted)
+				if (Adapted)
 					RE->lnLByDraw = RE->lnLByDraw + RE->AdaptiveShift  // even if active adaptation done, add adaptive ln(det(C)*normalden(QuadXAdapt)/normalden(QuadX))
 
         // for each group, make weights proportional to L (not lnL) for the group/obs at next-lower level
@@ -1586,58 +1587,58 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 				lnLmin = t[,1]; lnLmax = t[,2]
 				t = lnLmin:*(lnLmin:>0) - lnLmax; shift = t:*(t :< 0) + lnLmax // parallelizes better than rowminmax()
 				L_g = editmissing(exp(RE->lnLByDraw:+shift), 0)  // un-log likelihood for each group & draw; lnL=. => L=0
-				if (mod->Quadrature)
+				if (Quadrature)
 					L_g = L_g :* RE->QuadW
 				RE->plnL = &quadrowsum(L_g)  // in non-quadrature case, sum rather than average of likelihoods across draws
-				if (todo | (mod->AdaptivePhaseThisEst & mod->WillAdapt))
+				if (todo | (AdaptivePhaseThisEst & WillAdapt))
 					L_g = editmissing(L_g :/ *(RE->plnL), 0)  // normalize L_g's as weights for obs-level scores or for use in Naylor-Smith adaptation
 
-				if (mod->AdaptivePhaseThisEst & NewIter) {
-					pThisQuadXAdapt = &asarray(RE->QuadXAdapt, mod->ThisDraw[|.\l|])
+				if (AdaptivePhaseThisEst & NewIter) {
+					pThisQuadXAdapt = &asarray(RE->QuadXAdapt, ThisDraw[|.\l|])
 					if (rows(*pThisQuadXAdapt)==0) {  // initialize if needed
-						asarray(RE->QuadXAdapt, mod->ThisDraw[|.\l|], smatrix(RE->N))
-						pThisQuadXAdapt = &asarray(RE->QuadXAdapt, mod->ThisDraw[|.\l|])
+						asarray(RE->QuadXAdapt, ThisDraw[|.\l|], RE->JN1pQuadX)
+						pThisQuadXAdapt = &asarray(RE->QuadXAdapt, ThisDraw[|.\l|])
 					}
 
 					for (j=RE->N; j; j--)
 						if (RE->ToAdapt[j]) {
-              pThisQuadXAdapt_j = &((*pThisQuadXAdapt)[j].M); if (rows(*pThisQuadXAdapt_j)==0) pThisQuadXAdapt_j = &(RE->QuadX)
+              RE->QuadMean[j].M = (t = L_g[j,]) * *(pThisQuadXAdapt_j = (*pThisQuadXAdapt)[j])  // weighted sum
 
-              RE->QuadMean[j].M = (t=L_g[j,]) * *pThisQuadXAdapt_j  // weighted sum
               C = cholesky(crossdev(*pThisQuadXAdapt_j, RE->QuadMean[j].M, t, *pThisQuadXAdapt_j, RE->QuadMean[j].M))
 
               if (C[1,1] == .) {  // diverged? try restarting, but decrement counter to prevent infinite loop
                 RE->ToAdapt[j] = RE->ToAdapt[j] - 1
-                (*pThisQuadXAdapt)[j].M = RE->QuadX
-                RE->AdaptiveShift[j,] = J(1, RE->R, 0)
+                pThisQuadXAdapt_j = (*pThisQuadXAdapt)[j] = &(RE->QuadX)
+                RE->AdaptiveShift[j,] = RE->J1R0
               } else {
                 RE->QuadSD[j].M = diagonal(C)
-                if (mreldif(*pThisQuadXAdapt_j, t=RE->QuadX*C':+RE->QuadMean[j].M) < mod->QuadTol) {  // has adaptation converged for this ML search iteration?
+                if (mreldif(*pThisQuadXAdapt_j, *(pt = &(RE->QuadX * C' :+ RE->QuadMean[j].M))) < QuadTol) {  // has adaptation converged for this ML search iteration?
                   RE->ToAdapt[j] = 0
                   continue
                 }
-                (*pThisQuadXAdapt)[j].M = t
-                RE->AdaptiveShift[j,] = quadrowsum_lnnormalden(t, quadcolsum(ln(RE->QuadSD[j].M),1))' - RE->lnnormaldenQuadX
+                (*pThisQuadXAdapt)[j] = pt
+                if (pThisQuadXAdapt_j != (&(RE->QuadX))) pThisQuadXAdapt_j = pt
+                RE->AdaptiveShift[j,] = quadrowsum_lnnormalden(*pt, quadcolsum(ln(RE->QuadSD[j].M),1))' - RE->lnnormaldenQuadX
               }
 
               for (r=RE->R; r; r--)
                 RE->U[r].M[|RE->Subscript[j].M|] = J(RE->IDRangeLengths[j], 1, (*pThisQuadXAdapt_j)[r,])
 						}
 
-          if (RE->AdaptivePhaseThisIter = any(RE->ToAdapt) * mod(RE->AdaptivePhaseThisIter-1, mod->QuadIter)) {  // not converged and haven't hit max number of adaptations?
-						mod->BuildTotalEffects(l)
-						if (mod->todo)
-							mod->BuildXU(l)
+          if (RE->AdaptivePhaseThisIter = any(RE->ToAdapt) * mod(RE->AdaptivePhaseThisIter-1, QuadIter)) {  // not converged and haven't hit max number of adaptations?
+						BuildTotalEffects(l)
+						if (_todo)
+							BuildXU(l)
 					}
 				}
-				mod->ThisDraw[l+1] = 1
+				ThisDraw[l+1] = 1
 			}
 
-			if (mod->ThisDraw[l+1] > 1 | RE->AdaptivePhaseThisIter) {  // no (more) carrying? propagate draw changes down the tree
+			if (ThisDraw[l+1] > 1 | RE->AdaptivePhaseThisIter) {  // no (more) carrying? propagate draw changes down the tree
 				for (_l=l; _l<L; _l++)
 					for (eq=cols(RE->GammaEqs); eq; eq--) {
 						_eq = RE->GammaEqs[eq]
-						(*REs)[_l+1].theta[_eq].M = cols((*REs)[_l].TotalEffect[mod->ThisDraw[_l+1], _eq].M)? (*REs)[_l].theta[_eq].M + (*REs)[_l].TotalEffect[mod->ThisDraw[_l+1], _eq].M : (*REs)[_l].theta[_eq].M
+						(*REs)[_l+1].theta[_eq].M = cols((*REs)[_l].TotalEffect[ThisDraw[_l+1], _eq].M)? (*REs)[_l].theta[_eq].M + (*REs)[_l].TotalEffect[ThisDraw[_l+1], _eq].M : (*REs)[_l].theta[_eq].M
 					}
 				break
  			}
@@ -1645,13 +1646,13 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 			// finished the group's (adaptive) draws
 			if (todo) { // obs-level score for next level up is avg of scores over this level's draws, weighted by group's L for each draw
 				real matrix L_gv, L_gvr, sThetaScores, sCutScores
-				struct smatrix colvector sTScores, sGammaScores; sTScores=smatrix(L); sGammaScores=smatrix(sum(mod->G))
+				struct smatrix colvector sTScores, sGammaScores; sTScores=smatrix(L); sGammaScores=smatrix(sum(G))
 
-				for (v = mod->subviews; v!=NULL; v = v->next) {
+				for (v = subviews; v; v = v->next) {
 					L_gv = L_g[v->id[l].M, RE->one2R]
 					L_gvr = L_gv[v->one2N, 1]
-						sThetaScores = L_gvr :* v->Scores[l+1].M[1].ThetaScores
-					if (mod->NumCuts)
+          sThetaScores   = L_gvr :* v->Scores[l+1].M[1].ThetaScores
+					if (NumCuts)
 						sCutScores   = L_gvr :* v->Scores[l+1].M[1].CutScores
 					for (i=L; i; i--)
 						if (cols((*REs)[i].D))
@@ -1659,11 +1660,11 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 					for (i=cols(v->Scores.M[1].GammaScores); i; i--)
 						if (rows(v->Scores[l+1].M[1].GammaScores[i].M))
 							sGammaScores[i].M = L_gvr :* v->Scores[l+1].M[1].GammaScores[i].M
-					for (r = mod->NumREDraws[l+1]; r>1; r--) {
+					for (r = NumREDraws[l+1]; r>1; r--) {
 						L_gvr = L_gv[v->one2N, r]
 						
 							sThetaScores = sThetaScores + L_gvr :* v->Scores[l+1].M[r].ThetaScores
-						if (mod->NumCuts)
+						if (NumCuts)
 							sCutScores   = sCutScores   + L_gvr :* v->Scores[l+1].M[r].CutScores
 						for (i=L; i; i--)
 							if (cols((*REs)[i].D))
@@ -1673,51 +1674,51 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 								sGammaScores[i].M = sGammaScores[i].M + L_gvr :* v->Scores[l+1].M[r].GammaScores[i].M
 					}
 					if (l==1) { // final scores
-							S[v->SubsampleInds, mod->Scores.ThetaScores] = rows(v->WeightProduct)? sThetaScores  :* v->WeightProduct : sThetaScores
-						if (mod->NumCuts)
-							S[v->SubsampleInds, mod->Scores.CutScores]   = rows(v->WeightProduct)? sCutScores    :* v->WeightProduct : sCutScores
+							S[v->SubsampleInds, Scores.ThetaScores] = rows(v->WeightProduct)? sThetaScores  :* v->WeightProduct : sThetaScores
+						if (NumCuts)
+							S[v->SubsampleInds, Scores.CutScores]   = rows(v->WeightProduct)? sCutScores    :* v->WeightProduct : sCutScores
 						if (cols(base->D))
-							S[v->SubsampleInds, mod->Scores.SigScores[L].M]   = rows(v->WeightProduct)? sTScores[L].M*v->invGammaQSigD :* v->WeightProduct : sTScores[L].M*v->invGammaQSigD
+							S[v->SubsampleInds, Scores.SigScores[L].M]   = rows(v->WeightProduct)? sTScores[L].M*v->invGammaQSigD :* v->WeightProduct : sTScores[L].M*v->invGammaQSigD
 						for (i=L-1; i; i--)
 							if (cols((*REs)[i].D))
-								S[v->SubsampleInds, mod->Scores.SigScores[i].M] = rows(v->WeightProduct)? (sTScores[i].M*(*REs)[i].D):*v->WeightProduct : sTScores[i].M*(*REs)[i].D
+								S[v->SubsampleInds, Scores.SigScores[i].M] = rows(v->WeightProduct)? (sTScores[i].M*(*REs)[i].D):*v->WeightProduct : sTScores[i].M*(*REs)[i].D
 						for (i=m=1; m<=d; m++)
-							for (c=1; c<=mod->G[m]; c++) {
+							for (c=1; c<=G[m]; c++) {
 								if (v->TheseInds[m])
-									S[v->SubsampleInds, mod->Scores.GammaScores[i].M]  = rows(v->WeightProduct)? 
+									S[v->SubsampleInds, Scores.GammaScores[i].M]  = rows(v->WeightProduct)? 
 										(sGammaScores[i].M + sTScores[L].M * v->dOmega_dGamma[m,c].M) :* v->WeightProduct :
 										 sGammaScores[i].M + sTScores[L].M * v->dOmega_dGamma[m,c].M
 								else
-									S[v->SubsampleInds, mod->Scores.GammaScores[i].M] = v->J_N_1_0
+									S[v->SubsampleInds, Scores.GammaScores[i].M] = v->J_N_1_0
 								i++
 							}
 					} else {
-							v->Scores[l].M[mod->ThisDraw[l]].ThetaScores = sThetaScores
-						if (mod->NumCuts)
-							v->Scores[l].M[mod->ThisDraw[l]].CutScores   = sCutScores
+							v->Scores[l].M[ThisDraw[l]].ThetaScores = sThetaScores
+						if (NumCuts)
+							v->Scores[l].M[ThisDraw[l]].CutScores   = sCutScores
 						for (i=L; i; i--)
 							if (cols((*REs)[i].D))
-								v->Scores[l].M[mod->ThisDraw[l]].TScores[i].M = sTScores[i].M
+								v->Scores[l].M[ThisDraw[l]].TScores[i].M = sTScores[i].M
 						for (i=cols(v->Scores.M[1].GammaScores); i; i--)
-							v->Scores[l].M[mod->ThisDraw[l]].GammaScores[i].M = sGammaScores[i].M
+							v->Scores[l].M[ThisDraw[l]].GammaScores[i].M = sGammaScores[i].M
 					}
 				}
 			}
 			RE->plnL = &(ln(*(RE->plnL)) - shift)
-			if (mod->Quadrature==0)
+			if (Quadrature==0)
 				RE->plnL = &(*(RE->plnL) :- RE->lnNumREDraws)  // in simulation (vs quadrature), average unweighted evaluations rather than summing weighted ones
 		}
 	} while (l) // exit when adding one more draw causes carrying all the way accross the draw counters, back to 1, 1, 1...
 
 	if (L > 1) {
 		lnf = quadsum(rows(REs->Weights)? REs->Weights :* *(REs->plnL) : *(REs->plnL), 1)
-		if (mod->AdaptivePhaseThisEst & NewIter) {
-			if (mod->AdaptivePhaseThisEst = mreldif(mod->LastlnLThisIter, mod->LastlnLLastIter) >= 1e-6)
-				mod->LastlnLLastIter = mod->LastlnLThisIter
+		if (AdaptivePhaseThisEst & NewIter) {
+			if (AdaptivePhaseThisEst = mreldif(LastlnLThisIter, LastlnLLastIter) >= 1e-6)
+				LastlnLLastIter = LastlnLThisIter
 			else
 				printf("\n{res}Adaptive quadrature points fixed.\n")
 		}
-		if (lnf < .) mod->LastlnLThisIter = lnf
+		if (lnf < .) LastlnLThisIter = lnf
 		if (todo == 0)
 			lnf = J(base->N, 1, lnf/base->N)
 	}
@@ -1726,10 +1727,10 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 
 void cmp_gf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
 	real matrix _S, IDRanges, subscripts; real scalar i, n, K, d; pointer(class cmp_model scalar) scalar mod
-	pragma unset _S
+	pragma unset _S; pragma unused H
 
 	mod = moptimize_init_userinfo(M, 1)
-	cmp_lf1(M, todo, b, lnf, _S, H)
+	mod->lf1(M, todo, b, lnf, _S)
 
 	if (hasmissing(lnf)==0) {
 		lnf = *(mod->REs->plnL)
@@ -1774,7 +1775,7 @@ void cmp_model::cmp_init(transmorphic M) {
 	base->d = d
 	one2d = 1..d; d2 = d*(d+1)*.5
 
-	Gamma = J(d, d, 0)
+	Gamma = I(d)  // really will hold I - Gamma
 	cuts = J(MaxCuts+2, d, 1.701e+38) // maxfloat()
 	cuts[1,] = J(1, d, -1.701e+38) // minfloat()
 	y = Lt = Ut = yL = smatrix(d)
@@ -1785,7 +1786,9 @@ void cmp_model::cmp_init(transmorphic M) {
 		vLd = rowsum(Lmatrix(d) :*(1..d*d)) // X[vLd,] = L*X, but faster
 		vKd = colsum(Kmatrix(d,d) :* (1::d*d))
 		vIKI = colsum((I(d) # Kmatrix(d,d) # I(d)) :* (1::d^4))
-	}
+	} else
+    pOmega = &(base->Sig)
+
 	ThisDraw = J(1, L, 1)
 
 	for (l=L; l; l--) {
@@ -1827,7 +1830,7 @@ void cmp_model::cmp_init(transmorphic M) {
 
 	for (l=L; l; l--) {
 		RE = &((*REs)[l])
-		if (todo | HasGamma) {
+		if (_todo | HasGamma) {
 			// build dSigdParams, derivative of sig, vech(rho) vector w.r.t. vector of actual sig, rho parameters, reflecting "exchangeable" and "independent" options
 			real scalar accross, within, c1, c2
 			t = J(0, 1, 0); i = 0 // index of entries in full sig, vech(rho) vector
@@ -1881,7 +1884,7 @@ void cmp_model::cmp_init(transmorphic M) {
 	}
 	PrimeIndex = 1
 
-	if (todo) {
+	if (_todo) {
 		Scores = scores()
 		G = J(d, 1, 0); Scores.GammaScores = smatrix(d*d) // more than needed
 		cols = d + 1
@@ -1905,6 +1908,7 @@ void cmp_model::cmp_init(transmorphic M) {
 		RE = &((*REs)[l])
 
 		RE->N = RE->id[base->N]
+    RE->R = NumREDraws[l+1]
 		RE->one2N = RE->N<10000? 1::RE->N : .
 		RE->J_N_1_0 = J(RE->N, 1, 0)
 		RE->REInds = cmp_selectindex(tokens(st_global("cmp_rc"+strofreal(l))) :== "_cons")
@@ -1940,15 +1944,15 @@ void cmp_model::cmp_init(transmorphic M) {
 
 		if (Quadrature)
 			if (RE->d <= 2)
-				printf("{res}Random effects/coefficients%s modeled with Gauss-Hermite quadrature with %f integration points.\n", LevelName, NumREDraws[l+1])
+				printf("{res}Random effects/coefficients%s modeled with Gauss-Hermite quadrature with %f integration points.\n", LevelName, RE->R)
 			else {
 				printf("{res}Random effects/coefficients%s modeled with sparse-grid quadrature.\n", LevelName)
-				printf("Precision equivalent to that of one-dimensional quadrature with %f integration points.\n", NumREDraws[l+1])
+				printf("Precision equivalent to that of one-dimensional quadrature with %f integration points.\n", RE->R)
 			}
 		else {
 			printf("{res}Random effects/coefficients%s simulated.\n", LevelName)
 			printf("    Sequence type = %s\n", REType)
-			printf("    Number of draws per observation = %f\n", NumREDraws[l+1]/REAnti)
+			printf("    Number of draws per observation = %f\n", RE->R/REAnti)
 			printf("    Include antithetic draws = %s\n", REAnti==2? "yes" : "no")
 			printf("    Scramble = %s\n", ("no", "square root", "negative square root", "Faure-Lemieux")[1+REScramble])
 			if ((REType=="halton" | REType=="ghalton") | (Hammersley & RE->d>1))
@@ -1957,8 +1961,8 @@ void cmp_model::cmp_init(transmorphic M) {
 		}
 
 		if (Quadrature) {
-			QuadData = SpGr(RE->d, NumREDraws[l+1])
-			NDraws = NumREDraws[l+1] = rows(*QuadData[1])
+			QuadData = SpGr(RE->d, RE->R)
+			RE->R = NDraws = NumREDraws[l+1] = rows(*QuadData[1])
 			if (WillAdapt==0) printf("Number of integration points = %f.\n\n", NDraws)
 // inefficiently duplicates draws over groups then parcels them out below
 			U = J(RE->N, 1, *QuadData[1])
@@ -1967,16 +1971,17 @@ void cmp_model::cmp_init(transmorphic M) {
 			if (WillAdapt) {
 				RE->QuadMean = RE->QuadSD = smatrix(RE->N)
 				RE->QuadXAdapt = asarray_create("real", l)
-				for (j=RE->N; j; j--) {
-//					RE->QuadXAdapt[j].M = RE->QuadX
+				for (j=RE->N; j; j--)
 					RE->QuadSD[j].M = J(RE->d, 1, .)
-				}
 				RE->AdaptiveShift = J(RE->N, NDraws, 0)
 				RE->lnnormaldenQuadX = quadrowsum_lnnormalden(RE->QuadX,0)'
 				LastlnLThisIter=0; LastlnLLastIter=1
+        RE->JN12 = J(RE->N, 1, 2)
+        RE->J1R0 = J(1, RE->R, 0)
+        RE->JN1pQuadX = J(RE->N, 1, &(RE->QuadX))
 			}
 		} else {
-			NDraws = NumREDraws[l+1] / REAnti
+			NDraws = RE->R / REAnti
 			if (REType=="random")
 				U = invnormal(uniform(RE->N * NDraws / REAnti, RE->d))
 			else if (REType=="halton" | Hammersley) {
@@ -1991,8 +1996,7 @@ void cmp_model::cmp_init(transmorphic M) {
 					U[,r] = invnormal(ghalton(rows(U), Primes[PrimeIndex++], uniform(1,1)))
 			}
 		}
-		RE->one2R = 1..(RE->R = NumREDraws[l+1])
-    if (WillAdapt) RE->J1R = J(1, RE->R, 0)
+		RE->one2R = 1..RE->R
 		RE->U = smatrix(RE->R)
 		RE->TotalEffect = smatrix(RE->R, d)
  		RE->pXU         = J(RE->R, sum((RE->NEq..1) :* RE->NEff), NULL)
@@ -2166,13 +2170,13 @@ void cmp_model::cmp_init(transmorphic M) {
 			}
 		}
 
-		if (todo) {
+		if (_todo) {
 			v->XU = ssmatrix(L-1)
 			for (l=L-1; l; l--)
 				v->XU[l].M = smatrix(rows((*REs)[l].pXU), cols((*REs)[l].pXU))
 		}
 
-		if (todo) { // pre-compute stuff for scores
+		if (_todo) { // pre-compute stuff for scores
 			v->Scores = scorescol(L)
 			for (l=L; l; l--) {
 				v->Scores[l].M = scores(NumREDraws[l])
@@ -2252,7 +2256,7 @@ void cmp_model::cmp_init(transmorphic M) {
 	}
 	subviews = v
 
-	if (todo)
+	if (_todo)
 		for (l=L-1;l;l--)
 			BuildXU(l)
 
