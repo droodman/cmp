@@ -18,7 +18,7 @@
 
 cap program drop cmp
 program define cmp, sortpreserve properties(user_score svyb svyj svyr mi fvaddcons) byable(recall)
-	version 11.0
+	version 13.0
 	cap noi _cmp `0'
 	if _rc {
 		local rc = _rc
@@ -68,23 +68,6 @@ program define _cmp
 		di as txt "$" "cmp_roprobit = " as res 9
 		di as txt "$" "cmp_frac     = " as res 10
 		exit 0
-	}
-
-	mata st_local("StataVersion", cmpStataVersion()); st_local("CodeVersion", cmpVersion())
-	if `StataVersion' != c(stata_version) | "`CodeVersion'" < "08.06.02" {
-		cap findfile "lcmp.mlib"
-		while !_rc {
-			erase "`r(fn)'"
-			cap findfile "lcmp.mlib"
-		}
-		qui findfile "cmp.mata"
-		cap run "`r(fn)'"
-		if _rc & c(stata_version) >= 13 {
-			di _n "Warning: Could not recompile cmp.mata, probably for lack of write access to the directory where it is stored."
-			di    "For backward compatibility, cmp is distributed as compiled in Stata 11. Recompiling in Stata 13 or later"
-			di   `"makes it to run faster in some cases. To compile it manually, type or click on {stata "which cmp.mata"};"'
-			di    "then run the displayed file like a Stata .do file. This only needs to be done once per installation." _n
-		}
 	}
 
 	cap ghk2version

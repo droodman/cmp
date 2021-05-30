@@ -116,6 +116,9 @@ may be numbers or variables; {it:a} missing ({it:a} {ul:>} {cmd:.}) means minus 
 {browse "http://github.com/droodman/cmp/tree/09ce0ec1fe765a8c585208004b848758763a1cfe":Github archive}, and can be directly installed, in Stata 13 or later, via
 "{net "from https://raw.github.com/droodman/cmp/v7.1.0":net from https://raw.github.com/droodman/cmp/v7.1.0}".
 
+{pstd} Versions 8.6.2, released in June 2021, requires Stata 13 or later. The 
+{browse "https://github.com/droodman/cmp/releases/tag/v8.6.1":previous version} works in Stata 11 and 12 too.
+
 {pstd}Major features have been added to {cmd:cmp} since Roodman (2011), and are documented only here. They include:
 
 {p 4 6 0}

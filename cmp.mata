@@ -270,9 +270,6 @@ void cmp_model::setGammaInd(real matrix t) {
 	}
 }
 
-string scalar cmpStataVersion() return("`c(stata_version)'")
-string scalar      cmpVersion() return("08.06.02")
-
 // substitute for built-in Stata command _ms_findomitted, since missing from Stata 11
 void _ms_findomitted(string scalar bname, string scalar Vname) {
 	string matrix stripe; string rowvector s; real scalar i, j
@@ -291,32 +288,8 @@ void _ms_findomitted(string scalar bname, string scalar Vname) {
 	st_matrixcolstripe(bname, stripe)
 }
 
-// stick call to panelsum() in separate function to prevent run-time error in old Stata versions
-real matrix _cmp_panelsum(real matrix X, real matrix arg2, | real matrix arg3)
-	return (cols(arg3)? panelsum(X, arg2, arg3) : panelsum(X, arg2))
-
-// implement Mata's panelsum() for pre-version 13. Differs in that a single missing value in X doesn't make all results missing.
-real matrix cmp_panelsum(real matrix X, real matrix W, real matrix info) {
-	if (stataversion() >= 1300)
-		return (rows(W)? _cmp_panelsum(X, W, info) : _cmp_panelsum(X, info))
-	
-	real matrix retval, Xi, Wi; real scalar i
-	pragma unset Xi; pragma unset Wi
-	
-	retval = J(rows(info), cols(X), .)
-	for (i=rows(info); i; i--) {
-		panelsubview(Xi, X, i, info)
-		if (rows(W)==0)
-			retval[i,] = colsum(Xi)
-		else if (rows(W)==1)
-			retval[i,] = Xi * W
-		else {
-			panelsubview(Wi, W, i, info)
-			retval[i,] = cross(Xi, Wi)'
-		}
-	}
-	return (retval)
-}
+real matrix cmp_panelsum(real matrix X, real matrix W, real matrix info)
+	return (rows(W)? panelsum(X, W, info) : panelsum(X, info))
 
 // fast(?) computation of a :+ quadrowsum(lnnormalden(X))
 real colvector quadrowsum_lnnormalden(real matrix X, real scalar a)
@@ -1202,7 +1175,7 @@ void cmp_model::BuildXU(real scalar l) {
 					for (eq2=eq1+1; eq2<=RE->NEq; eq2++) {
 						RE->pXU[r,++k] = &( RE->RCk[eq2]? Ue :*RE->X[eq2].M : base->J_N_0_0 )
 						if (anyof(RE->REEqs, eq2))
-							RE->pXU[r,k] = &(*RE->pXU[r,k], Ue)  // XXX avoid concatenation?
+							RE->pXU[r,k] = &(*RE->pXU[r,k], Ue)  // avoid concatenation?
 					}
 				}
 		}
