@@ -33,15 +33,6 @@ struct mprobit_group {
 	real rowvector in, res // eqs of remaining alternatives; indices in ECens to hold relative differences
 }
 
-/*real matrix smat2mat(struct smatrix vector v) {
-  real scalar i; real matrix retval
-  retval = J(rows(v[1].M), length(v), 0)
-  for (i=length(v);i;i--)
-    retval[,i] = v[i].M
-  return(retval)
-}*/
-
-
 void setcol(pointer(real matrix) scalar pX, real rowvector c, real colvector v)
   if (cols(*pX)==cols(c))
     pX = &v
@@ -1577,31 +1568,58 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
 						asarray(RE->QuadXAdapt, ThisDraw[|.\l|], RE->JN1pQuadX)
 						pThisQuadXAdapt = &asarray(RE->QuadXAdapt, ThisDraw[|.\l|])
 					}
+          
+          if (RE->d == 1) {  // optimized code for 1-D case
+            for (j=RE->N; j; j--)
+              if (RE->ToAdapt[j]) {
+                RE->QuadMean[j].M = (t = L_g[j,]) * *(pThisQuadXAdapt_j = (*pThisQuadXAdapt)[j])  // weighted sum
 
-					for (j=RE->N; j; j--)
-						if (RE->ToAdapt[j]) {
-              RE->QuadMean[j].M = (t = L_g[j,]) * *(pThisQuadXAdapt_j = (*pThisQuadXAdapt)[j])  // weighted sum
+                C = *pThisQuadXAdapt_j :- RE->QuadMean[j].M; C = sqrt(t * (C :* C))
 
-              C = cholesky(crossdev(*pThisQuadXAdapt_j, RE->QuadMean[j].M, t, *pThisQuadXAdapt_j, RE->QuadMean[j].M))
-
-              if (C[1,1] == .) {  // diverged? try restarting, but decrement counter to prevent infinite loop
-                RE->ToAdapt[j] = RE->ToAdapt[j] - 1
-                pThisQuadXAdapt_j = (*pThisQuadXAdapt)[j] = &(RE->QuadX)
-                RE->AdaptiveShift[j,] = RE->J1R0
-              } else {
-                RE->QuadSD[j].M = diagonal(C)
-                if (mreldif(*pThisQuadXAdapt_j, *(pt = &(RE->QuadX * C' :+ RE->QuadMean[j].M))) < QuadTol) {  // has adaptation converged for this ML search iteration?
-                  RE->ToAdapt[j] = 0
-                  continue
+                if (C == .) {  // diverged? try restarting, but decrement counter to prevent infinite loop
+                  RE->ToAdapt[j] = RE->ToAdapt[j] - 1
+                  pThisQuadXAdapt_j = (*pThisQuadXAdapt)[j] = &(RE->QuadX)
+                  RE->AdaptiveShift[j,] = RE->J1R0
+                } else {
+                  RE->QuadSD[j].M = C
+                  if (mreldif(*pThisQuadXAdapt_j, *(pt = &(RE->QuadX * C :+ RE->QuadMean[j].M))) < QuadTol) {  // has adaptation converged for this ML search iteration?
+                    RE->ToAdapt[j] = 0
+                    continue
+                  }
+                  (*pThisQuadXAdapt)[j] = pt
+                  if (pThisQuadXAdapt_j != (&(RE->QuadX))) pThisQuadXAdapt_j = pt
+                  RE->AdaptiveShift[j,] = (ln(C) - 0.91893853320467267 /*ln(2pi)/2*/) :- (.5 * (*pt :* *pt)' + RE->lnnormaldenQuadX)
                 }
-                (*pThisQuadXAdapt)[j] = pt
-                if (pThisQuadXAdapt_j != (&(RE->QuadX))) pThisQuadXAdapt_j = pt
-                RE->AdaptiveShift[j,] = quadrowsum_lnnormalden(*pt, quadcolsum(ln(RE->QuadSD[j].M),1))' - RE->lnnormaldenQuadX
-              }
 
-              for (r=RE->R; r; r--)
-                RE->U[r].M[|RE->Subscript[j].M|] = J(RE->IDRangeLengths[j], 1, (*pThisQuadXAdapt_j)[r,])  // faster to explode these here than after multiplying by T in BuildTotalEffects(), BuildXU()
-						}
+                for (r=RE->R; r; r--)
+                  RE->U[r].M[|RE->Subscript[j].M|] = J(RE->IDRangeLengths[j], 1, (*pThisQuadXAdapt_j)[r,])  // faster to explode these here than after multiplying by T in BuildTotalEffects(), BuildXU()
+              }
+          } else {
+            for (j=RE->N; j; j--)
+              if (RE->ToAdapt[j]) {
+                RE->QuadMean[j].M = (t = L_g[j,]) * *(pThisQuadXAdapt_j = (*pThisQuadXAdapt)[j])  // weighted sum
+
+                C = cholesky(crossdev(*pThisQuadXAdapt_j, RE->QuadMean[j].M, t, *pThisQuadXAdapt_j, RE->QuadMean[j].M))
+
+                if (C[1,1] == .) {  // diverged? try restarting, but decrement counter to prevent infinite loop
+                  RE->ToAdapt[j] = RE->ToAdapt[j] - 1
+                  pThisQuadXAdapt_j = (*pThisQuadXAdapt)[j] = &(RE->QuadX)
+                  RE->AdaptiveShift[j,] = RE->J1R0
+                } else {
+                  RE->QuadSD[j].M = diagonal(C)
+                  if (mreldif(*pThisQuadXAdapt_j, *(pt = &(RE->QuadX * C' :+ RE->QuadMean[j].M))) < QuadTol) {  // has adaptation converged for this ML search iteration?
+                    RE->ToAdapt[j] = 0
+                    continue
+                  }
+                  (*pThisQuadXAdapt)[j] = pt
+                  if (pThisQuadXAdapt_j != (&(RE->QuadX))) pThisQuadXAdapt_j = pt
+                  RE->AdaptiveShift[j,] = quadrowsum_lnnormalden(*pt, quadcolsum(ln(RE->QuadSD[j].M),1))' - RE->lnnormaldenQuadX
+                }
+
+                for (r=RE->R; r; r--)
+                  RE->U[r].M[|RE->Subscript[j].M|] = J(RE->IDRangeLengths[j], 1, (*pThisQuadXAdapt_j)[r,])  // faster to explode these here than after multiplying by T in BuildTotalEffects(), BuildXU()
+              }
+          }
 
           if (RE->AdaptivePhaseThisIter = any(RE->ToAdapt) * mod(RE->AdaptivePhaseThisIter-1, QuadIter)) {  // not converged and haven't hit max number of adaptations?
 						BuildTotalEffects(l)
