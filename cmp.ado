@@ -1,4 +1,4 @@
-*! cmp 8.6.2 27 May 2021
+*! cmp 8.6.2 1 June 2021
 *! Copyright (C) 2007-21 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -915,8 +915,12 @@ program define _cmp
 		if "`lnl'" != "" mata st_view(_H, ., "`lnl'", st_global("ML_samp")); _H[,] = _lnf
     else {  // scores requested
       mata st_view(_H, ., "`scores'", st_global("ML_samp"))
-      if "`e(resultsform)'" == "reduced" di as err "Won't compute scores on reduced-form results. Try estimating with cmp's svy option instead of the svy prefix."
-//      if "`e(resultsform)'" == "reduced" mata _H[,] = _S * ("`equation'" == ""? st_matrix("e(dbr_db)") : st_matrix("e(dbr_db)")[`equation',])'
+      if "`e(resultsform)'" == "reduced" {
+        di as err "cmp: Won't compute scores on reduced-form results. " _c
+        if "`c(prefix)'"=="svy" di as err "Try estimating with cmp's svy option instead of the svy prefix." _c
+        di _n _n
+      }
+//    if "`e(resultsform)'" == "reduced" mata _H[,] = _S * ("`equation'" == ""? st_matrix("e(dbr_db)") : st_matrix("e(dbr_db)")[`equation',])'
         else                             mata _H[,] =       "`equation'" == ""? _S                     : _S                    [,`equation']
     }
 		cmp_clear
