@@ -14,6 +14,18 @@
    You should have received a copy of the GNU General Public License
    along with this program. If not, see <http://www.gnu.org/licenses/>. */
 
+local cmp_cont 1
+local cmp_left 2
+local cmp_right 3
+local cmp_probit 4
+local cmp_oprobit 5
+local cmp_mprobit 6
+local cmp_int 7
+local cmp_probity1 8
+local cmp_frac 10
+local mprobit_ind_base 20
+local roprobit_ind_base 40
+
 mata
 mata clear
 mata set matastrict on
@@ -33,42 +45,29 @@ struct mprobit_group {
 	real rowvector in, res // eqs of remaining alternatives; indices in ECens to hold relative differences
 }
 
-void setcol(pointer(real matrix) scalar pX, real rowvector c, real colvector v)
-  if (cols(*pX)==cols(c))
-    pX = &v
-  else
-    (*pX)[,c] = v
-
-// return pointer to chosen columns of a matrix, but don't duplicate data if return value is whole matrix
-pointer (real matrix) getcol(real matrix A, real vector p)
-	return(length(p)==cols(A)? &A : &A[,p])
-
-real matrix Mdivs(real matrix X, real scalar c)
-  return(c==1? X : (c==-1? -X : X/c))
-
 struct scores {
 	real rowvector ThetaScores, CutScores  // in nonhierarchical models, vectors specifying relevant cols of master score matrix, S
-	struct smatrix vector TScores, SigScores, GammaScores // SigScores only used at top level, to refer to cols of S. In hierarchical models, TScores[L] holds base Sig scores
+	struct smatrix rowvector TScores, SigScores, GammaScores // SigScores only used at top level, to refer to cols of S. In hierarchical models, TScores[L] holds base Sig scores
 }
 
 struct scorescol {
 	struct scores colvector M
 }
 
-struct subview { // info associated with subsets of data defined by given combinations of indicator values
+struct subview {  // info associated with subsets of data defined by given combinations of indicator values
   real matrix EUncens
   pointer (real matrix) scalar pECens, pF, pEt, pFt
 	struct smatrix colvector theta, y, Lt, Ut, yL
 	struct smatrix matrix dOmega_dGamma
-	struct scorescol rowvector Scores // one col for each level, one col for each draw
+	struct scorescol rowvector Scores  // one col for each level, one col for each draw
 	real matrix Yi
 	real colvector subsample, SubsampleInds, one2N
-	real scalar GHKStart, GHKStartTrunc // starting indexes in ghk2() point structure
+	real scalar GHKStart, GHKStartTrunc  // starting indexes in ghk2() point structure
 	real scalar d_uncens, d_cens, d2_cens, d_two_cens, d_oprobit, d_trunc, d_frac, NFracCombs, N
-	real scalar NumCuts // number of cuts in ordered probit eqs relevant for *these* observations
+	real scalar NumCuts  // number of cuts in ordered probit eqs relevant for *these* observations
 	real colvector vNumCuts // number of cuts per eq for the eq for *these* observations
-	real matrix dSig_dLTSig // derivative of Sig w.r.t. its lower triangle
-	real scalar bounded // d_oprobit? d_one_cens+1..d_cens:J(1,0,0)
+	real matrix dSig_dLTSig  // derivative of Sig w.r.t. its lower triangle
+	real scalar bounded  // d_oprobit? d_one_cens+1..d_cens:J(1,0,0)
 	real scalar N_perm
 	real colvector CensLTInds // indexes of lower triangle of a vectorized square matrix of dimension d_cens
 	real colvector WeightProduct
@@ -123,7 +122,8 @@ struct RE { // info associated with given level of model. Top level also holds v
 	real matrix Sig, T, invGamma
 	real matrix D // derivative of vech(Sig) w.r.t lnsigs and atanhrhos
 	real matrix dSigdParams // derivative of sig, vech(rho) vector w.r.t. vector of actual sig, rho parameters, reflecting "exchangeable" and "independent" options
-	real scalar N // number of groups at this level
+	real scalar NSigParams
+  real scalar N // number of groups at this level
 	real colvector one2N, J_N_1_0, J_N_0_0
 	real matrix IDRanges // id ranges for each group in data set, as returned by panelsetup()
 	real colvector IDRangeLengths // lengths of those ranges
@@ -166,7 +166,7 @@ class cmp_model {
 	real matrix dSig_dT // derivative of vech(Sig) w.r.t vech(cholesky(Sig))
 	real colvector WeightProduct // obs-level product of weights at all levels, for weighting scores
 	transmorphic ghk2DrawSet
-	real scalar mprobit_ind_base, roprobit_ind_base, ghkAnti, NumCuts, HasGamma, SigXform, d_cens
+	real scalar ghkAnti, NumCuts, HasGamma, SigXform, d_cens
 	real matrix Eqs, GammaId, NumEff
 	real colvector vNumCuts
 	real matrix cuts
@@ -187,23 +187,51 @@ class cmp_model {
 	real rowvector ThisDraw
 	real scalar h // if computing 2nd derivatives most recent h used
 	struct smatrix colvector X // NEq-vector of data matrices--needed only in gfX() estimation, to expand scores to one per regressor
+  struct smatrix colvector sTScores, sGammaScores
 
 	void new(), cmp_init(), BuildXU(), BuildTotalEffects(), 
 				setReverse(), setSigXform(), setQuadTol(), setQuadIter(), setGHKType(), setMaxCuts(), setindVars(), setLtVars(), setUtVars(), setyLVars(), 
 				setGHKAnti(), setGHKDraws(), setGHKScramble(), setQuadrature(), setd(), setL(), settodo(),
 				setREAnti(), setREType(), setREScramble(), setEqs(), setGammaI(), setNumEff(), setNumMprobitGroups(), setNumRoprobitGroups(),
 				setMprobitGroupInds(), setRoprobitGroupInds(), setNonbaseCases(), setvNumCuts(), settrunceqs(), setintregeqs(), setNumREDraws(), setGammaInd(),
-				setAdaptNow(), setWillAdapt(), lf1()
+				setAdaptNow(), setWillAdapt(), lf1(), gf1(), SaveSomeResults()
+  static void scoreAccum(), setcol(), PasteAndAdvance(), CheckPrime()
   real colvector lnLCensored(), lnLTrunc()
+  static real colvector quadrowsum_lnnormalden(), binormal2(), binormalGenz(), lnLContinuous(), normal2(), vecbinormal(), vecbinormal2(), vecmultinormal()
+  static real rowvector vSigInds()
+  static real matrix _panelsum(), Mdivs(), insert(), _PermuteTies(), dPhi_dpE_dSig(), dSigdsigrhos(), neg_half_E_Dinvsym_E(), PermuteTies(), QE2QSig(), SpGrGetSeq()
+  static pointer(real matrix) scalar Xdotv(), getcol()
+  static pointer (real matrix) rowvector SpGr(), SpGrKronProd()
+  static pointer colvector GQNn1d(), GQNw1d(), KPNn1d(), KPNw1d()
 	static void _st_view()
 	real scalar getGHKDraws()
 }
 
-void cmp_model::new() {
-	mprobit_ind_base  = 20
-	roprobit_ind_base = 40
+void cmp_model::new()
 	Adapted = AdaptivePhaseThisEst = WillAdapt = AdaptNextTime = HasGamma = ghkScramble = REScramble = 0
-}
+
+void cmp_model::setcol(pointer(real matrix) scalar pX, real rowvector c, real colvector v)
+  if (cols(*pX)==cols(c))
+    pX = &v
+  else
+    (*pX)[,c] = v
+
+// return pointer to chosen columns of a matrix, but don't duplicate data if return value is whole matrix
+pointer (real matrix) scalar cmp_model::getcol(real matrix A, real vector p)
+	return(length(p)==cols(A)? &A : &A[,p])
+
+real matrix cmp_model::Mdivs(real matrix X, real scalar c)
+  return(c==1? X : (c==-1? -X : X/c))
+
+void cmp_model::scoreAccum(real matrix S, real scalar r, real colvector v, real matrix X)
+  S = r==1? v :* X : S + v :* X
+
+pointer(real matrix) scalar cmp_model::Xdotv(real matrix X, real colvector v)
+  return(rows(v)? &(X :* v) : &X)
+
+// insert row vector into a matrix at specified row
+real matrix cmp_model::insert(real matrix X, real scalar i, real rowvector newrow)
+	return (i==1? newrow\X : (i==rows(X)+1? X\newrow : X[|.,.\i-1,.|] \ newrow \ X[|i,.\.,.|]))
 
 void cmp_model::setd       (real scalar t) d  = t
 void cmp_model::setL       (real scalar t) L  = t
@@ -244,7 +272,7 @@ void cmp_model::setWillAdapt(real scalar t) {
 	Lastb = J(1,0,0)
 }
 
-void cmp_model::setGammaI(real matrix t) { // infinite loop if d is not set
+void cmp_model::setGammaI(real matrix t) {
 	real scalar i
 	GammaId = t
 	for (i=d-2; i>0; i--)
@@ -261,84 +289,15 @@ void cmp_model::setGammaInd(real matrix t) {
 	}
 }
 
-// substitute for built-in Stata command _ms_findomitted, since missing from Stata 11
-void _ms_findomitted(string scalar bname, string scalar Vname) {
-	string matrix stripe; string rowvector s; real scalar i, j
-
-	stripe = st_matrixcolstripe(bname)
-	for (i=rows(stripe); i; i--)
-		if ((st_matrix(bname)[i] & st_matrix(Vname)[i,i])==0) {
-			s = tokens(stripe[i,2], "#")
-			for (j=cols(s); j; j--)
-				if (s[j] != "#" & (strmatch(s[j], "*b*.*") | strmatch(s[j], "*o*.*"))==0) {
-					stata("fvexpand o."+s[j])
-					s[j] = st_global("r(varlist)")
-				}
-			stripe[i,2] = invtokens(s, "")
-		}
-	st_matrixcolstripe(bname, stripe)
-}
-
-real matrix cmp_panelsum(real matrix X, real matrix W, real matrix info)
+real matrix cmp_model::_panelsum(real matrix X, real matrix W, real matrix info)
 	return (rows(W)? panelsum(X, W, info) : panelsum(X, info))
 
 // fast(?) computation of a :+ quadrowsum(lnnormalden(X))
-real colvector quadrowsum_lnnormalden(real matrix X, real scalar a)
+real colvector cmp_model::quadrowsum_lnnormalden(real matrix X, real scalar a)
 	return ( (a - 0.91893853320467267 /*ln(2pi)/2*/ * cols(X)) :- .5*quadrowsum(X:*X) )
 
-// prepare matrix to transform scores w.r.t. elements of Sigma to ones w.r.t. lnsig's and rho's
-real matrix dSigdsigrhos(real scalar SigXform, real rowvector sig, real matrix Sig, real rowvector rho, real matrix Rho) {
-	real matrix D, t, t2; real scalar i, j, k, d, d2
-	d = cols(sig); d2 = d + cols(rho)
-	D = I(d2)
-	for (k=1; k<=d; k++) {  // derivatives of Sigma w.r.t. lnsig's
-		t2 = SigXform? Sig[k,] : (d>1? Rho[k,]:*sig : sig)
-		(t = J(d,d,0))[k,] = t2
-		t[,k] = t[,k] + t2'
-		D[,k] = vech(t)
-	}
-	if (d > 1) {  // derivatives of Sigma w.r.t. rho's
-		for (j=1; j<=d; j++)
-			for (i=j+1; i<=d; i++) {
-				(t = J(d,d,0))[i,j] = sig[i] * sig[j]
-				D[,k++] = vech(t)
-			}
-		if (SigXform) {
-			t = cosh(rho)
-			D[|.,d+1 \ .,.|] = D[|.,d+1 \ .,.|] :/ (t:*t)  //Datanh=cosh^2
-		}
-	}
-	return(D)
-}
-
-// insert row vector into a matrix at specified row
-real matrix cmp_insert(real matrix X, real scalar i, real rowvector newrow)
-	return (i==1? newrow\X : (i==rows(X)+1? X\newrow : X[|.,.\i-1,.|] \ newrow \ X[|i,.\.,.|]))
-
-// Given a col, apply forward Guassian elimination using first row that is non-zero in that col, then delete the row.
-/* real matrix eliminate(real matrix X, real scalar c) {
-	real matrix RetVal, r
-	r = min(cmp_selectindex(X[,c]:!=0)')
-	if (r < .) {
-		RetVal = r>1? X[|.,.\r-1,.|] : J(0, cols(X), 0)
-		return (r==rows(X) & r>0? RetVal : RetVal \ X[|r+1,.\.,.|] - (X[r,]/X[r,c] # J(rows(X)-r,1,1)) :* X[|r+1,c \ .,c|])
-	}
-	return (X)
-}*/
-
-// Check whether all entries in vector are prime
-void CheckPrime(real vector v) {
-	real scalar i, j
-	for (i=length(v); i; i--)
-		for (j=floor(sqrt(v[i])); j>1; j--)
-			if (mod(v[i], j) == 0) {
-				printf("Note: %f is not prime. Prime draw counts are more reliable.\n\n", v[i])
-				return
-			}
-}
-
 // paste columns B into matrix A at starting index i, then advance index; for efficiency, overwrite A = B when possible
-void PasteAndAdvance(real matrix A, real scalar i, real matrix B) {
+void cmp_model::PasteAndAdvance(real matrix A, real scalar i, real matrix B) {
 	if (cols(B)) {
 		real scalar t
 		t = i + cols(B)
@@ -350,24 +309,51 @@ void PasteAndAdvance(real matrix A, real scalar i, real matrix B) {
 	}
 }
 
-// given a vector of 0's and 1's, return indices of the 1's, like selectindex() function added in Stata 13
-// if v = 0 (so can't tell if row or col vector), returns rowvector J(1, 0, 0) 
-real vector cmp_selectindex(real vector v) {
-	real scalar rows; real vector retval
-	rows = rows(v)
-	retval = select(rows>1? 1::rows : 1..cols(v), v)
-	return(cols(retval)? retval : (rows>1? J(0,1,0) : J(1,0,0)))
+// prepare matrix to transform scores w.r.t. elements of Sigma to ones w.r.t. lnsig's and rho's
+real matrix cmp_model::dSigdsigrhos(real scalar SigXform, real rowvector sig, real matrix Sig, real rowvector rho, real matrix Rho) {
+	real matrix D, t, t2; real scalar i, j, k, _d, _d2
+	_d = cols(sig); _d2 = _d + cols(rho)
+	D = I(_d2)
+	for (k=1; k<=_d; k++) {  // derivatives of Sigma w.r.t. lnsig's
+		t2 = SigXform? Sig[k,] : (_d>1? Rho[k,]:*sig : sig)
+		(t = J(_d,_d,0))[k,] = t2
+		t[,k] = t[,k] + t2'
+		D[,k] = vech(t)
+	}
+	if (_d > 1) {  // derivatives of Sigma w.r.t. rho's
+		for (j=1; j<=_d; j++)
+			for (i=j+1; i<=_d; i++) {
+				(t = J(_d,_d,0))[i,j] = sig[i] * sig[j]
+				D[,k++] = vech(t)
+			}
+		if (SigXform) {
+			t = cosh(rho)
+			D[|.,_d+1 \ .,.|] = D[|.,_d+1 \ .,.|] :/ (t:*t)  // Datanh=cosh^2
+		}
+	}
+	return(D)
+}
+
+// Check whether all entries in vector are prime
+void cmp_model::CheckPrime(real vector v) {
+	real scalar i, j
+	for (i=length(v); i; i--)
+		for (j=floor(sqrt(v[i])); j>1; j--)
+			if (mod(v[i], j) == 0) {
+				printf("Note: %f is not prime. Prime draw counts are more reliable.\n\n", v[i])
+				return
+			}
 }
 
 // Given ranking potentially with ties, return matrix of all un-tied rankings consistent with it, one per row
-real matrix PermuteTies(real vector v) {
+real matrix cmp_model::PermuteTies(real vector v) {
 	real colvector Indexes; real matrix  TiedRanges
 	pragma unset   Indexes; pragma unset TiedRanges
 	minindex(v, ., Indexes, TiedRanges)
 	TiedRanges[,2] = rowsum(TiedRanges) :- 1
 	return (_PermuteTies(Indexes, TiedRanges', rows(TiedRanges))')
 }
-real matrix _PermuteTies(real colvector Indexes, real matrix TiedRanges, real scalar ThisRank) {
+real matrix cmp_model::_PermuteTies(real colvector Indexes, real matrix TiedRanges, real scalar ThisRank) {
 	real colvector info, p, t; real matrix RetVal
 	RetVal = J(rows(Indexes), 0, .)
 	info = cvpermutesetup(Indexes[| p = TiedRanges[,ThisRank] |], 0)
@@ -380,18 +366,18 @@ real matrix _PermuteTies(real colvector Indexes, real matrix TiedRanges, real sc
 
 // given indexes for variables, and dimension of variance matrix, return corresponding indexes in vectorized variance matrix
 // e.g., (1,3) ->((1,1), (3,1), (3,3)) -> (1, 3, 6)
-real rowvector vSigInds(real rowvector inds, real scalar d)
+real rowvector cmp_model::vSigInds(real rowvector inds, real scalar d)
 	return (vech(invvech(1::d*(d+1)*0.5)[inds,inds])')
 
 // Given transformation matrix for errors, return transformation matrix for vech(covar)
-real matrix QE2QSig(real matrix QE)
+real matrix cmp_model::QE2QSig(real matrix QE)
 	return (Lmatrix(cols(QE))*(QE#QE)'Dmatrix(rows(QE)))
 
 // compute normal(F) - normal(E) while maximizing precision
 // In Mata, 1 - normal(10) should = normal(-10) but the former = 0 because normal(10) is close to 1
 // Ergo the best way to compute the former is to do the latter
 // F = . means +infinity. E = . means -infinity
-real colvector normal2(real colvector E, real colvector F) {
+real colvector cmp_model::normal2(real colvector E, real colvector F) {
 	real colvector sign
 	sign = F+E:<0
 	sign = sign + sign :- 1
@@ -399,9 +385,9 @@ real colvector normal2(real colvector E, real colvector F) {
 }
 
 // integral of bivariate normal from -infinity to E1, F2 to E2, done to maximize precision as in normal2()
-real colvector binormal2(real colvector E1, real matrix E2, real matrix F2, real scalar rho) {
+real colvector cmp_model::binormal2(real colvector E1, real matrix E2, real matrix F2, real scalar rho) {
 	real colvector sign
-	sign = E2+F2:<0
+	sign = E2 + F2 :< 0
 	sign = sign + sign :- 1
 	return (abs(binormalGenz(E1, sign:*E2, rho, sign) - binormalGenz(E1, sign:*F2, rho, sign)))
 }
@@ -421,8 +407,8 @@ real colvector binormal2(real colvector E1, real matrix E2, real matrix F2, real
 //   x2  integration limit
 //   r   correlation coefficient
 //   m   optional column vector of +/-1 multipliers for r
-real colvector binormalGenz(real colvector x1, real colvector x2, real scalar r, | real colvector m) {
-	real scalar a, as, absr, asinr; real colvector X, W, B, C, D, retval, BS, HS, HK, negx2, normalx1, normalx2, normalnegx1, normalnegx2; real rowvector xs, rs, sn, sn2; pointer (real colvector) px2
+real colvector cmp_model::binormalGenz(real colvector x1, real colvector x2, real scalar r, | real colvector m) {
+	real scalar a, as, absr, asinr; real colvector _X, W, B, C, _D, retval, BS, HS, HK, negx2, normalx1, normalx2, normalnegx1, normalnegx2; real rowvector xs, rs, sn, sn2; pointer (real colvector) px2
 
 	if (r>=.) return (J(rows(x1),1,.))
 	if (r==0) return (normal(x1):*normal(x2))
@@ -430,27 +416,27 @@ real colvector binormalGenz(real colvector x1, real colvector x2, real scalar r,
 	if ((absr=abs(r)) < 0.925) {
 		// Gauss Legendre Points and Weights
 		if (absr < 0.3) {
-			X = -0.9324695142031522D+00, -0.6612093864662647D+00, -0.2386191860831970D+00
+			_X = -0.9324695142031522D+00, -0.6612093864662647D+00, -0.2386191860831970D+00
 			W =  0.1713244923791705D+00,  0.3607615730481384D+00,  0.4679139345726904D+00	
 		} else if (absr < 0.75) {
-			X = -0.9815606342467191D+00, -0.9041172563704750D+00, -0.7699026741943050D+00, -0.5873179542866171D+00, -0.3678314989981802D+00, -0.1252334085114692D+00	
+			_X = -0.9815606342467191D+00, -0.9041172563704750D+00, -0.7699026741943050D+00, -0.5873179542866171D+00, -0.3678314989981802D+00, -0.1252334085114692D+00	
 			W =  0.4717533638651177D-01,  0.1069393259953183D+00,  0.1600783285433464D+00,  0.2031674267230659D+00,  0.2334925365383547D+00,  0.2491470458134029D+00	
 		} else {
-			X = -0.9931285991850949D+00, -0.9639719272779138D+00, -0.9122344282513259D+00, -0.8391169718222188D+00, -0.7463319064601508D+00,
+			_X = -0.9931285991850949D+00, -0.9639719272779138D+00, -0.9122344282513259D+00, -0.8391169718222188D+00, -0.7463319064601508D+00,
 			    -0.6360536807265150D+00, -0.5108670019508271D+00, -0.3737060887154196D+00, -0.2277858511416451D+00, -0.7652652113349733D-01
 
 			W =  0.1761400713915212D-01,  0.4060142980038694D-01,  0.6267204833410906D-01,  0.8327674157670475D-01,  0.1019301198172404D+00,
 			     0.1181945319615184D+00,  0.1316886384491766D+00,  0.1420961093183821D+00,  0.1491729864726037D+00,  0.1527533871307259D+00
 		}
-		X = 1:-X, 1:+X
+		_X = 1:-_X, 1:+_X
 		W = W, W
 
 		HK = x1:*x2; if (rows(m)) HK = m :* HK
 		HS = x1:*x1 + x2:*x2
 		asinr = asin(r) 
-		sn = sin((asinr * 0.5) * X); sn2 = sn + sn
+		sn = sin((asinr * 0.5) * _X); sn2 = sn + sn
 		asinr = asinr * 0.079577471545947673 // 1/(2 * tau)
-		return ( normal(x1):*normal(x2) + quadrowsum(W:*exp((HK*sn2:-HS):/(2:-sn2:*sn))) :* (rows(m)?m*asinr:asinr) )
+		return ( normal(x1) :* normal(x2) + quadrowsum(W :* exp((HK * sn2 :- HS) :/ (2 :- sn2 :* sn))) :* (rows(m)? m * asinr : asinr) )
 	}
 
 	negx2 = -x2
@@ -465,27 +451,27 @@ real colvector binormalGenz(real colvector x1, real colvector x2, real scalar r,
 	}
 	HK = x1 :* *px2 * 0.5
 	if (absr < 1) {
-		X = -0.9931285991850949D+00, -0.9639719272779138D+00, -0.9122344282513259D+00, -0.8391169718222188D+00, -0.7463319064601508D+00,
+		_X = -0.9931285991850949D+00, -0.9639719272779138D+00, -0.9122344282513259D+00, -0.8391169718222188D+00, -0.7463319064601508D+00,
 		    -0.6360536807265150D+00, -0.5108670019508271D+00, -0.3737060887154196D+00, -0.2277858511416451D+00, -0.7652652113349733D-01
 
 		W =  0.1761400713915212D-01,  0.4060142980038694D-01,  0.6267204833410906D-01,  0.8327674157670475D-01,  0.1019301198172404D+00,
 		     0.1181945319615184D+00,  0.1316886384491766D+00,  0.1420961093183821D+00,  0.1491729864726037D+00,  0.1527533871307259D+00
-		X = 1:-X, 1:+X
+		_X = 1:-_X, 1:+_X
 		W = W, W
 
 		a = sqrt(as = (1-r)*(1+r))
 		B = abs(x1 + *px2); BS = B :* B
 		C = 2 :+ HK
-		D = 6 :+ HK
+		_D = 6 :+ HK
 		asinr = HK - BS/(as+as)
-		retval = a * exp(asinr) :* (1:-C:*(BS:-as):*(0.083333333333333333:-D:*BS*0.0020833333333333333) + C:*D:*(as*as*0.00625)) -
-		              exp(HK) :* normal(B/-a) :* B :* (/*sqrt(tau)*/2.5066282746310002 :- C:*BS:*(/*sqrt(tau)/12*/0.20888568955258335:-D:*BS*/*sqrt(tau)/480*/0.0052221422388145835)) 
+		retval = a * exp(asinr) :* (1:-C:*(BS:-as):*(0.083333333333333333:-_D:*BS*0.0020833333333333333) + C:*_D:*(as*as*0.00625)) -
+		              exp(HK) :* normal(B/-a) :* B :* (/*sqrt(tau)*/2.5066282746310002 :- C:*BS:*(/*sqrt(tau)/12*/0.20888568955258335:-_D:*BS*/*sqrt(tau)/480*/0.0052221422388145835)) 
 
 		a = a * 0.5
-		xs = a*X; xs = xs :* xs
+		xs = a*_X; xs = xs :* xs
 		rs = sqrt(1 :- xs)
 		asinr = HK :- BS * 1:/(xs+xs)
-		retval = (retval + quadrowsum((a*W) :* (exp(asinr) :* ( exp(HK*((1:-rs):/(1:+rs))):/rs - (1 :+ C*(xs*.25):*(1:+D*(xs*.125))) ))))/-6.2831853071795862
+		retval = (retval + quadrowsum((a*W) :* (exp(asinr) :* ( exp(HK*((1:-rs):/(1:+rs))):/rs - (1 :+ C*(xs*.25):*(1:+_D*(xs*.125))) ))))/-6.2831853071795862
 		if (rows(m)) {
 			if (r<0)				
 				return ((m:<0):*(retval + rowmin((normalx1,normalx2))) - (m:>0):*(retval + (x1:>=negx2):*((x1:>x2):*(normalnegx1-normalx2)+(x1:<=x2):*(normalnegx2-normalx1)))) // slow but max precision
@@ -505,7 +491,7 @@ real colvector binormalGenz(real colvector x1, real colvector x2, real scalar r,
 	return (normal(rowmin((x1,x2))))
 }
 
-/*SpGr(dim, k): function for generating nodes & weights for nested sparse grids intergration with Gaussian weights
+/*SpGr(dim, k): function for generating nodes & weights for nested sparse grids integration with Gaussian weights
 dim  : dimension of the integration problem
 k    : Accuracy level. The rule will be exact for polynomial up to total order 2k-1
 Returns 1x2 vector of pointers to matrices: nodes and weights
@@ -513,7 +499,7 @@ correspond to Heiss and Winschel GQN & KPN types
 Adapted with permission from Florian Heiss & Viktor Winschel, https://web.archive.org/web/20181007012445/http://sparse-grids.de/stata/build_nwspgr.do.
 Sources: Florian Heiss and Viktor Winschel, "Likelihood approximation by numerical integration on sparse grids", Journal of Econometrics 144(1): 62-80.
          A. Genz and B. D. Keister (1996): "Fully symmetric interpolatory rules for multiple integrals over infinite regions with Gaussian weight." Journal of Computational and Applied Mathematics 71, 299-309.*/
-pointer (real matrix) rowvector SpGr(real scalar dim, real scalar k) {
+pointer (real matrix) rowvector cmp_model::SpGr(real scalar dim, real scalar k) {
 	pointer colvector n1d, w1d
 	real matrix nodes, is, t
 	pointer (real matrix) rowvector newnw
@@ -577,7 +563,7 @@ pointer (real matrix) rowvector SpGr(real scalar dim, real scalar k) {
 
 // SpGrGetSeq(): generate all d-length sequences of positive integers summing to norm
 //     Output: one sequence per row
-real matrix SpGrGetSeq(real scalar d, real scalar norm) {
+real matrix cmp_model::SpGrGetSeq(real scalar d, real scalar norm) {
 	real scalar i; real matrix retval
 	if (d==1) return (norm)
 	retval = norm-d+1, J(1,d-1,1)
@@ -592,29 +578,29 @@ real matrix SpGrGetSeq(real scalar d, real scalar norm) {
 //     n1d : vector of pointers to 1D weights 
 // Output:
 //     out  = pair of pointers to nodes and weights
-pointer (real matrix) rowvector SpGrKronProd(pointer colvector n1d, pointer colvector w1d){
+pointer (real matrix) rowvector cmp_model::SpGrKronProd(pointer colvector n1d, pointer colvector w1d){
   real matrix nodes; real colvector weights; real scalar j
   nodes = *n1d[1]; weights = *w1d[1]
   for(j=2; j<=rows(n1d); j++){  
-    nodes = J(rows(*n1d[j]),1,nodes), *n1d[j]#J(rows(nodes),1,1)
+    nodes = J(rows(*n1d[j]),1,nodes), *n1d[j] # J(rows(nodes),1,1)
     weights = *w1d[j] # weights
   }
   return(&nodes, &weights)
 }
 
 // build database of KPN nodes
-pointer colvector KPNn1d() {
+pointer colvector cmp_model::KPNn1d() {
 	pointer colvector n1d
 	n1d = J(25, 1, NULL)
-	n1d[1]=&0
-	n1d[2]=
-	n1d[3]=&(0 \ 1.bb67ae8584caaX+000)
-	n1d[4]=&(0 \ 1.7b70d986e371bX-001 \ 1.bb67ae8584caaX+000 \ 1.0bd651c3c6940X+002)
+	n1d[1]= &0
+	n1d[2]= 
+	n1d[3]= &(0 \ 1.bb67ae8584caaX+000)
+	n1d[4]= &(0 \ 1.7b70d986e371bX-001 \ 1.bb67ae8584caaX+000 \ 1.0bd651c3c6940X+002)
 	n1d[5]=
 	n1d[6]=
 	n1d[7]=
-	n1d[8] =&(0 \ 1.7b70d986e371bX-001 \ 1.bb67ae8584caaX+000 \ 1.6e3e68bdf05c1X+001 \ 1.0bd651c3c6940X+002)
-	n1d[9] =&(0 \ 1.7b70d986e371bX-001 \ 1.3afd0b145f6cbX+000 \ 1.bb67ae8584caaX+000 \ 1.4c4c73966ac4cX+001 \ 1.6e3e68bdf05c1X+001 \ 1.0bd651c3c6940X+002 \ 1.4bf8121fd06beX+002 \ 1.9741dafb2e279X+002)
+	n1d[8]= &(0 \ 1.7b70d986e371bX-001 \ 1.bb67ae8584caaX+000 \ 1.6e3e68bdf05c1X+001 \ 1.0bd651c3c6940X+002)
+	n1d[9]= &(0 \ 1.7b70d986e371bX-001 \ 1.3afd0b145f6cbX+000 \ 1.bb67ae8584caaX+000 \ 1.4c4c73966ac4cX+001 \ 1.6e3e68bdf05c1X+001 \ 1.0bd651c3c6940X+002 \ 1.4bf8121fd06beX+002 \ 1.9741dafb2e279X+002)
 	n1d[10]=
 	n1d[11]=
 	n1d[12]=
@@ -634,18 +620,18 @@ pointer colvector KPNn1d() {
 	return (n1d)
 }
 // build database of KPN weights
-pointer colvector KPNw1d() {
+pointer colvector cmp_model::KPNw1d() {
 	pointer colvector w1d
 	w1d = J(25, 1, NULL)
-	w1d[1]=&1
-	w1d[2]=
-	w1d[3]=&(1.5555555555556X-001 \ 1.5555555555555X-003)
-	w1d[4]=&(1.d5c136f97eb9fX-002 \ 1.0d103a2317c43X-003 \ 1.1bc1d1bdbe6a5X-003 \ 1.6cbd25ab17686X-00b)
-	w1d[5]=
-	w1d[6]=
-	w1d[7]=
-	w1d[8]=&(1.0410410410414X-002 \ 1.148e5d741b005X-002 \ 1.84826d9d7c2efX-004 \ 1.06060a315d4a6X-007 \ 1.8b650f2e8fcd4X-00e)
-	w1d[9]=&(1.11540fa7752daX-002 \ 1.04abb319cb636X-002 \ 1.d1109e29589b7X-007 \ 1.6b3cc5404fbb8X-004 \ 1.01a52daa57d1aX-009 \ 1.ccf2379939783X-008 \ 1.bb13c34bd0925X-00e \ -1.b87f927a33201X-015 \ 1.6b1f4ed2fa996X-01a)
+	w1d[1]= &1
+	w1d[2]= 
+	w1d[3]= &(1.5555555555556X-001 \ 1.5555555555555X-003)
+	w1d[4]= &(1.d5c136f97eb9fX-002 \ 1.0d103a2317c43X-003 \ 1.1bc1d1bdbe6a5X-003 \ 1.6cbd25ab17686X-00b)
+	w1d[5]= 
+	w1d[6]= 
+	w1d[7]= 
+	w1d[8]= &(1.0410410410414X-002 \ 1.148e5d741b005X-002 \ 1.84826d9d7c2efX-004 \ 1.06060a315d4a6X-007 \ 1.8b650f2e8fcd4X-00e)
+	w1d[9]= &(1.11540fa7752daX-002 \ 1.04abb319cb636X-002 \ 1.d1109e29589b7X-007 \ 1.6b3cc5404fbb8X-004 \ 1.01a52daa57d1aX-009 \ 1.ccf2379939783X-008 \ 1.bb13c34bd0925X-00e \ -1.b87f927a33201X-015 \ 1.6b1f4ed2fa996X-01a)
 	w1d[10]=
 	w1d[11]=
 	w1d[12]=
@@ -661,25 +647,23 @@ pointer colvector KPNw1d() {
 	w1d[22]=
 	w1d[23]=
 	w1d[24]=
-	w1d[25]= KPNw1d25()
+	w1d[25]= &(1.0df3f89599c82X-00b \ 1.88b98713549feX-003 \ 1.2f3fc28a6ceecX-003 \ 1.7a536f88daddaX-004 \ 1.72e1ccce26990X-005 \ 1.00cb504b73588X-006 \ 1.9d97350f96961X-009 \ 1.2ef3e06f24d86X-009 \ 1.ad5e22af36681X-00b \ 1.209cbfeab0317X-00c \ 1.2bb830e618c44X-00f \ 1.6efb1b7210daeX-013 \ 1.08f607cf1c672X-016 \ 1.6f8ca9924e87bX-01a \ 1.f9e7977b533b5X-020 \ 1.b3e53215c6f94X-027 \ 1.88b784334d04dX-030 \ 1.3720030162321X-03c)
 	return (w1d)
 }
-pointer(real colvector) scalar KPNw1d25() // hack to get around Mata "no room to add more double literals" compiler error
-	return(&(1.0df3f89599c82X-00b \ 1.88b98713549feX-003 \ 1.2f3fc28a6ceecX-003 \ 1.7a536f88daddaX-004 \ 1.72e1ccce26990X-005 \ 1.00cb504b73588X-006 \ 1.9d97350f96961X-009 \ 1.2ef3e06f24d86X-009 \ 1.ad5e22af36681X-00b \ 1.209cbfeab0317X-00c \ 1.2bb830e618c44X-00f \ 1.6efb1b7210daeX-013 \ 1.08f607cf1c672X-016 \ 1.6f8ca9924e87bX-01a \ 1.f9e7977b533b5X-020 \ 1.b3e53215c6f94X-027 \ 1.88b784334d04dX-030 \ 1.3720030162321X-03c))
 
 // build database of classic Gaussian quadrature node points, which are optimal (fewer) in 1- and 2-dimensional case
-pointer colvector GQNw1d() {
+pointer colvector cmp_model::GQNw1d() {
 	pointer colvector w1d
-	w1d = J(17, 1, NULL)
-	w1d[1]=&1
-	w1d[2]=&0.5
-	w1d[3]=&(1.5555555555555X-001 \ 1.5555555555558X-003)
-	w1d[4]=&(1.d105eb806161eX-002 \ 1.77d0a3fcf4f09X-005)
-	w1d[5]=&(1.1111111111112X-001 \ 1.c6cfbdb1f1fa3X-003 \ 1.70e202bebe3a7X-007)
-	w1d[6]=&(1.a2a3ee29aae1dX-002 \ 1.6af858329214cX-004 \ 1.4efde4d84c7a5X-009)
-	w1d[7]=&(1.d41d41d41d425X-002 \ 1.ebc5b378f5f4bX-003 \ 1.f7ecba63d3cabX-006 \ 1.1f7366724faa9X-00b)
-	w1d[8]=&(1.7df6ecdef47e1X-002 \ 1.e036f41317d11X-004 \ 1.3bba15a77e75dX-007 \ 1.d856f0999f3a6X-00e)
-	w1d[9]=&(1.a01a01a01a023X-002 \ 1.f3e9643fc0922X-003 \ 1.98ea4ad2e4eb8X-005 \ 1.6d940d8468e15X-009 \ 1.76e6ab51a9110X-010)
+	w1d = J(25, 1, NULL)
+	w1d[1] =&1
+	w1d[2] =&0.5
+	w1d[3] =&(1.5555555555555X-001 \ 1.5555555555558X-003)
+	w1d[4] =&(1.d105eb806161eX-002 \ 1.77d0a3fcf4f09X-005)
+	w1d[5] =&(1.1111111111112X-001 \ 1.c6cfbdb1f1fa3X-003 \ 1.70e202bebe3a7X-007)
+	w1d[6] =&(1.a2a3ee29aae1dX-002 \ 1.6af858329214cX-004 \ 1.4efde4d84c7a5X-009)
+	w1d[7] =&(1.d41d41d41d425X-002 \ 1.ebc5b378f5f4bX-003 \ 1.f7ecba63d3cabX-006 \ 1.1f7366724faa9X-00b)
+	w1d[8] =&(1.7df6ecdef47e1X-002 \ 1.e036f41317d11X-004 \ 1.3bba15a77e75dX-007 \ 1.d856f0999f3a6X-00e)
+	w1d[9] =&(1.a01a01a01a023X-002 \ 1.f3e9643fc0922X-003 \ 1.98ea4ad2e4eb8X-005 \ 1.6d940d8468e15X-009 \ 1.76e6ab51a9110X-010)
 	w1d[10]=&(1.60e9eb9566811X-002 \ 1.15787acb87a16X-003 \ 1.391fc74e7189cX-006 \ 1.8d728ef7a4755X-00b \ 1.214872c35b4dfX-012)
 	w1d[11]=&(1.7a463005e918fX-002 \ 1.f01baeaddb005X-003 \ 1.0ee78075fa6f1X-004 \ 1.b86bad4e71d18X-008 \ 1.9a5a915200b18X-00d \ 1.b409da81c1130X-015)
 	w1d[12]=&(1.496261e3f1ff8X-002 \ 1.2cfd0f478e08eX-003 \ 1.dd0c3d967e08aX-006 \ 1.20cd2ffcb8399X-009 \ 1.95c5c15728197X-00f \ 1.421b5e3a9a562X-017)
@@ -688,33 +672,29 @@ pointer colvector GQNw1d() {
 	w1d[15]=&(1.45e5d2ba42e9fX-002 \ 1.dc1530e4db087X-003 \ 1.6e415aaec396bX-004 \ 1.1c855660dc3c2X-006 \ 1.9adf94e023fc0X-00a \ 1.d94c2be3fe52aX-00f \ 1.40cd8aa6ea5efX-015 \ 1.d8389345109e0X-01f)
 	w1d[16]=&(1.257237eb1f12bX-002 \ 1.4446e8a55664eX-003 \ 1.835b501eb7e7eX-005 \ 1.dc3efb56d343fX-008 \ 1.13c480766c610X-00b \ 1.00b123449bbfeX-010 \ 1.19350d272303bX-017 \ 1.495f790d999f3X-021)
 	w1d[17]=&(1.32ba2fbe5d1aeX-002 \ 1.d04b65a55e84cX-003 \ 1.8ef9fba90df96X-004 \ 1.7a4075398fbccX-006 \ 1.76ba4fad552feX-009 \ 1.615a26057b77bX-00d \ 1.0d494ed8ab7b5X-012 \ 1.e269dadb1cac0X-01a \ 1.c6a33273c5c56X-024)
-	return (w1d \ GQNw1d18())
-}
-pointer colvector GQNw1d18() {
-	pointer colvector w1d
-	w1d = J(8, 1, NULL)
-	w1d[1]=&(1.17547cfef2f46X-002 \ 1.491560695d193X-003 \ 1.c1b695253803aX-005 \ 1.589af1e7fc724X-007 \ 1.174f796af7002X-00a \ 1.b2856c34a4c40X-00f \ 1.12388bd5565c6X-014 \ 1.95d273b675690X-01c \ 1.36ca30ad426f8X-026)
-	w1d[2]=&(1.2295709965ab9X-002 \ 1.c47d16a1bd936X-003 \ 1.a85c4efbf3d6bX-004 \ 1.d5acd11d5e8b3X-006 \ 1.2762dcb9ca37eX-008 \ 1.8ce362e7050adX-00c \ 1.018cab7a125b2X-010 \ 1.0fe5225d2e717X-016 \ 1.4f73f6cb14e42X-01e \ 1.a53ef230db9faX-029)
-	w1d[3]=&(1.0b0d563a28710X-002 \ 1.4b3dfdef813beX-003 \ 1.f7dc361055131X-005 \ 1.caae5f0667284X-007 \ 1.dfc024629beb9X-00a \ 1.0e2b151900242X-00d \ 1.276bdd4d66a02X-012 \ 1.072c77c840896X-018 \ 1.10e7d83542f2aX-020 \ 1.1b3b45ae1f15eX-02b)
-	w1d[4]=&(1.14bf15e76d04cX-002 \ 1.b900e215176feX-003 \ 1.bbf98c9e7772bX-004 \ 1.16240901614afX-005 \ 1.a608303b60f73X-008 \ 1.7338910139939X-00b \ 1.61ef604c7b84aX-00f \ 1.48edbe3f7951cX-014 \ 1.f2718419f6999X-01b \ 1.b5a35749021e1X-023 \ 1.7a1ee275317e1X-02e)
-	w1d[5]=&(1.003fdb7d7f495X-002 \ 1.4b9586d9d3975X-003 \ 1.133c707ffb8c5X-004 \ 1.1fda085c6c27eX-006 \ 1.702661aee92fbX-009 \ 1.1306235b39102X-00c \ 1.bfd11211e61bbX-011 \ 1.647771ec3c191X-016 \ 1.ceb0afd401710X-01d \ 1.5a4342ed6e5acX-025 \ 1.f57170af1a7b8X-031)
-	w1d[6]=&(1.08b6c709e2b6cX-002 \ 1.adff55d2841ebX-003 \ 1.cb0d75907c529X-004 \ 1.3e66645c9c42dX-005 \ 1.19238f0cff5bbX-007 \ 1.32163b3f699f4X-00a \ 1.87c846af16c00X-00e \ 1.127946272007dX-012 \ 1.78e2d51532124X-018 \ 1.a5b629c720c4fX-01f \ 1.0ea10bc809809X-027 \ 1.4a730b4f958dcX-033)
-	w1d[7]=&(1.ed4d4fa6da3d6X-003 \ 1.4aab48fb22861X-003 \ 1.27323497f4f17X-004 \ 1.5a224f9483d2bX-006 \ 1.049c6d4cc0b24X-008 \ 1.e74afb2f16fd5X-00c \ 1.0d3b7ff451495X-00f \ 1.46dcf0c7d6da6X-014 \ 1.858c04de91929X-01a \ 1.79f03beeecf96X-021 \ 1.a244d6f97e2fcX-02a \ 1.b10bd7013194eX-036)
-	w1d[8]=&(1.fc403679615eeX-003 \ 1.a388ef3dc31c8X-003 \ 1.d68d614d1d96cX-004 \ 1.635e64257cda4X-005 \ 1.63c111f64510bX-007 \ 1.cccf5801e9c6eX-00a \ 1.74cde1a66238cX-00d \ 1.661974c8c9745X-011 \ 1.7b0c183df3fb2X-016 \ 1.8a50622866c6cX-01c \ 1.4d791bd04ec6dX-023 \ 1.3fd9ac565f9a5X-02c \ 1.1a3e0c7f3a049X-038)
+	w1d[18]=&(1.17547cfef2f46X-002 \ 1.491560695d193X-003 \ 1.c1b695253803aX-005 \ 1.589af1e7fc724X-007 \ 1.174f796af7002X-00a \ 1.b2856c34a4c40X-00f \ 1.12388bd5565c6X-014 \ 1.95d273b675690X-01c \ 1.36ca30ad426f8X-026)
+	w1d[19]=&(1.2295709965ab9X-002 \ 1.c47d16a1bd936X-003 \ 1.a85c4efbf3d6bX-004 \ 1.d5acd11d5e8b3X-006 \ 1.2762dcb9ca37eX-008 \ 1.8ce362e7050adX-00c \ 1.018cab7a125b2X-010 \ 1.0fe5225d2e717X-016 \ 1.4f73f6cb14e42X-01e \ 1.a53ef230db9faX-029)
+	w1d[20]=&(1.0b0d563a28710X-002 \ 1.4b3dfdef813beX-003 \ 1.f7dc361055131X-005 \ 1.caae5f0667284X-007 \ 1.dfc024629beb9X-00a \ 1.0e2b151900242X-00d \ 1.276bdd4d66a02X-012 \ 1.072c77c840896X-018 \ 1.10e7d83542f2aX-020 \ 1.1b3b45ae1f15eX-02b)
+	w1d[21]=&(1.14bf15e76d04cX-002 \ 1.b900e215176feX-003 \ 1.bbf98c9e7772bX-004 \ 1.16240901614afX-005 \ 1.a608303b60f73X-008 \ 1.7338910139939X-00b \ 1.61ef604c7b84aX-00f \ 1.48edbe3f7951cX-014 \ 1.f2718419f6999X-01b \ 1.b5a35749021e1X-023 \ 1.7a1ee275317e1X-02e)
+	w1d[22]=&(1.003fdb7d7f495X-002 \ 1.4b9586d9d3975X-003 \ 1.133c707ffb8c5X-004 \ 1.1fda085c6c27eX-006 \ 1.702661aee92fbX-009 \ 1.1306235b39102X-00c \ 1.bfd11211e61bbX-011 \ 1.647771ec3c191X-016 \ 1.ceb0afd401710X-01d \ 1.5a4342ed6e5acX-025 \ 1.f57170af1a7b8X-031)
+	w1d[23]=&(1.08b6c709e2b6cX-002 \ 1.adff55d2841ebX-003 \ 1.cb0d75907c529X-004 \ 1.3e66645c9c42dX-005 \ 1.19238f0cff5bbX-007 \ 1.32163b3f699f4X-00a \ 1.87c846af16c00X-00e \ 1.127946272007dX-012 \ 1.78e2d51532124X-018 \ 1.a5b629c720c4fX-01f \ 1.0ea10bc809809X-027 \ 1.4a730b4f958dcX-033)
+	w1d[24]=&(1.ed4d4fa6da3d6X-003 \ 1.4aab48fb22861X-003 \ 1.27323497f4f17X-004 \ 1.5a224f9483d2bX-006 \ 1.049c6d4cc0b24X-008 \ 1.e74afb2f16fd5X-00c \ 1.0d3b7ff451495X-00f \ 1.46dcf0c7d6da6X-014 \ 1.858c04de91929X-01a \ 1.79f03beeecf96X-021 \ 1.a244d6f97e2fcX-02a \ 1.b10bd7013194eX-036)
+	w1d[25]=&(1.fc403679615eeX-003 \ 1.a388ef3dc31c8X-003 \ 1.d68d614d1d96cX-004 \ 1.635e64257cda4X-005 \ 1.63c111f64510bX-007 \ 1.cccf5801e9c6eX-00a \ 1.74cde1a66238cX-00d \ 1.661974c8c9745X-011 \ 1.7b0c183df3fb2X-016 \ 1.8a50622866c6cX-01c \ 1.4d791bd04ec6dX-023 \ 1.3fd9ac565f9a5X-02c \ 1.1a3e0c7f3a049X-038)
 	return (w1d)
 }
-pointer colvector GQNn1d() {
+
+pointer colvector cmp_model::GQNn1d() {
 	pointer colvector n1d
-	n1d = J(17, 1, NULL)
-	n1d[1]=&(0.0000000000000X-3ff)
-	n1d[2]=&(1.0000000000001X+000)
-	n1d[3]=&(0.0000000000000X-3ff \ 1.bb67ae8584caaX+000)
-	n1d[4]=&(1.7be2ad58cb0ffX-001 \ 1.2ace15c98aa9fX+001)
-	n1d[5]=&(0.0000000000000X-3ff \ 1.5b0a513c97441X+000 \ 1.6db131839e414X+001)
-	n1d[6]=&(1.3bc0f75835b11X-001 \ 1.e3a107c35822eX+000 \ 1.a98144804badfX+001)
-	n1d[7]=&(0.0000000000000X-3ff \ 1.27871ca8bbf03X+000 \ 1.2ef1f8ed4d738X+001 \ 1.e00e689ea0325X+001)
-	n1d[8]=&(1.140244df60425X-001 \ 1.a2f2e9768a3f2X+000 \ 1.66b7db50ddbecX+001 \ 1.094042d748ee4X+002)
-	n1d[9]=&(0.0000000000000X-3ff \ 1.05f4154b6bccfX+000 \ 1.09d6279197adaX+001 \ 1.9a4b7f60758f2X+001 \ 1.20d0d4069d86cX+002)
+	n1d = J(25, 1, NULL)
+	n1d[1] =&(0.0000000000000X-3ff)
+	n1d[2] =&(1.0000000000001X+000)
+	n1d[3] =&(0.0000000000000X-3ff \ 1.bb67ae8584caaX+000)
+	n1d[4] =&(1.7be2ad58cb0ffX-001 \ 1.2ace15c98aa9fX+001)
+	n1d[5] =&(0.0000000000000X-3ff \ 1.5b0a513c97441X+000 \ 1.6db131839e414X+001)
+	n1d[6] =&(1.3bc0f75835b11X-001 \ 1.e3a107c35822eX+000 \ 1.a98144804badfX+001)
+	n1d[7] =&(0.0000000000000X-3ff \ 1.27871ca8bbf03X+000 \ 1.2ef1f8ed4d738X+001 \ 1.e00e689ea0325X+001)
+	n1d[8] =&(1.140244df60425X-001 \ 1.a2f2e9768a3f2X+000 \ 1.66b7db50ddbecX+001 \ 1.094042d748ee4X+002)
+	n1d[9] =&(0.0000000000000X-3ff \ 1.05f4154b6bccfX+000 \ 1.09d6279197adaX+001 \ 1.9a4b7f60758f2X+001 \ 1.20d0d4069d86cX+002)
 	n1d[10]=&(1.f092fc71c448cX-002 \ 1.774b0fb0b3e2fX+000 \ 1.3dfe63a13936dX+001 \ 1.ca793120f33dbX+001 \ 1.37017060f4281X+002)
 	n1d[11]=&(0.0000000000000X-3ff \ 1.db94b79c0a3abX-001 \ 1.e043d4c1b73c5X+000 \ 1.6ebc5b10fd018X+001 \ 1.f7d44eb09d822X+001 \ 1.4c0836499312fX+002)
 	n1d[12]=&(1.c711949e60909X-002 \ 1.5722d43422c04X+000 \ 1.21362191c2f29X+001 \ 1.9ca2860f2e400X+001 \ 1.1165983dc4e75X+002 \ 1.600ec605ccc6dX+002)
@@ -723,24 +703,19 @@ pointer colvector GQNn1d() {
 	n1d[15]=&(0.0000000000000X-3ff \ 1.992771fb7948dX-001 \ 1.9b5159e0a1de5X+000 \ 1.375a1706cbe4dX+001 \ 1.a500a723520f6X+001 \ 1.0c8eaac9c7e65X+002 \ 1.4c2a7e4f7553aX+002 \ 1.974aec15fe3bcX+002)
 	n1d[16]=&(1.8c0af8ced8268X-002 \ 1.29f0b43504447X+000 \ 1.f3b4fbe349534X+000 \ 1.614fb5b04289bX+001 \ 1.cce96d4a6c431X+001 \ 1.1f8c9465ada5bX+002 \ 1.5e38f22ad8822X+002 \ 1.a8604ef376e7bX+002)
 	n1d[17]=&(0.0000000000000X-3ff \ 1.80f1836b86908X-001 \ 1.8287b663c367eX+000 \ 1.23f871ecb6a1dX+001 \ 1.89722f93492fdX+001 \ 1.f3355a79cee0fX+001 \ 1.31d3762917467X+002 \ 1.6fa53be2c1437X+002 \ 1.b8e761ce5f5f2X+002)
-	return (n1d \ GQNn1d18())
-}
-pointer colvector GQNn1d18() {
-	pointer colvector n1d
-	n1d = J(8, 1, NULL)
-	n1d[1]=&(1.7602fbbba22caX-002 \ 1.193072dc46a64X+000 \ 1.d6fbd122b7929X+000 \ 1.4c44473fdd49dX+001 \ 1.aff75de6e4410X+001 \ 1.0c088602756abX+002 \ 1.4375ed47e5578X+002 \ 1.807ee8b4fde66X+002 \ 1.c8ecfdf981a52X+002)
-	n1d[2]=&(0.0000000000000X-3ff \ 1.6c96693043f6bX-001 \ 1.6dcadca1c617aX+000 \ 1.13e783b5259f8X+001 \ 1.72f3581f62135X+001 \ 1.d50b99f71c617X+001 \ 1.1dd0db6c15d13X+002 \ 1.5483ab02758aeX+002 \ 1.90d3356de8734X+002 \ 1.d87c2cbb1629dX+002)
-	n1d[3]=&(1.634a926e31cc3X-002 \ 1.0afe77649f855X+000 \ 1.bec88746540b3X+000 \ 1.3ab57d3cecdfdX+001 \ 1.9831a333c7333X+001 \ 1.f8d3ec11c84feX+001 \ 1.2f03616d7eb60X+002 \ 1.650a0e7d0f317X+002 \ 1.a0ad8256821f3X+002 \ 1.e79e7dc649aafX+002)
-	n1d[4]=&(0.0000000000000X-3ff \ 1.5b28ce1473d5dX-001 \ 1.5c199cece9271X+000 \ 1.0648fd5ba8a05X+001 \ 1.60136e491d115X+001 \ 1.bc23efb4dcdfbX+001 \ 1.0db7cfd1dc8e7X+002 \ 1.3fad7d40e26dcX+002 \ 1.7514984550ddcX+002 \ 1.b017ab96e92dbX+002 \ 1.f65c4a1312ec3X+002)
-	n1d[5]=&(1.5320aba86f5ecX-002 \ 1.fd85edd3b9dcdX-001 \ 1.aa0415e079011X+000 \ 1.2bbecaa391824X+001 \ 1.8425d25d6503fX+001 \ 1.dee95a373fc04X+001 \ 1.1e7cb6f266eabX+002 \ 1.4fdab7954e4f1X+002 \ 1.84ad428f4eb28X+002 \ 1.bf1a4da2ea0cbX+002 \ 1.025e7421097e3X+003)
-	n1d[6]=&(0.0000000000000X-3ff \ 1.4c046939a8fceX-001 \ 1.4cc4b44834a04X+000 \ 1.f5136b2368a4eX+000 \ 1.4fe9d63b33b83X+001 \ 1.a70b8d2ab336fX+001 \ 1.004e3d26ab08fX+002 \ 1.2ec42f6c9ccb9X+002 \ 1.5f9513ea54adcX+002 \ 1.93dcc5a2cb26bX+002 \ 1.cdbcfaed54d66X+002 \ 1.09636b181b8c7X+003)
-	n1d[7]=&(1.44fcaaa701e6fX-002 \ 1.e826eb1490d0aX-001 \ 1.97ee555ce0a70X+000 \ 1.1ec7a68b60b2cX+001 \ 1.72e8c5ada9cd9X+001 \ 1.c8df0b468b344X+001 \ 1.10aa1ffefe67aX+002 \ 1.3e983ad98d6f2X+002 \ 1.6ee554687c2dbX+002 \ 1.a2aacda3fd64aX+002 \ 1.dc06669272595X+002 \ 1.103fed2a77985X+003)
-	n1d[8]=&(0.0000000000000X-3ff \ 1.3eb3603832154X-001 \ 1.3f4fd66f2eea1X+000 \ 1.e086e5b79be9dX+000 \ 1.41da42df91e4bX+001 \ 1.94d5d55dc73a6X+001 \ 1.e9b71c20e3ca5X+001 \ 1.20924ecfc66b2X+002 \ 1.4e019b6f3f9fcX+002 \ 1.7dd32f47e7204X+002 \ 1.b11e255e18de2X+002 \ 1.e9fc869ed6452X+002 \ 1.16f68f680d2d2X+003)
+	n1d[18]=&(1.7602fbbba22caX-002 \ 1.193072dc46a64X+000 \ 1.d6fbd122b7929X+000 \ 1.4c44473fdd49dX+001 \ 1.aff75de6e4410X+001 \ 1.0c088602756abX+002 \ 1.4375ed47e5578X+002 \ 1.807ee8b4fde66X+002 \ 1.c8ecfdf981a52X+002)
+	n1d[19]=&(0.0000000000000X-3ff \ 1.6c96693043f6bX-001 \ 1.6dcadca1c617aX+000 \ 1.13e783b5259f8X+001 \ 1.72f3581f62135X+001 \ 1.d50b99f71c617X+001 \ 1.1dd0db6c15d13X+002 \ 1.5483ab02758aeX+002 \ 1.90d3356de8734X+002 \ 1.d87c2cbb1629dX+002)
+	n1d[20]=&(1.634a926e31cc3X-002 \ 1.0afe77649f855X+000 \ 1.bec88746540b3X+000 \ 1.3ab57d3cecdfdX+001 \ 1.9831a333c7333X+001 \ 1.f8d3ec11c84feX+001 \ 1.2f03616d7eb60X+002 \ 1.650a0e7d0f317X+002 \ 1.a0ad8256821f3X+002 \ 1.e79e7dc649aafX+002)
+	n1d[21]=&(0.0000000000000X-3ff \ 1.5b28ce1473d5dX-001 \ 1.5c199cece9271X+000 \ 1.0648fd5ba8a05X+001 \ 1.60136e491d115X+001 \ 1.bc23efb4dcdfbX+001 \ 1.0db7cfd1dc8e7X+002 \ 1.3fad7d40e26dcX+002 \ 1.7514984550ddcX+002 \ 1.b017ab96e92dbX+002 \ 1.f65c4a1312ec3X+002)
+	n1d[22]=&(1.5320aba86f5ecX-002 \ 1.fd85edd3b9dcdX-001 \ 1.aa0415e079011X+000 \ 1.2bbecaa391824X+001 \ 1.8425d25d6503fX+001 \ 1.dee95a373fc04X+001 \ 1.1e7cb6f266eabX+002 \ 1.4fdab7954e4f1X+002 \ 1.84ad428f4eb28X+002 \ 1.bf1a4da2ea0cbX+002 \ 1.025e7421097e3X+003)
+	n1d[23]=&(0.0000000000000X-3ff \ 1.4c046939a8fceX-001 \ 1.4cc4b44834a04X+000 \ 1.f5136b2368a4eX+000 \ 1.4fe9d63b33b83X+001 \ 1.a70b8d2ab336fX+001 \ 1.004e3d26ab08fX+002 \ 1.2ec42f6c9ccb9X+002 \ 1.5f9513ea54adcX+002 \ 1.93dcc5a2cb26bX+002 \ 1.cdbcfaed54d66X+002 \ 1.09636b181b8c7X+003)
+	n1d[24]=&(1.44fcaaa701e6fX-002 \ 1.e826eb1490d0aX-001 \ 1.97ee555ce0a70X+000 \ 1.1ec7a68b60b2cX+001 \ 1.72e8c5ada9cd9X+001 \ 1.c8df0b468b344X+001 \ 1.10aa1ffefe67aX+002 \ 1.3e983ad98d6f2X+002 \ 1.6ee554687c2dbX+002 \ 1.a2aacda3fd64aX+002 \ 1.dc06669272595X+002 \ 1.103fed2a77985X+003)
+	n1d[25]=&(0.0000000000000X-3ff \ 1.3eb3603832154X-001 \ 1.3f4fd66f2eea1X+000 \ 1.e086e5b79be9dX+000 \ 1.41da42df91e4bX+001 \ 1.94d5d55dc73a6X+001 \ 1.e9b71c20e3ca5X+001 \ 1.20924ecfc66b2X+002 \ 1.4e019b6f3f9fcX+002 \ 1.7dd32f47e7204X+002 \ 1.b11e255e18de2X+002 \ 1.e9fc869ed6452X+002 \ 1.16f68f680d2d2X+003)
 	return (n1d)
 }
 
 // vectorize binormal(). Accepts general covariance matrix, not just rho parameter. Optionally computes scores.
-real colvector vecbinormal(real matrix X, real matrix Sig, real colvector one2N, real scalar todo, real matrix dPhi_dX, real matrix dPhi_dSig) {
+real colvector cmp_model::vecbinormal(real matrix X, real matrix Sig, real colvector one2N, real scalar todo, real matrix dPhi_dX, real matrix dPhi_dSig) {
 	real colvector Phi, Xhat, X_2
 	real matrix dPhi_dSigDiag, phi, X_
 	real scalar rho
@@ -763,8 +738,8 @@ real colvector vecbinormal(real matrix X, real matrix Sig, real colvector one2N,
 
 // compute binormal(E1,E2,rho)-binormal(E1,F2,rho) so as to maximize precision. If midpoint between E2, F2 is >0, negate E2, F2, rho in order to take difference of smaller numbers
 // infsign flag indicate whether to interpret . in E1 as + or - infinity. 1=+, 0=-
-real colvector vecbinormal2(real colvector E1, real colvector E2, real colvector F2, real matrix Sig, real scalar infsign, real scalar flip, real colvector one2N,
-							real scalar todo, real matrix dPhi_dE1, real matrix dPhi_dE2, real matrix dPhi_dF2, real matrix dPhi_dSig) {
+real colvector cmp_model::vecbinormal2(real colvector E1, real colvector E2, real colvector F2, real matrix Sig, real scalar infsign, real scalar flip, real colvector one2N,
+							                         real scalar todo, real matrix dPhi_dE1, real matrix dPhi_dE2, real matrix dPhi_dF2, real matrix dPhi_dSig) {
 	real colvector Phi, E1hat, E2hat, F2hat, phiE1, phiE2, phiF2
 	real matrix dPhi_dSigDiagE, dPhi_dSigDiagF, dPhi_dXE, dPhi_dXF, dPhi_dSigE, dPhi_dSigF, E1E2hat, E1F2hat, t
 	real scalar rho, i1, i2
@@ -812,7 +787,7 @@ real colvector vecbinormal2(real colvector E1, real colvector E2, real colvector
 
 // neg_half_E_Dinvsym_E() -- compute -0.5 * inner product of given errors weighting by derivative of inverse of a symmetric matrix 
 // Passed +/- E times the inverse of X. Returns a matrix with one column for each of the N(N+1)/2 independent entries in X.
-real matrix neg_half_E_Dinvsym_E(real matrix E_invX, real colvector one2N, real matrix EDE) {
+real matrix cmp_model::neg_half_E_Dinvsym_E(real matrix E_invX, real colvector one2N, real matrix EDE) {
 	real colvector E_invX_j; real scalar N, j, l
 	if (N = cols(E_invX)) {
 		l = cols(EDE)
@@ -834,8 +809,8 @@ real matrix neg_half_E_Dinvsym_E(real matrix E_invX, real colvector one2N, real 
 // Returns a score matrix with one row for each observation and one column for each element of the lower triangle of
 // Var[in | out], ordered by the lists in parameters "in" and "out". E.g. if in=(1,3) and out=(2), then the column 
 // order corresponds to (1,1),(1,3),(1,2),(3,3),(3,2),(2,2)
-real matrix dPhi_dpE_dSig(real matrix E_out, real colvector one2N, real matrix beta, real matrix invSig_out, real matrix Sig_out_in, 
-					real matrix dPhi_dpE, real scalar lin, real scalar lout, real matrix scores, real matrix J_d_uncens_d_cens_0) {
+real matrix cmp_model::dPhi_dpE_dSig(real matrix E_out, real colvector one2N, real matrix beta, real matrix invSig_out, real matrix Sig_out_in, 
+					                           real matrix dPhi_dpE, real scalar lin, real scalar lout, real matrix scores, real matrix J_d_uncens_d_cens_0) {
 	real matrix neg_dbeta_dSig; real rowvector beta_j; real colvector invSig_out_j; real scalar i, j, l
 
 	l = lin + lout
@@ -866,8 +841,8 @@ real matrix dPhi_dpE_dSig(real matrix E_out, real colvector one2N, real matrix b
 // Argument -bounded- indicates which dimensions have lower bounds as well as upper bounds.
 // If argument log>0, returns Phi, not log Phi
 // returns scores if requested in dPhi_dE, dPhi_dF, dPhi_dSig. dPhi_dF must already be allocated
-real colvector vecmultinormal(real matrix E, real matrix F, real matrix Sig, real scalar d, real rowvector bounded, real colvector one2N, real scalar todo, 
-						real matrix dPhi_dE, real matrix dPhi_dF, real matrix dPhi_dSig, transmorphic ghk2DrawSet, real scalar ghkAnti, real scalar GHKStart, real scalar N_perm) {
+real colvector cmp_model::vecmultinormal(real matrix E, real matrix F, real matrix Sig, real scalar d, real rowvector bounded, real colvector one2N, real scalar todo, 
+						                             real matrix dPhi_dE, real matrix dPhi_dF, real matrix dPhi_dSig, transmorphic ghk2DrawSet, real scalar ghkAnti, real scalar GHKStart, real scalar N_perm) {
 	real matrix dPhi_dE1, dPhi_dE2, dPhi_dF1, dPhi_dF2, _dPhi_dF2, _dPhi_dE1, _dPhi_dF1, _dPhi_dSig
 	pragma unset dPhi_dE1; pragma unset dPhi_dE2; pragma unset dPhi_dF1; pragma unset dPhi_dF2; pragma unset _dPhi_dF2; pragma unset _dPhi_dE1; pragma unset _dPhi_dF1; pragma unset _dPhi_dSig
 	real colvector Phi
@@ -949,7 +924,7 @@ real colvector vecmultinormal(real matrix E, real matrix F, real matrix Sig, rea
 // Sig is the assumed covariance for the full error set and inds marks the observed variables assumed to have a joint normal distribution,
 // i.e., the ones not censored
 // dphi_dE should already be allocated
-real colvector lnLContinuous(pointer(struct subview scalar) scalar v, real scalar todo) {
+real colvector cmp_model::lnLContinuous(pointer(struct subview scalar) scalar v, real scalar todo) {
 	real matrix C, t, phi, invSig
 	C = luinv(cholesky(v->Omega[v->uncens, v->uncens])) // if uncens were before cens, then this would just be the upper left of cholesky(Omega)
 	phi = quadrowsum_lnnormalden(v->EUncens * C', quadsum(ln(diagonal(C)), 1))
@@ -966,7 +941,7 @@ real colvector cmp_model::lnLTrunc(pointer(struct subview scalar) scalar v, real
 	pragma unset dPhi_dEt; pragma unset dPhi_dFt; pragma unset dPhi_dSigt
 
 	Phi = vecmultinormal(*v->pEt, *v->pFt, v->Omega[v->trunc,v->trunc], v->d_trunc, v->one2d_trunc, v->one2N, todo, 
-							dPhi_dEt, dPhi_dFt, dPhi_dSigt, ghk2DrawSet, ghkAnti, v->GHKStartTrunc, 1)
+							         dPhi_dEt, dPhi_dFt, dPhi_dSigt, ghk2DrawSet, ghkAnti, v->GHKStartTrunc, 1)
 
 	if (todo) {
 		v->dPhi_dEt[v->one2N,v->trunc] = dPhi_dEt + dPhi_dFt
@@ -1015,7 +990,7 @@ real colvector cmp_model::lnLCensored(pointer(struct subview scalar) scalar v, r
 			}
 
 			Phi = vecmultinormal(*roprobit_pE, *pF, roprobit_pSig, v->dCensNonrobase, v->two_cens, v->one2N, todo, dPhi_dpE, v->dPhi_dpF, dPhi_dpSig, 
-			                                            ghk2DrawSet, ghkAnti, v->GHKStart, N_perm)
+			                     ghk2DrawSet, ghkAnti, v->GHKStart, N_perm)
 
       if (todo & NumRoprobitGroups) {
 				dPhi_dpE   = dPhi_dpE   * *roprobit_pQE'
@@ -1197,8 +1172,9 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
   mod->lf1(M, todo, b, lnf, S)
 }
 
+
 void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S) {
-	real matrix t, L_g, invGamma, C, dOmega_dSig
+	real matrix t, L_g, invGamma, C, dOmega_dSig, L_gv, L_gvr, sThetaScores, sCutScores
 	real scalar e, c, i, j, k, l, m, _l, r, tEq, EUncensEq, ECensEq, FCensEq, NewIter, eq, eq1, eq2, _eq, c1, c2, cut, lnsigWithin, lnsigAccross, atanhrhoAccross, atanhrhoWithin, Iter
 	real colvector shift, lnLmin, lnLmax, lnL, out, Fi
 	pointer(struct subview scalar) scalar v
@@ -1206,7 +1182,7 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
 	pointer(struct scores scalar) scalar pScores
 	pointer (struct RE scalar) scalar RE
 	pointer(pointer (real matrix) colvector) scalar pThisQuadXAdapt
-	pragma unset out
+	pragma unset out; pragma unset sThetaScores; pragma unset sCutScores
 
 	lnf = .
 
@@ -1378,7 +1354,7 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
 		for (v = subviews; v; v = v->next) {
 			tEq = EUncensEq = ECensEq = FCensEq = 0
 			for (i=1; i<=d; i++)
-				if (v->TheseInds[i]==6) {  // handle mprobit eqs below
+				if (v->TheseInds[i]==`cmp_mprobit') {  // handle mprobit eqs below
 					++ECensEq
 					++FCensEq
 				} else {
@@ -1386,19 +1362,19 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
 						v->theta[i].M = base->theta[i].M[v->SubsampleInds]
 
 						if (v->TheseInds[i] & v->TheseInds[i]<.) {
-							if (v->TheseInds[i]==1)
+							if (v->TheseInds[i]==`cmp_cont')
 								v->EUncens[v->one2N,++EUncensEq] = v->y[i].M - v->theta[i].M
 							else {
 								++ECensEq
-								if (v->TheseInds[i]==2 | v->TheseInds[i]==7)
+								if (v->TheseInds[i]==`cmp_left' | v->TheseInds[i]==`cmp_int')
 									setcol(v->pECens, ECensEq, v->y[i].M - v->theta[i].M)
-								else if (v->TheseInds[i]==3)
+								else if (v->TheseInds[i]==`cmp_right')
 									setcol(v->pECens, ECensEq, v->theta[i].M - v->y[i].M)
-								else if (v->TheseInds[i]==4)
+								else if (v->TheseInds[i]==`cmp_probit')
 									setcol(v->pECens, ECensEq, -v->theta[i].M)
-								else if (v->TheseInds[i]==8 | v->TheseInds[i]==10)
+								else if (v->TheseInds[i]==`cmp_probity1' | v->TheseInds[i]==`cmp_frac')
 									setcol(v->pECens, ECensEq, v->theta[i].M)
-								else if (v->TheseInds[i]==5) {
+								else if (v->TheseInds[i]==`cmp_oprobit') {
 									if (trunceqs[i]) {
 										t = v->y[i].M :> v->vNumCuts[i] // bit of inefficiency in truncated oprobit case
 										setcol(v->pECens, ECensEq, (t :* v->Ut[i].M + (1:-t) :* cuts[v->y[i].M:+1, i]) - v->theta[i].M)
@@ -1411,22 +1387,22 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
 									if (NonbaseCases[ECensEq]) {
 										++FCensEq
                     Fi = J(0,0,0)
-										if (v->TheseInds[i]==7)
+										if (v->TheseInds[i]==`cmp_int')
 											Fi = v->yL[i].M - v->theta[i].M
-										else if (v->TheseInds[i]==5)
+										else if (v->TheseInds[i]==`cmp_oprobit')
 											if (trunceqs[i]) {
 												t = v->y[i].M
 												Fi = (t :* v->Lt[i].M + (1:-t) :* cuts[v->y[i].M, i]) - v->theta[i].M
 											} else
 												Fi = cuts[ v->y[i].M, i] - v->theta[i].M
 										else if (trunceqs[i])
-											if (v->TheseInds[i]==2)
+											if (v->TheseInds[i]==`cmp_left')
 												Fi = v->Lt[i].M - v->theta[i].M
-											else if (v->TheseInds[i]==3)
+											else if (v->TheseInds[i]==`cmp_right')
 												Fi = v->theta[i].M - v->Ut[i].M
-											else if (v->TheseInds[i]==4)
+											else if (v->TheseInds[i]==`cmp_probit')
 												Fi = v->Lt[i].M - v->theta[i].M
-											else if (v->TheseInds[i]==8)
+											else if (v->TheseInds[i]==`cmp_probity1')
 												Fi = v->theta[i].M - v->Ut[i].M
                     if (rows(Fi)) setcol(v->pF, FCensEq, Fi)
 									}
@@ -1434,19 +1410,19 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
 
 							if (trunceqs[i]) {
 								++tEq
-								if (v->TheseInds[i]==2) {
+								if (v->TheseInds[i]==`cmp_left') {
 									setcol(v->pEt, tEq, v->Ut[i].M - v->theta[i].M)
 									setcol(v->pFt, tEq, Fi)
-								} else if (v->TheseInds[i]==3) {
+								} else if (v->TheseInds[i]==`cmp_right') {
 									setcol(v->pEt, tEq, v->theta[i].M - v->Lt[i].M)
 									setcol(v->pFt, tEq, Fi)
-								} else if (v->TheseInds[i]==4) {
+								} else if (v->TheseInds[i]==`cmp_probit') {
 									setcol(v->pEt, tEq, v->Ut[i].M - v->theta[i].M)
 									setcol(v->pFt, tEq, Fi)
-								} else if (v->TheseInds[i]==8) {
+								} else if (v->TheseInds[i]==`cmp_probity1') {
 									setcol(v->pEt, tEq, v->theta[i].M - v->Lt[i].M)
 									setcol(v->pFt, tEq, Fi)
-								} else if (anyof((1,5,7), v->TheseInds[i])) {
+								} else if (anyof((`cmp_cont',`cmp_oprobit',`cmp_int'), v->TheseInds[i])) {
 									setcol(v->pEt, tEq, v->Ut[i].M - v->theta[i].M)
 									setcol(v->pFt, tEq, v->Lt[i].M - v->theta[i].M)
 								}
@@ -1544,7 +1520,7 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
 		for (l=L-1; l; l--) {  // If L=1, sets l=0 as needed to terminate do loop. Usually this loop runs once.
 			RE = &((*REs)[l])
 
-			RE->lnLByDraw[RE->one2N, ThisDraw[l+1]] = cmp_panelsum(*((*REs)[l+1].plnL), (*REs)[l+1].Weights, RE->IDRangesGroup)
+			RE->lnLByDraw[RE->one2N, ThisDraw[l+1]] = _panelsum(*((*REs)[l+1].plnL), (*REs)[l+1].Weights, RE->IDRangesGroup)
 			if (ThisDraw[l+1] < RE->R)
 				ThisDraw[l+1] = ThisDraw[l+1] + 1
 			else {
@@ -1640,50 +1616,35 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
  			}
 
 			// finished the group's (adaptive) draws
-			if (todo) { // obs-level score for next level up is avg of scores over this level's draws, weighted by group's L for each draw
-				real matrix L_gv, L_gvr, sThetaScores, sCutScores
-				struct smatrix colvector sTScores, sGammaScores; sTScores=smatrix(L); sGammaScores=smatrix(sum(G))
-
+			if (todo) // obs-level score for next level up is avg of scores over this level's draws, weighted by group's L for each draw
 				for (v = subviews; v; v = v->next) {
 					L_gv = L_g[v->id[l].M, RE->one2R]
-					L_gvr = L_gv[v->one2N, 1]
-          sThetaScores   = L_gvr :* v->Scores[l+1].M[1].ThetaScores
-					if (NumCuts)
-						sCutScores   = L_gvr :* v->Scores[l+1].M[1].CutScores
-					for (i=L; i; i--)
-						if (cols((*REs)[i].D))
-							sTScores[i].M = L_gvr :* v->Scores[l+1].M[1].TScores[i].M
-					for (i=cols(v->Scores.M[1].GammaScores); i; i--)
-						if (rows(v->Scores[l+1].M[1].GammaScores[i].M))
-							sGammaScores[i].M = L_gvr :* v->Scores[l+1].M[1].GammaScores[i].M
-					for (r = NumREDraws[l+1]; r>1; r--) {
+					for (r=1; r<=NumREDraws[l+1]; r++) {
 						L_gvr = L_gv[v->one2N, r]
-						
-							sThetaScores = sThetaScores + L_gvr :* v->Scores[l+1].M[r].ThetaScores
+
+            scoreAccum(sThetaScores, r, L_gvr, v->Scores[l+1].M[r].ThetaScores)
 						if (NumCuts)
-							sCutScores   = sCutScores   + L_gvr :* v->Scores[l+1].M[r].CutScores
+              scoreAccum(sCutScores, r, L_gvr, v->Scores[l+1].M[r].CutScores)
 						for (i=L; i; i--)
-							if (cols((*REs)[i].D))
-								sTScores[i].M = sTScores[i].M + L_gvr :* v->Scores[l+1].M[r].TScores[i].M
-						for (i=cols(v->Scores.M[1].GammaScores); i; i--)
+							if ((*REs)[i].NSigParams)
+                scoreAccum(sTScores[i].M, r, L_gvr, v->Scores[l+1].M[r].TScores[i].M)
+						for (i=cols(v->Scores.M.GammaScores); i; i--)
 							if (rows(v->Scores[l+1].M[r].GammaScores[i].M))
-								sGammaScores[i].M = sGammaScores[i].M + L_gvr :* v->Scores[l+1].M[r].GammaScores[i].M
+                scoreAccum(sGammaScores[i].M, r, L_gvr, v->Scores[l+1].M[r].GammaScores[i].M)
 					}
 					if (l==1) { // final scores
-							S[v->SubsampleInds, Scores.ThetaScores] = rows(v->WeightProduct)? sThetaScores  :* v->WeightProduct : sThetaScores
+						S[v->SubsampleInds, Scores.ThetaScores] = *Xdotv(sThetaScores, v->WeightProduct)
 						if (NumCuts)
-							S[v->SubsampleInds, Scores.CutScores]   = rows(v->WeightProduct)? sCutScores    :* v->WeightProduct : sCutScores
-						if (cols(base->D))
-							S[v->SubsampleInds, Scores.SigScores[L].M]   = rows(v->WeightProduct)? sTScores[L].M*v->invGammaQSigD :* v->WeightProduct : sTScores[L].M*v->invGammaQSigD
+							S[v->SubsampleInds, Scores.CutScores] = *Xdotv(sCutScores, v->WeightProduct)
+						if (base->NSigParams)
+							S[v->SubsampleInds, Scores.SigScores[L].M] = *Xdotv(sTScores[L].M * v->invGammaQSigD, v->WeightProduct)
 						for (i=L-1; i; i--)
-							if (cols((*REs)[i].D))
-								S[v->SubsampleInds, Scores.SigScores[i].M] = rows(v->WeightProduct)? (sTScores[i].M*(*REs)[i].D):*v->WeightProduct : sTScores[i].M*(*REs)[i].D
+							if ((*REs)[i].NSigParams)
+								S[v->SubsampleInds, Scores.SigScores[i].M] = *Xdotv(sTScores[i].M * (*REs)[i].D, v->WeightProduct)
 						for (i=m=1; m<=d; m++)
 							for (c=1; c<=G[m]; c++) {
 								if (v->TheseInds[m])
-									S[v->SubsampleInds, Scores.GammaScores[i].M]  = rows(v->WeightProduct)? 
-										(sGammaScores[i].M + sTScores[L].M * v->dOmega_dGamma[m,c].M) :* v->WeightProduct :
-										 sGammaScores[i].M + sTScores[L].M * v->dOmega_dGamma[m,c].M
+									S[v->SubsampleInds, Scores.GammaScores[i].M]  = *Xdotv(sGammaScores[i].M + sTScores[L].M * v->dOmega_dGamma[m,c].M, v->WeightProduct)
 								else
 									S[v->SubsampleInds, Scores.GammaScores[i].M] = v->J_N_1_0
 								i++
@@ -1691,15 +1652,15 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
 					} else {
 							v->Scores[l].M[ThisDraw[l]].ThetaScores = sThetaScores
 						if (NumCuts)
-							v->Scores[l].M[ThisDraw[l]].CutScores   = sCutScores
+							v->Scores[l].M[ThisDraw[l]].CutScores = sCutScores
 						for (i=L; i; i--)
-							if (cols((*REs)[i].D))
+							if ((*REs)[i].NSigParams)
 								v->Scores[l].M[ThisDraw[l]].TScores[i].M = sTScores[i].M
 						for (i=cols(v->Scores.M[1].GammaScores); i; i--)
 							v->Scores[l].M[ThisDraw[l]].GammaScores[i].M = sGammaScores[i].M
 					}
 				}
-			}
+
 			RE->plnL = &(ln(*(RE->plnL)) - shift)
 			if (Quadrature==0)
 				RE->plnL = &(*(RE->plnL) :- RE->lnNumREDraws)  // in simulation (vs quadrature), average unweighted evaluations rather than summing weighted ones
@@ -1720,40 +1681,42 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
 	}
 }
 
-
 void cmp_gf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S, real matrix H) {
-	real matrix _S, IDRanges, subscripts; real scalar i, n, K, d; pointer(class cmp_model scalar) scalar mod
-	pragma unset _S; pragma unused H
-
+	pointer(class cmp_model scalar) scalar mod
+	pragma unused H
 	mod = moptimize_init_userinfo(M, 1)
-	mod->lf1(M, todo, b, lnf, _S)
+  mod->gf1(M, todo, b, lnf, S)
+}
 
-	if (hasmissing(lnf)==0) {
-		lnf = *(mod->REs->plnL)
+void cmp_model::gf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S) {
+	real matrix subscripts, _S; real scalar i, n, K
+  pragma unset _S
+
+	lf1(M, todo, b, lnf, _S)
+
+	if (hasmissing(lnf) == 0) {
+		lnf = *(REs->plnL)
 		if (todo) {
-			IDRanges = mod->REs->IDRanges
 			K = cols(b); n = moptimize_init_eq_n(M)  // numbers of eqs (inluding auxiliary parameters); number of parameters
-			d = mod->base->d
 			S = J(rows(lnf), K, 0)
-			if (length(mod->X)==0) {
-				mod->X = smatrix(d)
-				for (i=d;i;i--)
-					mod->X[i].M = editmissing(moptimize_util_indepvars(M, i),0)
+			if (length(X) == 0) {
+				X = smatrix(base->d)
+				for (i=base->d;i;i--)
+					X[i].M = editmissing(moptimize_util_indepvars(M, i),0)
 			}
-			for (i=1;i<=d;i++) {
+			for (i=1;i<=base->d;i++) {
 				(subscripts = moptimize_util_eq_indices(M,i))[2,1] = .
-				S[|subscripts|] = cmp_panelsum(_S[,i] :* mod->X[i].M, mod->WeightProduct, IDRanges)
+				S[|subscripts|] = _panelsum(_S[,i] :* X[i].M, WeightProduct, REs->IDRanges)
 			}
 
 			if (n > d) { // any aux params?
 				subscripts[1,2] = subscripts[2,2] + 1
 				subscripts[2,2] = .
-				S[|subscripts|] = cmp_panelsum(_S[|.,mod->base->d+1\.,.|], mod->WeightProduct, IDRanges)
+				S[|subscripts|] = _panelsum(_S[|.,base->d+1\.,.|], WeightProduct, REs->IDRanges)
 			}
 		}
 	}
 }
-
 
 void cmp_model::cmp_init(transmorphic M) {
 	real scalar i, l, ghk_nobs, d_ghk, eq1, eq2, c, m, j, r, k, d_oprobit, d_mprobit, d_roprobit, start, stop, PrimeIndex, Hammersley, NDraws, HasRE, cols, d2
@@ -1781,17 +1744,17 @@ void cmp_model::cmp_init(transmorphic M) {
 		Idd = I(d*d)
 		vLd = rowsum(Lmatrix(d) :*(1..d*d)) // X[vLd,] = L*X, but faster
 		vKd = colsum(Kmatrix(d,d) :* (1::d*d))
-		vIKI = colsum((I(d) # Kmatrix(d,d) # I(d)) :* (1::d^4))
+		vIKI = colsum((I(d) # Kmatrix(d,d) # I(d)) :* (1::d^4))  // storage for I(d) # Kmatrix(d,d) # I(d) grows with d^8!
 	} else
     pOmega = &(base->Sig)
 
-	ThisDraw = J(1, L, 1)
+	ThisDraw = J(1,L,1)
 
 	for (l=L; l; l--) {
 		RE = &((*REs)[l])
-		RE->NEq = cols(RE->Eqs = cmp_selectindex(Eqs[,l]'))
+		RE->NEq = cols(RE->Eqs = selectindex(Eqs[,l]'))
 		RE->NEff = NumEff[l,RE->Eqs]
-		RE->GammaEqs = HasGamma? cmp_selectindex((GammaId * Eqs[,l])') : RE->Eqs
+		RE->GammaEqs = HasGamma? selectindex((GammaId * Eqs[,l])') : RE->Eqs
 		RE->one2d = 1..( RE->d = rowsum(RE->NEff) )
 		RE->theta = smatrix(d)
     RE->Rho = I(RE->d)
@@ -1869,7 +1832,7 @@ void cmp_model::cmp_init(transmorphic M) {
 					}
 				}
 			}
-			RE->dSigdParams = i? designmatrix(editmissing(t,i+1))[|.,.\.,i|] : J(RE->d2, 0, 0)
+			RE->dSigdParams = (RE->NSigParams = i)? designmatrix(editmissing(t,i+1))[|.,.\.,i|] : J(RE->d2, 0, 0)
 		}
 	}
 
@@ -1907,7 +1870,7 @@ void cmp_model::cmp_init(transmorphic M) {
     RE->R = NumREDraws[l+1]
 		RE->one2N = RE->N<10000? 1::RE->N : .
 		RE->J_N_1_0 = J(RE->N, 1, 0)
-		RE->REInds = cmp_selectindex(tokens(st_global("cmp_rc"+strofreal(l))) :== "_cons")
+		RE->REInds = selectindex(tokens(st_global("cmp_rc"+strofreal(l))) :== "_cons")
 		RE->X = RE->RCInds = smatrix(RE->NEq)
 
 		RE->HasRC = 0
@@ -2016,16 +1979,16 @@ void cmp_model::cmp_init(transmorphic M) {
 		for (l=L; l; l--)
 			if (st_global("parse_wexp"+strofreal(l)) != "") {
 				RE = &((*REs)[l])
-				RE->Weights = st_data(., st_global("cmp_weight"+strofreal(l)), st_global("ML_samp")) // can't be a view because panelsum() doesn't accept weights in views
-				if (l < L) RE->Weights = RE->Weights[RE->IDRanges[,1]] // get one instance of each group's weight
-				if (anyof(("pweight", "aweight"), st_global("parse_wtype"+strofreal(l)))) // normalize pweights, aweights to sum to # of groups
+				RE->Weights = st_data(., st_global("cmp_weight"+strofreal(l)), st_global("ML_samp"))  // can't be a view because panelsum() doesn't accept weights in views
+				if (l < L) RE->Weights = RE->Weights[RE->IDRanges[,1]]  // get one instance of each group's weight
+				if (anyof(("pweight", "aweight"), st_global("parse_wtype"+strofreal(l))))  // normalize pweights, aweights to sum to # of groups
 					if (l == 1)
 						REs->Weights = RE->Weights * rows(RE->Weights) / quadsum(RE->Weights)  // fast way to divide by mean
 					else
 						for (j=(*REs)[l-1].N; j; j--) {
 							S = (*REs)[l-1].IDRangesGroup[j,]', (.\.)
               t = RE->Weights[|S|]
-							RE->Weights[|S|] = t * rows(t) / quadsum(t)  // fast way to divide by mean
+							RE->Weights[|S|] = t * (rows(t) / quadsum(t))  // fast way to divide by mean
 						}
 				t = l==L? RE->Weights : RE->Weights[RE->id]
 				WeightProduct = rows(WeightProduct)? WeightProduct:* t : t
@@ -2037,24 +2000,24 @@ void cmp_model::cmp_init(transmorphic M) {
 	while (t = max(remaining)) { // build linked list of subviews onto data, each a set of rows with same indicator combination
 		next = v; (v = &(subview()))->next = next  // add new subview to linked list
 		remaining = remaining :* !(v->subsample = rowmin(indicators :== (v->TheseInds = indicators[t,])))
-		v->SubsampleInds = cmp_selectindex(v->subsample)
+		v->SubsampleInds = selectindex(v->subsample)
 		v->theta = smatrix(d)
-		v->QE = diag(2*(v->TheseInds:==3 :| v->TheseInds:==8 :| v->TheseInds:==10) :- 1)
+		v->QE = diag(2*(v->TheseInds:==`cmp_right' :| v->TheseInds:==`cmp_probity1' :| v->TheseInds:==`cmp_frac') :- 1)
 		v->N = colsum(v->subsample)
 		v->one2N = v->N<10000? 1::v->N : .
-		v->d_uncens = cols(v->uncens = cmp_selectindex(v->TheseInds:==1))
+		v->d_uncens = cols(v->uncens = selectindex(v->TheseInds:==`cmp_cont'))
 		v->halfDmatrix = 0.5 * Dmatrix(v->d_uncens)
-		v->d_oprobit = d_oprobit = cols(v->oprobit = cmp_selectindex(v->TheseInds:==5))
-		v->d_trunc = cols(v->trunc = cmp_selectindex(trunceqs))
-		v->d_cens = cols(v->cens = cmp_selectindex(v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<mprobit_ind_base :| v->TheseInds:>=roprobit_ind_base)))
-		v->censnonfrac           = cmp_selectindex(v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<mprobit_ind_base :| v->TheseInds:>=roprobit_ind_base) :& v->TheseInds:!=10)
-		v->d_frac = cols(v->frac = cols(v->cens)? cmp_selectindex(v->TheseInds[v->cens]:==10) : J(1,0,0))
+		v->d_oprobit = d_oprobit = cols(v->oprobit = selectindex(v->TheseInds:==`cmp_oprobit'))
+		v->d_trunc = cols(v->trunc = selectindex(trunceqs))
+		v->d_cens = cols(v->cens = selectindex(v->TheseInds:>`cmp_cont' :& v->TheseInds:<. :& (v->TheseInds:<`mprobit_ind_base' :| v->TheseInds:>=`roprobit_ind_base')))
+		v->censnonfrac           = selectindex(v->TheseInds:>`cmp_cont' :& v->TheseInds:<. :& (v->TheseInds:<`mprobit_ind_base' :| v->TheseInds:>=`roprobit_ind_base') :& v->TheseInds:!=`cmp_frac')
+		v->d_frac = cols(v->frac = cols(v->cens)? selectindex(v->TheseInds[v->cens]:==`cmp_frac') : J(1,0,0))
 		d_cens = max((d_cens, v->d_cens))
     d_ghk = max((d_ghk, v->d_trunc, v->d_cens))
-		v->dCensNonrobase = cols(v->cens_nonrobase = cmp_selectindex(NonbaseCases :& (v->TheseInds:>1 :& v->TheseInds:<. :& (v->TheseInds:<mprobit_ind_base :| v->TheseInds:>=roprobit_ind_base))))
+		v->dCensNonrobase = cols(v->cens_nonrobase = selectindex(NonbaseCases :& (v->TheseInds:>`cmp_cont' :& v->TheseInds:<. :& (v->TheseInds:<`mprobit_ind_base' :| v->TheseInds:>=`roprobit_ind_base'))))
 
 		if (v->d_cens)
-			v->d_two_cens = cols(v->two_cens = cmp_selectindex((v->TheseInds:==5 :| v->TheseInds:==7 :| (v->TheseInds:==2 :| v->TheseInds:==3 :| v->TheseInds:==4 :| v->TheseInds:==8) :& trunceqs)[v->cens])) //indexes *within* list of censored eqs of doubly censored ones
+			v->d_two_cens = cols(v->two_cens = selectindex((v->TheseInds:==`cmp_oprobit' :| v->TheseInds:==`cmp_int' :| (v->TheseInds:==`cmp_left' :| v->TheseInds:==`cmp_right' :| v->TheseInds:==`cmp_probit' :| v->TheseInds:==`cmp_probity1') :& trunceqs)[v->cens])) //indexes *within* list of censored eqs of doubly censored ones
 		else
 			v->d_two_cens = 0
 		
@@ -2116,12 +2079,12 @@ void cmp_model::cmp_init(transmorphic M) {
 		v->mprobit = mprobit_group(rows(MprobitGroupInds))
 		for (k=rows(MprobitGroupInds); k; k--) {
 			start = MprobitGroupInds[k, 1]; stop = MprobitGroupInds[k, 2]
-			v->mprobit[k].d = d_mprobit = (v->TheseInds[start]<.) * (cols( mprobit = cmp_selectindex(v->TheseInds :& one2d:>=start :& one2d:<=stop) ) - 1)
+			v->mprobit[k].d = d_mprobit = (v->TheseInds[start]<.) * (cols( mprobit = selectindex(v->TheseInds :& one2d:>=start :& one2d:<=stop) ) - 1)
 			if (d_mprobit > 0) {
-				v->mprobit[k].out = v->TheseInds[start] - mprobit_ind_base // eq of chosen alternative
-				v->mprobit[k].res = cmp_selectindex((v->TheseInds :& one2d:>start  :& one2d:<=stop)[v->cens]) // index in v->ECens for relative differencing results
-				v->mprobit[k].in =  cmp_selectindex( v->TheseInds :& one2d:>=start :& one2d:<=stop :& one2d:!=v->mprobit[k].out) // eqs of rejected alternatives
-				(v->QE)[mprobit,mprobit] = J(d_mprobit+1, 1, 0), cmp_insert(-I(d_mprobit), v->mprobit[k].out-start+1-sum(!v->TheseInds[|start\v->mprobit[k].out|]), J(1, d_mprobit, 1))
+				v->mprobit[k].out = v->TheseInds[start] - `mprobit_ind_base' // eq of chosen alternative
+				v->mprobit[k].res = selectindex((v->TheseInds :& one2d:>start  :& one2d:<=stop)[v->cens]) // index in v->ECens for relative differencing results
+				v->mprobit[k].in =  selectindex( v->TheseInds :& one2d:>=start :& one2d:<=stop :& one2d:!=v->mprobit[k].out) // eqs of rejected alternatives
+				(v->QE)[mprobit,mprobit] = J(d_mprobit+1, 1, 0), insert(-I(d_mprobit), v->mprobit[k].out-start+1-sum(!v->TheseInds[|start\v->mprobit[k].out|]), J(1, d_mprobit, 1))
 			}
 		}
 
@@ -2137,7 +2100,7 @@ void cmp_model::cmp_init(transmorphic M) {
 			v->d2_cens = v->d_cens * (v->d_cens + 1)*.5
 
 			for (k=NumRoprobitGroups; k; k--)
-				if (cols(this_roprobit=*(roprobit[k] = &cmp_selectindex(v->TheseInds :& one2d:>=RoprobitGroupInds[k,1] :& one2d:<=RoprobitGroupInds[k,2]))))
+				if (cols(this_roprobit=*(roprobit[k] = &selectindex(v->TheseInds :& one2d:>=RoprobitGroupInds[k,1] :& one2d:<=RoprobitGroupInds[k,2]))))
 					v->N_perm = v->N_perm * (rows(*(perms[k] = &PermuteTies(reverse? v->TheseInds[this_roprobit] : -v->TheseInds[this_roprobit]))))
 			
 			v->roprobit_QE = v->roprobit_Q_Sig = J(i=v->N_perm, 1, NULL)
@@ -2156,7 +2119,7 @@ void cmp_model::cmp_init(transmorphic M) {
 			}
 		}
 
-    v->NotBaseEq = v->TheseInds :< mprobit_ind_base :| v->TheseInds :>= roprobit_ind_base
+    v->NotBaseEq = v->TheseInds :< `mprobit_ind_base' :| v->TheseInds :>= `roprobit_ind_base'
 
 		if (v->d_trunc) {
 			v->one2d_trunc = 1..v->d_trunc
@@ -2176,11 +2139,12 @@ void cmp_model::cmp_init(transmorphic M) {
 
 		if (_todo) { // pre-compute stuff for scores
 			v->Scores = scorescol(L)
+      sTScores=smatrix(L); sGammaScores=smatrix(sum(G))
 			for (l=L; l; l--) {
 				v->Scores[l].M = scores(NumREDraws[l])
 				for (r=NumREDraws[l]; r; r--) {
-					v->Scores[l].M[r].GammaScores = smatrix(sum(G))
-					v->Scores[l].M[r].TScores = smatrix(L) // last entry holds scores of base-level Sig parameters not T
+					v->Scores[l].M[r].GammaScores = sGammaScores
+					v->Scores[l].M[r].TScores = sTScores  // last entry holds scores of base-level Sig parameters not T
 				}
 			}
 			v->Scores.M.SigScores = smatrix(L)
@@ -2281,13 +2245,11 @@ void cmp_model::cmp_init(transmorphic M) {
 }
 
 
-void cmpSaveSomeResults(pointer(class cmp_model scalar) scalar mod) {
-	pointer (struct RE scalar) scalar RE, REs; real scalar L, l, j, k_aux_nongamma; real matrix means, ses; string matrix colstripe, _colstripe
+void cmp_model::SaveSomeResults() {
+	pointer (struct RE scalar) scalar RE; real scalar L, l, j, k_aux_nongamma; real matrix means, ses; string matrix colstripe, _colstripe
 
-	REs = mod->REs
-
-	st_matrix("e(MprobitGroupEqs)", mod->MprobitGroupInds)
-	st_matrix("e(ROprobitGroupEqs)", mod->RoprobitGroupInds)
+	st_matrix("e(MprobitGroupEqs)", MprobitGroupInds)
+	st_matrix("e(ROprobitGroupEqs)", RoprobitGroupInds)
 
 	if ((L =st_numscalar("e(L)")) == 1)
 		st_matrix("e(Sigma)", REs->Sig)
@@ -2295,7 +2257,7 @@ void cmpSaveSomeResults(pointer(class cmp_model scalar) scalar mod) {
 		for (l=L; l; l--) {
 			RE = &((*REs)[l])
 			st_matrix("e(Sigma"+(l<L?strofreal(l):"")+")", RE->Sig)
-			if (l<L & mod->Quadrature & (mod->AdaptivePhaseThisEst | mod->Adapted)) { // means and ses don't exist if iter() option stopped search before adaptive phase
+			if (l<L & Quadrature & (AdaptivePhaseThisEst | Adapted)) { // means and ses don't exist if iter() option stopped search before adaptive phase
 				ses = means = J(RE->N, RE->d, 0)
 				for (j=RE->N; j; j--) {
 					means[j,] = RE->QuadMean[j].M
@@ -2308,11 +2270,11 @@ void cmpSaveSomeResults(pointer(class cmp_model scalar) scalar mod) {
 				st_matrixcolstripe("e(RESEs"  +strofreal(l)+")", colstripe)
 			}
 		}
-		if (rows(mod->WeightProduct))
-			st_numscalar("e(N)", sum(mod->WeightProduct))
+		if (rows(WeightProduct))
+			st_numscalar("e(N)", sum(WeightProduct))
 	}
 
-	if (mod->HasGamma) {
+	if (HasGamma) {
 		real scalar eq, d, k, NumCoefs, rows_dbr_db, cols_dbr_db, k_gamma
 		real matrix Beta, BetaInd, GammaInd, REInd, dBeta_dB, dBeta_dGamma, dbr_db, dOmega_dSig, V, br, sig, rho, Rho, invGamma, Omega, NumEff
 		real rowvector eb, p
@@ -2326,18 +2288,18 @@ void cmpSaveSomeResults(pointer(class cmp_model scalar) scalar mod) {
 		invGamma = (*REs)[L].invGamma'
 		Beta = invGamma * st_matrix(st_local("Beta"))
 		d = rows(Beta); k = cols(Beta)
-		br = colshape(Beta,1)
+		br = colshape(Beta, 1)
 		eb = st_matrix("e(b)")
-		k_aux_nongamma = st_numscalar("e(k_aux)")-(k_gamma = st_numscalar("e(k_gamma)"))
+		k_aux_nongamma = st_numscalar("e(k_aux)") - (k_gamma = st_numscalar("e(k_gamma)"))
 		dBeta_dB = invGamma # I(k); dBeta_dGamma = invGamma # Beta'
 
 		dbr_db = J(rows(dBeta_dB), 0, 0)
 		for (eq=d; eq; eq--)
-			dbr_db = dBeta_dGamma[, GammaInd[cmp_selectindex(GammaInd[,2]:==eq),1] :+ (eq-1)*d], dbr_db        
+			dbr_db = dBeta_dGamma[, GammaInd[selectindex(GammaInd[,2]:==eq),1] :+ (eq-1)*d], dbr_db        
 		for (eq=d; eq; eq--)
-			dbr_db = dBeta_dB    [, BetaInd [cmp_selectindex(BetaInd [,2]:==eq),1] :+ (eq-1)*k], dbr_db        
+			dbr_db = dBeta_dB    [, BetaInd [selectindex(BetaInd [,2]:==eq),1] :+ (eq-1)*k], dbr_db        
 
-		keep = cmp_selectindex(rowsum(dbr_db:!=0):>0)
+		keep = selectindex(rowsum(dbr_db:!=0):>0)
 		br = br[keep]'
 		dbr_db = dbr_db[keep,]
     rows_dbr_db = rows(dbr_db); cols_dbr_db = cols(dbr_db)
@@ -2347,10 +2309,10 @@ void cmpSaveSomeResults(pointer(class cmp_model scalar) scalar mod) {
 			colstripe = J(k, 1, eqnames[eq]) \ colstripe
 		colstripe = (colstripe, J(d, 1, tokens(st_local("xvarsall"))'))[keep,]
 
-		if (mod->NumCuts) {
-			br = br, eb[|cols(eb)-k_aux_nongamma+1 \ cols(eb)-k_aux_nongamma+mod->NumCuts|]
-			colstripe = colstripe \ st_matrixcolstripe("e(b)")[|cols(eb)-k_aux_nongamma+1, . \ cols(eb)-k_aux_nongamma+mod->NumCuts,.|]
-			dbr_db = blockdiag(dbr_db, I(mod->NumCuts))
+		if (NumCuts) {
+			br = br, eb[|cols(eb)-k_aux_nongamma+1 \ cols(eb)-k_aux_nongamma+NumCuts|]
+			colstripe = colstripe \ st_matrixcolstripe("e(b)")[|cols(eb)-k_aux_nongamma+1, . \ cols(eb)-k_aux_nongamma+NumCuts,.|]
+			dbr_db = blockdiag(dbr_db, I(NumCuts))
 		}		
 
 		NumEff = J(0, d, 0)
@@ -2362,15 +2324,15 @@ void cmpSaveSomeResults(pointer(class cmp_model scalar) scalar mod) {
 			st_matrix("e(Omega"+(l<L?strofreal(l):"")+")", Omega = quadcross(dOmega_dSig, RE->Sig) * dOmega_dSig)
 			Rho = corr(Omega); rho = rows(Rho)>1? vech(Rho[|2,1 \ .,cols(Rho)-1|])' : J(1,0,0)
 			sig = sqrt(diagonal(Omega))'
-			dOmega_dSig = edittozero(pinv(editmissing(dSigdsigrhos(mod->SigXform, sig, Omega, rho, Rho),0)),10) * QE2QSig(dOmega_dSig) * dSigdsigrhos(mod->SigXform, RE->sig, RE->Sig, RE->rho, Rho) * RE->dSigdParams
-			keep = cmp_selectindex((((sig:!=.) :* (sig:>0)), (rho:!=.)) :* (rowsum(dOmega_dSig:!=0):>0)')'
-			br = br, (mod->SigXform? ln(sig), atanh(rho) : sig, rho)[keep]
+			dOmega_dSig = edittozero(pinv(editmissing(dSigdsigrhos(SigXform, sig, Omega, rho, Rho),0)),10) * QE2QSig(dOmega_dSig) * dSigdsigrhos(SigXform, RE->sig, RE->Sig, RE->rho, Rho) * RE->dSigdParams
+			keep = selectindex((((sig:!=.) :* (sig:>0)), (rho:!=.)) :* (rowsum(dOmega_dSig:!=0):>0)')'
+			br = br, (SigXform? ln(sig), atanh(rho) : sig, rho)[keep]
 			_colstripe = _colstripe \ ((tokens(st_local("sigparams"+strofreal(l)))' \ tokens(st_local("rhoparams"+strofreal(l)))')[keep] , J(rows(keep), 1, "_cons"))
 			dbr_db = blockdiag(dbr_db, dOmega_dSig[keep,])
 			keep = colshape(rowsum(dOmega_dSig[|.,.\k*d,.|]:!=0):>0, k) // get retained sig params by eq
 			NumEff = NumEff \ rowsum(keep)'
 			for (j=d; j; j--)
-				st_global("e(EffNames_reducedform"+strofreal(l)+"_"+strofreal(j)+")", invtokens(tokens(st_local("cmp_rcu"+strofreal(l)))[cmp_selectindex(keep[j,])]))
+				st_global("e(EffNames_reducedform"+strofreal(l)+"_"+strofreal(j)+")", invtokens(tokens(st_local("cmp_rcu"+strofreal(l)))[selectindex(keep[j,])]))
 			st_matrix("e(fixed_sigs_reducedform"+strofreal(l)+")", J(1, d, .)) 
 			st_matrix("e(fixed_rhos_reducedform"+strofreal(l)+")", J(d, d, .)) 
 		}

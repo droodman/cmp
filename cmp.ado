@@ -18,7 +18,14 @@
 
 cap program drop cmp
 program define cmp, sortpreserve properties(user_score svyb svyj svyr mi fvaddcons) byable(recall)
-	version 13.0
+  version 11
+  cap version 13.0
+  if _rc {
+     di as err "This version of {cmd:cmp} requires Stata version 13 or later. An older version compatible with Stata `c(stata_version)'"
+     di as err "is at https://github.com/droodman/cmp/releases/tag/v8.6.1."
+     exit _rc
+  }
+
 	cap noi _cmp `0'
 	if _rc {
 		local rc = _rc
@@ -203,7 +210,7 @@ program define _cmp
 		di as res "Warning: {cmd:scramble} in {cmd:ghkdraws()} option incompatible with {cmd:ghalton}. {cmd:scramble} ignored."
 		local scramble
 	}
-	if 0`ghkdraws' mata CheckPrime(`ghkdraws')
+	if 0`ghkdraws' mata _mod.CheckPrime(`ghkdraws')
 	local ghkanti = "`antithetics'`ghkanti'"!=""
 	mata _mod.setGHKType("`ghktype'"); _mod.setGHKAnti(`ghkanti'); _mod.setGHKDraws(0`ghkdraws'); _mod.setGHKScramble("`scramble'")
 	local ghkscramble `scramble'
@@ -289,7 +296,7 @@ program define _cmp
 				di as res "Warning: {cmd:scramble} in {cmd:redraws()} option incompatible with {cmd:ghalton}. {cmd:scramble} ignored."
 				local scramble
 			}
-			mata CheckPrime(strtoreal(tokens("`redraws'")))
+			mata _mod.CheckPrime(strtoreal(tokens("`redraws'")))
 			mata _mod.setREType("`type'"); _mod.setREAnti(1+("`antithetics'"!= "")); _mod.setREScramble("`scramble'")
 		}
 	}
@@ -305,7 +312,6 @@ program define _cmp
 	global cmp_truncreg 0
 	local asprobit_eq 0
 	tempvar _touse n asmprobit_dummy_sum asmprobit_ind
-	if c(stata_version)>=12.1 local fast fast
 
 	qui {
 		gen byte `_touse' = 0
@@ -316,7 +322,7 @@ program define _cmp
 			if (`"`1'"' == ")" & `asprobit_eq' == 0) | (`"`1'"' == "(" & `asprobit_eq') cmp_error 132 "Too many `1'"
 			if `"`1'"'==")" {
 				if "`m_ro'" == "m" {
-					cap assert `asmprobit_dummy_sum'==1 if `touse' & _cmp_ind`first_asprobit_eq', `fast'
+					cap assert `asmprobit_dummy_sum'==1 if `touse' & _cmp_ind`first_asprobit_eq', fast
 					if _rc cmp_error 132 "For multinomial probit groups, exactly one dependent variable must be non-zero for each observation."
 					replace _cmp_ind`first_asprobit_eq'=`asmprobit_ind'*(_cmp_ind`first_asprobit_eq'!=0) // store choice info in indicator var for first equation
 					drop `asmprobit_ind' `asmprobit_dummy_sum'
@@ -345,11 +351,11 @@ program define _cmp
 			cap gen byte _cmp_ind`cmp_eqno' = `1'
 			if _rc cmp_error 198 `"Error building indicator variable for equation `cmp_eqno' from expression `1'. Did you forget to type {stata "cmp setup"}?"'
 			if "${parse_y`parse_eqno'}"=="." {
-				cap assert inlist(_cmp_ind`cmp_eqno', ., 0) if `touse', `fast'
+				cap assert inlist(_cmp_ind`cmp_eqno', ., 0) if `touse', fast
 				if _rc cmp_error 198 `"Indicator for ${parse_eq`parse_eqno'} equation must only evaluate to missing (".") or 0 since the dependent variable is unobserved."'
 			}
 			else {
-				cap assert inlist(_cmp_ind`cmp_eqno', ., 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10) if `touse', `fast'
+				cap assert inlist(_cmp_ind`cmp_eqno', ., 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10) if `touse', fast
 				if _rc cmp_error 198 "Indicator for ${parse_y`parse_eqno'} must only evaluate to integers between 0 and 10."
 				replace _cmp_ind`cmp_eqno' = $cmp_cont if _cmp_ind`cmp_eqno'==$cmp_trunc // deprecate this indicator value
 			}
@@ -361,24 +367,24 @@ program define _cmp
 			markout _cmp_ind`cmp_eqno' ${cmp_xo`cmp_eqno'} ${cmp_xe`cmp_eqno'}
 			if "${cmp_xe`cmp_eqno'}" != "" replace _cmp_ind`cmp_eqno' = 0 if ${cmp_xe`cmp_eqno'}<=0
 			
-			cap assert _cmp_ind`cmp_eqno' != $cmp_int if `touse', `fast'
+			cap assert _cmp_ind`cmp_eqno' != $cmp_int if `touse', fast
 			if _rc {
 				if `:word count ${cmp_y`cmp_eqno'}' != 2 cmp_error 198 "Interval regression equations require two dependent variables."
 				global cmp_y`cmp_eqno'_L : word 1 of ${cmp_y`cmp_eqno'}
-				gen double _cmp_y`cmp_eqno' = `: word 2 of ${cmp_y`cmp_eqno'}' if `touse' // copy so can modify below in converting some obs to Tobits for efficiency
+				gen double _cmp_y`cmp_eqno' = `: word 2 of ${cmp_y`cmp_eqno'}' if `touse'  // copy so can modify below in converting some obs to Tobits for efficiency
 				global cmp_y`cmp_eqno' _cmp_y`cmp_eqno'
 				global cmp_intreg 1
 				global cmp_intreg`cmp_eqno' 1
 				mat cmp_intregeqs = nullmat(cmp_intregeqs), 1
 				replace _cmp_ind`cmp_eqno' = ${cmp_y`cmp_eqno'}<. if _cmp_ind`cmp_eqno'==$cmp_int & ${cmp_y`cmp_eqno'}==${cmp_y`cmp_eqno'_L}
-				replace _cmp_ind`cmp_eqno' = 0 if _cmp_ind`cmp_eqno'==$cmp_int & ${cmp_y`cmp_eqno'}<${cmp_y`cmp_eqno'_L} & ${cmp_y`cmp_eqno'_L}<.
+				replace _cmp_ind`cmp_eqno' = 0 if _cmp_ind`cmp_eqno'==$cmp_int & ${cmp_y`cmp_eqno'} < ${cmp_y`cmp_eqno'_L} & ${cmp_y`cmp_eqno'_L} < .
 				markout _cmp_ind`cmp_eqno' ${parse_x`parse_eqno'}
 			}
 			else {
 				mat cmp_intregeqs = nullmat(cmp_intregeqs), 0
-				markout _cmp_ind`cmp_eqno' ${parse_x`parse_eqno'} // `=cond("${parse_y`parse_eqno'}"!="." & , "${parse_y`parse_eqno'}", "")'
+				markout _cmp_ind`cmp_eqno' ${parse_x`parse_eqno'}  // `=cond("${parse_y`parse_eqno'}"!="." & , "${parse_y`parse_eqno'}", "")'
 				global cmp_intreg`cmp_eqno' 0
-				global cmp_y`cmp_eqno'_L . // to prevent syntax errors
+				global cmp_y`cmp_eqno'_L .  // to prevent syntax errors
 			}
 
 			if `"${parse_tr`parse_eqno'}"' != "" { // truncated regression
@@ -419,7 +425,7 @@ program define _cmp
 			if "`:list eqnames & global(cmp_eq`cmp_eqno')'" != "" global cmp_eq`cmp_eqno' `=substr("${cmp_eq`cmp_eqno'}",1,29)'`cmp_eqno'
 			local eqnames `eqnames' ${cmp_eq`cmp_eqno'}
 
-      if 0`first_asprobit_eq' == `cmp_eqno' & "${parse_x`parse_eqno'}" == "" { // if this is an mprobit base case with no regressors, leave cons in but constrain to 0
+      if 0`first_asprobit_eq' == `cmp_eqno' & "${parse_x`parse_eqno'}" == "" {  // if this is an mprobit base case with no regressors, leave cons in but constrain to 0
         constraint free
         local _constraints `_constraints' `r(free)'
         constraint `r(free)' [${cmp_eq`parse_eqno'}]_cons
@@ -427,7 +433,7 @@ program define _cmp
 
 			replace `_touse' = `_touse' | _cmp_ind`cmp_eqno'
 
-			cap assert _cmp_ind`cmp_eqno' != $cmp_oprobit if `touse', `fast'
+			cap assert _cmp_ind`cmp_eqno' != $cmp_oprobit if `touse', fast
 			if _rc { // ordered probit
 				GroupCategoricalVar if ${cmp_y`cmp_eqno'} < . & `touse' & _cmp_ind`cmp_eqno', predict(`predict') cmp_eqno(`cmp_eqno')
 				mat cmp_cat`cmp_eqno' = r(cat)
@@ -447,10 +453,10 @@ program define _cmp
 				mat cmp_num_cuts = nullmat(cmp_num_cuts) \ 0
 			}
 
-			cap assert _cmp_ind`cmp_eqno' != $cmp_frac if `touse', `fast'
+			cap assert _cmp_ind`cmp_eqno' != $cmp_frac if `touse', fast
 			if _rc {
 				local hasfrac 1
-				cap assert (${cmp_y`cmp_eqno'} >= 0 & ${cmp_y`cmp_eqno'} <= 1) | ${cmp_y`cmp_eqno'} >= . if `touse' & _cmp_ind`cmp_eqno'==$cmp_frac, `fast'
+				cap assert (${cmp_y`cmp_eqno'} >= 0 & ${cmp_y`cmp_eqno'} <= 1) | ${cmp_y`cmp_eqno'} >= . if `touse' & _cmp_ind`cmp_eqno'==$cmp_frac, fast
 				if _rc cmp_error 198 "Observations of dependent variable for fractional probit equation must be in [0,1]."
 			}
 
@@ -461,7 +467,7 @@ program define _cmp
 			if `N_mprobit' | `N_roprobit' { // multinomial or rank-ordered probit
 				if (`N_mprobit' & "`m_ro'" == "ro") | (`N_roprobit' & "`m_ro'" == "m") cmp_error 148 "Cannot mix multinomial and rank-ordered indicator values in the same group."
 
-				cap assert inlist(_cmp_ind`cmp_eqno', 0, $cmp_mprobit, $cmp_roprobit) if `touse', `fast'
+				cap assert inlist(_cmp_ind`cmp_eqno', 0, $cmp_mprobit, $cmp_roprobit) if `touse', fast
 				if _rc | `N_mprobit'&`N_roprobit' cmp_error "Dependent variables modeled as `=cond(`N_mprobit',"multinomial","rank-ordered")' probit may not be modeled differently for other observations in the same equation."
 				
 				if ${cmp_truncreg`cmp_eqno'} cmp_error "Truncation not allowed in `=cond(`N_mprobit',"multinomial","rank-ordered")' probit equations."
@@ -527,7 +533,7 @@ program define _cmp
 						replace _cmp_ind`cmp_eqno' = 0 if _cmp_ind`first_asprobit_eq' == 0  // exclude obs missing for base case
 					}
 					else {
-						cap assert mod(${cmp_y`cmp_eqno'}, 1)==0 & ${cmp_y`cmp_eqno'}>=0 & ${cmp_y`cmp_eqno'}<=`=maxbyte()-$cmp_roprobit_ind_base' if `touse', `fast'
+						cap assert mod(${cmp_y`cmp_eqno'}, 1)==0 & ${cmp_y`cmp_eqno'}>=0 & ${cmp_y`cmp_eqno'}<=`=maxbyte()-$cmp_roprobit_ind_base' if `touse', fast
 						if _rc cmp_error 148 "Dependent variables modeled as rank-ordered probit must take integer values between 0 and `=maxbyte()-$cmp_roprobit_ind_base'."
 						replace _cmp_ind`cmp_eqno' = ${cmp_y`cmp_eqno'} + $cmp_roprobit_ind_base if _cmp_ind`cmp_eqno'
 					}
@@ -542,7 +548,7 @@ program define _cmp
 				mat cmp_nonbase_cases = nullmat(cmp_nonbase_cases) , 1
 			}
 
-			cap assert ${cmp_y`cmp_eqno'}==. & _cmp_ind`cmp_eqno'!=$cmp_int if `touse', `fast'
+			cap assert ${cmp_y`cmp_eqno'}==. & _cmp_ind`cmp_eqno'!=$cmp_int if `touse', fast
 			if _rc==0 global cmp_y`cmp_eqno' .
 			qui replace _cmp_ind`cmp_eqno' = 0 if `touse' & mi(${cmp_y`cmp_eqno'}) & _cmp_ind`cmp_eqno'!=$cmp_int
 
@@ -552,13 +558,13 @@ program define _cmp
 				else      mat cmp_fixed_rhos$parse_L = (cmp_fixed_rhos$parse_L, J(`i'-1, 1, .)) \ J(1, `i', `FixedRhoFill$parse_L')
 
 				// create sig param unless mprobit eq 1-2 or entirely (ordered/fractional) probit or unobserved
-				cap assert inlist(_cmp_ind`i', $cmp_out, $cmp_probit, $cmp_oprobit, $cmp_missing, $cmp_frac) if `touse', `fast'
+				cap assert inlist(_cmp_ind`i', $cmp_out, $cmp_probit, $cmp_oprobit, $cmp_missing, $cmp_frac) if `touse', fast
 				if _rc==0 {
 					mat cmp_fixed_sigs$parse_L = nullmat(cmp_fixed_sigs$parse_L), 1
 					forvalues l=1/`=$parse_L-1' {
 						mat cmp_fixed_sigs`l' = nullmat(cmp_fixed_sigs`l'), .
 					}
-					cap assert inlist(_cmp_ind`i', $cmp_out, $cmp_missing, $cmp_oprobit) if `touse', `fast'
+					cap assert inlist(_cmp_ind`i', $cmp_out, $cmp_missing, $cmp_oprobit) if `touse', fast
 					if _rc==0 global cmp_xc`i' nocons
 					if "${parse_y`parse_eqno'}"=="." noi di _n as txt "Error for ${cmp_eq`parse_eqno'} equation modeled as standard normal (mean 0, variance 1) and constant term set to 0."
 				}
@@ -641,7 +647,7 @@ program define _cmp
 
 		drop `_touse'
 		egen byte `_touse' = rowmax($cmp_ind) if `touse'
-		replace `touse' = 0 if `_touse'==0 | `_touse'==. // drop obs for which all outcomes unobserved
+		replace `touse' = 0 if `_touse'==0 | `_touse'==.  // drop obs for which all outcomes unobserved
 		drop `_touse'
 
 		global cmpHasGamma 0
@@ -762,7 +768,7 @@ program define _cmp
 				replace `touse' = 0 if `weight`l''<=0
 
 				if "${parse_wtype`l'}" == "fweight" {
-					cap assert mod(`weight`l'', 1)==0 if `touse', `fast'
+					cap assert mod(`weight`l'', 1)==0 if `touse', fast
 					if _rc cmp_error 401 "Frequency weights must be integers."
 				}
 					
@@ -784,7 +790,7 @@ program define _cmp
 				if `l' < $parse_L {
 					tempvar t
 					qui by `cmp_ids': egen float `t' = mad(`weight`l'') if `touse'
-					qui assert inlist(`t', 0, .) if `touse', `fast'
+					qui assert inlist(`t', 0, .) if `touse', fast
 					if _rc cmp_error 101 "Weights for level {res}`:word `l' of $parse_id'{err} must be constant within groups."
 					drop `t'
 				}
@@ -826,7 +832,7 @@ program define _cmp
 		constraint drop `_constraints' `initconstraints' `1onlyinitconstraints'
 	}
 
-	mata _mod.setMprobitGroupInds (st_matrix("cmp_mprobit_group_inds" )); _mod.setRoprobitGroupInds(st_matrix("cmp_roprobit_group_inds"))
+	mata _mod.setMprobitGroupInds(st_matrix("cmp_mprobit_group_inds" )); _mod.setRoprobitGroupInds(st_matrix("cmp_roprobit_group_inds"))
 	mata _mod.setNonbaseCases(st_matrix("cmp_nonbase_cases"))
 	mata _mod.setvNumCuts(st_matrix("cmp_num_cuts")); _mod.settrunceqs(st_matrix("cmp_trunceqs")); _mod.setintregeqs(st_matrix("cmp_intregeqs"))
 
@@ -1006,7 +1012,7 @@ program define _cmp
 		global cmpHasGamma `HasGamma'
 		global cmp_num_scores = $cmp_num_scores + $cmpHasGamma
 	}
-	mata _mod.setGammaInd(st_matrix("cmpGammaInd")) // hidden from constants-only fit
+	mata _mod.setGammaInd(st_matrix("cmpGammaInd"))  // hidden from constants-only fit
 
 	tempname LeftCens RightCens
 	qui {
@@ -1016,7 +1022,7 @@ program define _cmp
 				if _rc==0 {
 					replace   _cmp_ind`eq' = $cmp_left      if `LeftCens'  // Having gotten initial fits treating as intreg,
 					cap gen byte `RightCens' = _cmp_ind`eq'==$cmp_int & `touse' & ${cmp_y`eq'  }>=.
-					cap assert `RightCens'==0, `fast'
+					cap assert `RightCens'==0, fast
 					if _rc==0 {
 						replace _cmp_ind`eq' = $cmp_right     if `RightCens' // helps speed & precision to treat left & right
 						if strpos("${cmp_y`eq'}", ".") {
@@ -1290,7 +1296,7 @@ end*/
 cap program drop DoInitSearch
 program define DoInitSearch, rclass
 	version 11.0
-	`*' // run InitSearch
+	`*'  // run InitSearch
 	tempname b
 	mat `b' = r(b)
 	return matrix b = `b'
@@ -1329,7 +1335,7 @@ program define cmp_full_model, eclass
 			}
 		}
 
-		if $cmpHasGamma { // prepare to build reduced-form b and V
+		if $cmpHasGamma {  // prepare to build reduced-form b and V
 			mat cmpGammaInd = .,. \ cmpGammaInd[1..rowsof(cmpGammaInd), 1...]
 
 			tempname b beq Beta
@@ -1381,9 +1387,9 @@ program define cmp_full_model, eclass
 			}
 		}
 
-		mata cmpSaveSomeResults(&_mod) // Get final Sig; if weights, get weighted sample size; for Gamma models build e(br), e(Vr)
+		mata _mod.SaveSomeResults() // Get final Sig; if weights, get weighted sample size; for Gamma models build e(br), e(Vr)
 
-		if $cmpHasGamma { // eliminate unnecessary "#"'s in e(b) colnames, unnecessary for predict that is, which wrongly imply that variable is unobserved
+		if $cmpHasGamma {  // eliminate unnecessary "#"'s in e(b) colnames, unnecessary for predict that is, which wrongly imply that variable is unobserved
 			mat colnames `b' = `paramsdisplay'
 			local paramsdisplay: colnames `b'
 			forvalues eq=1/$cmp_d {
@@ -1417,7 +1423,7 @@ program define cmp_full_model, eclass
 			}
 		}
 
-		if "`svy'" != "" & "`: char _dta[_svy_wvar]'" != "" { // compensate for bug in Stata 14, 15 because of which ml model, svy puts references to temp var in these macros
+		if "`svy'" != "" & "`: char _dta[_svy_wvar]'" != "" {  // compensate for bug in Stata 14, 15 because of which ml model, svy puts references to temp var in these macros
 			ereturn local wtype: char _dta[_svy_wtype]
 			ereturn local wvar : char _dta[_svy_wvar]
 			ereturn local wexp "= `e(wvar)'"
@@ -1430,7 +1436,7 @@ program define cmp_full_model, eclass
 		}
 
 		tempname cat t
-		forvalues i=1/$cmp_d { // capture all _cmp_y* labels, from oprobit and non-as mprobit eqs, for later use if called from cmp_p
+		forvalues i=1/$cmp_d {  // capture all _cmp_y* labels, from oprobit and non-as mprobit eqs, for later use if called from cmp_p
 			cap confirm matrix cmp_cat`i'
 			if _rc mat `t' = J(1, $cmp_max_cuts+1, .)
 			else {
@@ -1579,7 +1585,7 @@ program Estimate, eclass
 		gen `u' = uniform() if `if'
 	}
 
-	local gf = $parse_L>1 & "`1only'"==""
+	local gf = $parse_L > 1 & "`1only'" == ""
 
 	while `psampling_cutoff' < `psampling_rate' {
 		if "`psampling'" != "" {
@@ -1956,7 +1962,7 @@ program InitSearch, rclass
 						}
 
 						if e(ic) > 0 { // unless we're contrained to zero iterations, mark dropped variables
-							mata _ms_findomitted("`beta'", "`V'")  // In FV versions of Stata, prefix with "o." rather than dropping
+							_ms_findomitted `beta' `V'  // In FV versions of Stata, prefix with "o." rather than dropping
 							local xvars: colnames `beta'
 							local xvars: list xvars - `_cons'
 
@@ -2186,7 +2192,7 @@ program Display, eclass
 		local meff meff meft
 		local diopts: list diopts - meff
 
-		if e(k_gamma) | e(k_gamma_reducedform)<. {
+		if e(k_gamma) | e(k_gamma_reducedform) < . {
 			if `"`resultsform'"' != "" {
 				local 0, `resultsform'
 				syntax, [REDuced STRUCTural]
@@ -2521,7 +2527,7 @@ program define cmp_error
 end
 
 * Version history
-* 8.6.2 Fixed crashes in margins, vce(unconditional) after svy estimation
+* 8.6.2 Fixed crashes in margins, vce(unconditional) after svy estimation. Now requires Stata 13 or newer.
 * 8.6.1 Fixed crash in margins after resultsform(reduced) and observation weights, and crash in svy: , resultsform(reduced).
 *       Fixed computational bug affecting predict, lnl and predict, scores after resultsform(reduced) and thus standard errors from svy: , resultsform(reduced).
 * 8.6.0 Added optimizations for 1-eq models
