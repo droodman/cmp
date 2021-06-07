@@ -727,7 +727,7 @@ real colvector cmp_model::vecbinormal(real matrix X, real matrix Sig, real colve
 
 	if (todo) {
 		phi = editmissing(normalden(Xhat), 0)
-		X_ = Xhat * ((1,-rho \ -rho,1) / sqrt(1-rho*rho)) // each X_ with the other partialled out, then renormalized to s.d. 1
+		X_ = Xhat * ((1,-rho \ -rho,1) / sqrt(1 - rho * rho)) // each X_ with the other partialled out, then renormalized to s.d. 1
 		dPhi_dSig = phi[one2N,1] :* editmissing(normalden(X_2=X_[one2N,2]),0) / sqrt(det(Sig))
 		dPhi_dX = phi :* (editmissing(normal(X_2), 1), editmissing(normal(X_[one2N,1]), 1)) :/ sqrtSigDiag
 		dPhi_dSigDiag = (editmissing(X, 0):*dPhi_dX :+ (Sig[1,2]*dPhi_dSig)) :/ (-2 * SigDiag) 
@@ -740,10 +740,10 @@ real colvector cmp_model::vecbinormal(real matrix X, real matrix Sig, real colve
 // infsign flag indicate whether to interpret . in E1 as + or - infinity. 1=+, 0=-
 real colvector cmp_model::vecbinormal2(real colvector E1, real colvector E2, real colvector F2, real matrix Sig, real scalar infsign, real scalar flip, real colvector one2N,
 							                         real scalar todo, real matrix dPhi_dE1, real matrix dPhi_dE2, real matrix dPhi_dF2, real matrix dPhi_dSig) {
-	real colvector Phi, E1hat, E2hat, F2hat, phiE1, phiE2, phiF2
-	real matrix dPhi_dSigDiagE, dPhi_dSigDiagF, dPhi_dXE, dPhi_dXF, dPhi_dSigE, dPhi_dSigF, E1E2hat, E1F2hat, t
+	real colvector Phi, E1hat, E2hat, F2hat, phiE1, phiE2, phiF2, E1E2hat1, E1E2hat2, E1F2hat1, E1F2hat2
+	real matrix dPhi_dSigDiagE, dPhi_dSigDiagF, dPhi_dXE, dPhi_dXF, dPhi_dSigE, dPhi_dSigF
 	real scalar rho, i1, i2
-	real rowvector SigDiag, sqrtSigDiag
+	real rowvector SigDiag, sqrtSigDiag, t
 
 	if (flip) {
 		i1 = 2; i2 = 1
@@ -767,17 +767,18 @@ real colvector cmp_model::vecbinormal2(real colvector E1, real colvector E2, rea
 		phiE1 = editmissing(normalden(E1hat), 0)
 		phiE2 = editmissing(normalden(E2hat), 0)
 		phiF2 = editmissing(normalden(F2hat), 0)
-		E1E2hat = (E1hat,E2hat) * (t = (1,-rho \ -rho,1) / sqrt(1-rho*rho)) // each with the other partialled out, then renormalized to s.d. 1
-		E1F2hat = (E1hat,F2hat) *  t
-		dPhi_dSigE = phiE1 :* editmissing(normalden(E2hat=E1E2hat[one2N,2]),0) / (t=sqrt(det(Sig)))
-		dPhi_dSigF = phiE1 :* editmissing(normalden(F2hat=E1F2hat[one2N,2]),0) /  t
-		dPhi_dXE = (phiE1,phiE2) :* (editmissing(normal(E2hat), 1), editmissing(normal(E1E2hat[one2N,1]), infsign)) :/ sqrtSigDiag
-		dPhi_dXF = (phiE1,phiF2) :* (editmissing(normal(F2hat), 0), editmissing(normal(E1F2hat[one2N,1]), infsign)) :/ sqrtSigDiag
-		dPhi_dSigDiagE = (editmissing((E1,E2), 0):*dPhi_dXE :+ (Sig[1,2]*dPhi_dSigE)) :/ (t=-SigDiag-SigDiag) 
-		dPhi_dSigDiagF = (editmissing((E1,F2), 0):*dPhi_dXF :+ (Sig[1,2]*dPhi_dSigF)) :/  t 
-		dPhi_dSigE = dPhi_dSigDiagE[one2N,i1], dPhi_dSigE, dPhi_dSigDiagE[one2N,i2]
-		dPhi_dSigF = dPhi_dSigDiagF[one2N,i1], dPhi_dSigF, dPhi_dSigDiagF[one2N,i2]
-		dPhi_dSig = dPhi_dSigE - dPhi_dSigF
+    t = sqrt(1-rho*rho); E1hat = E1hat / t; E2hat = E2hat / t; F2hat = F2hat / t
+		E1E2hat1 = E1hat - rho * E2hat // each with the other partialled out, then renormalized to s.d. 1
+		E1E2hat2 = E2hat - rho * E1hat
+		E1F2hat1 = E1hat - rho * F2hat
+		E1F2hat2 = F2hat - rho * E1hat
+		dPhi_dSigE = phiE1 :* editmissing(normalden(E1E2hat2),0) / (t=sqrt(det(Sig)))
+		dPhi_dSigF = phiE1 :* editmissing(normalden(E1F2hat2),0) /  t
+		dPhi_dXE = (phiE1,phiE2) :* (editmissing(normal(E1E2hat2), 1), editmissing(normal(E1E2hat1), infsign)) :/ sqrtSigDiag
+		dPhi_dXF = (phiE1,phiF2) :* (editmissing(normal(E1F2hat2), 0), editmissing(normal(E1F2hat1), infsign)) :/ sqrtSigDiag
+		dPhi_dSigDiagE = (editmissing((E1,E2), 0) :* dPhi_dXE :+ (Sig[1,2] * dPhi_dSigE)) :/ (t = -SigDiag-SigDiag) 
+		dPhi_dSigDiagF = (editmissing((E1,F2), 0) :* dPhi_dXF :+ (Sig[1,2] * dPhi_dSigF)) :/  t 
+		dPhi_dSig = (dPhi_dSigDiagE[one2N,i1] - dPhi_dSigDiagF[one2N,i1]), (dPhi_dSigE - dPhi_dSigF), (dPhi_dSigDiagE[one2N,i2] - dPhi_dSigDiagF[one2N,i2])
 		dPhi_dE1 = dPhi_dXE[one2N,1] - dPhi_dXF[one2N,1]
 		dPhi_dE2 = dPhi_dXE[one2N,2]
 		dPhi_dF2 =                   - dPhi_dXF[one2N,2]
@@ -797,7 +798,7 @@ real matrix cmp_model::neg_half_E_Dinvsym_E(real matrix E_invX, real colvector o
 			E_invX_j = E_invX[one2N,j]	
 			EDE[|.,l-N+j+1 \ .,l|] = E_invX[|.,j+1 \ .,N|] :* E_invX_j // effectively double off-diagonal entries since symmetric
 			l = l - N + j
-			EDE[one2N,l--] = E_invX_j:*E_invX_j * .5
+			EDE[one2N,l--] = E_invX_j :* E_invX_j * .5
 		}
 	}
 	return (EDE)

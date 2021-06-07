@@ -5,6 +5,9 @@ set trace off
 set linesize 200
 cap set processors 8
 
+timer clear
+timer on 1
+
 cap log close
 qui log using "cmp\unit tests.log", replace
 
@@ -90,8 +93,7 @@ constraint 3 [esteem]high1=[security]high4
 constraint 4 [esteem]low1=[variety]low2
 constraint 5 [esteem]low1=[autonomy]low3
 constraint 6 [esteem]low1=[security]low4
-cmp (esteem:rank1=high1 low1)(variety:rank2=female score high2 low2)(autonomy:rank3=female score high3 ///
-  low3)(security:rank4=female score high4 low4),ind((9 9 9 9)) tech(dfp) ghkd(200, type(hammersley)) rev constr(1/6)
+cmp (esteem:rank1=high1 low1)(variety:rank2=female score high2 low2)(autonomy:rank3=female score high3 low3)(security:rank4=female score high4 low4), ind((9 9 9 9)) tech(dfp) ghkd(47, type(hammersley) scramble) rev constr(1/6)
 predict cmppr1, eq(esteem) pr
 predict cmppr2, eq(variety) pr
 predict cmppr3, eq(autonomy) pr
@@ -213,3 +215,6 @@ predict prE prF, pr
 predict prG, eq(#2) pr
 
 qui log close
+
+timer off 1
+timer list

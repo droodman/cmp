@@ -1086,10 +1086,8 @@ xij variables:
 
 . constraint 6 [esteem]low1=[security]low4
 
-. cmp (esteem:rank1=high1 low1)(variety:rank2=female score high2 low2)(autonomy:rank3=female score high3 ///
->   low3)(security:rank4=female score high4 low4),ind((9 9 9 9)) tech(dfp) ghkd(200, type(hammersley)) rev constr(1/6)
-Note: 200 is not prime. Prime draw counts are more reliable.
-
+. cmp (esteem:rank1=high1 low1)(variety:rank2=female score high2 low2)(autonomy:rank3=female score high3 low3)(security:rank4=female score high4 low4), ind((9 9 9 9)) tech(dfp) ghkd(47, type(hammersle
+> y) scramble) rev constr(1/6)
 
 Fitting individual models as starting point for full model fit.
 Note: For programming reasons, these initial estimates may deviate from your specification.
@@ -1164,52 +1162,52 @@ Fitting full model.
 Likelihoods for 3226 observations involve cumulative normal distributions above dimension 2.
 Using ghk2() to simulate them. Settings:
     Sequence type = hammersley
-    Number of draws per observation = 200
+    Number of draws per observation = 47
     Include antithetic draws = no
-    Scramble = no
+    Scramble = square root
     Prime bases = 2 3 5
 Each observation gets different draws, so changing the order of observations in the data set would change the results.
 
 
-Iteration 0:   log likelihood = -9340.3545  
-Iteration 1:   log likelihood =  -7061.457  (backed up)
-Iteration 2:   log likelihood = -6923.8024  (backed up)
-Iteration 3:   log likelihood = -6896.5793  (backed up)
-Iteration 4:   log likelihood = -6820.6604  (backed up)
-Iteration 5:   log likelihood = -6800.5629  (backed up)
-Iteration 6:   log likelihood = -6797.7939  (backed up)
-Iteration 7:   log likelihood = -6786.3719  (backed up)
-Iteration 8:   log likelihood = -6774.7053  (backed up)
-Iteration 9:   log likelihood = -6773.0761  (backed up)
-Iteration 10:  log likelihood = -6768.4098  (backed up)
-Iteration 11:  log likelihood = -6762.5507  
-Iteration 12:  log likelihood = -6750.3912  
-Iteration 13:  log likelihood = -6702.5032  
-Iteration 14:  log likelihood = -6678.3193  
-Iteration 15:  log likelihood = -6579.9611  
-Iteration 16:  log likelihood = -6509.0584  
-Iteration 17:  log likelihood = -6475.5495  
-Iteration 18:  log likelihood = -6421.8449  
-Iteration 19:  log likelihood = -6233.2697  
-Iteration 20:  log likelihood = -6148.9587  
-Iteration 21:  log likelihood = -6038.2987  
-Iteration 22:  log likelihood = -6026.2971  
-Iteration 23:  log likelihood = -6020.1481  
-Iteration 24:  log likelihood =  -6018.011  
-Iteration 25:  log likelihood = -6016.8532  
-Iteration 26:  log likelihood =  -6016.458  
-Iteration 27:  log likelihood = -6016.2403  
-Iteration 28:  log likelihood = -6016.1868  
-Iteration 29:  log likelihood = -6016.1747  
-Iteration 30:  log likelihood = -6016.1666  
-Iteration 31:  log likelihood = -6016.1646  
-Iteration 32:  log likelihood =  -6016.164  
-Iteration 33:  log likelihood = -6016.1639  
-Iteration 34:  log likelihood = -6016.1639  
+Iteration 0:   log likelihood = -9347.7255  
+Iteration 1:   log likelihood =  -7077.654  (backed up)
+Iteration 2:   log likelihood = -6944.6929  (backed up)
+Iteration 3:   log likelihood = -6929.4095  (backed up)
+Iteration 4:   log likelihood = -6853.8271  (backed up)
+Iteration 5:   log likelihood =  -6840.926  (backed up)
+Iteration 6:   log likelihood = -6831.1098  (backed up)
+Iteration 7:   log likelihood = -6820.2201  (backed up)
+Iteration 8:   log likelihood = -6805.5757  (backed up)
+Iteration 9:   log likelihood = -6801.4722  (backed up)
+Iteration 10:  log likelihood = -6796.5856  (backed up)
+Iteration 11:  log likelihood = -6774.6343  
+Iteration 12:  log likelihood = -6771.6177  
+Iteration 13:  log likelihood = -6733.1704  
+Iteration 14:  log likelihood = -6722.8421  
+Iteration 15:  log likelihood = -6637.8299  
+Iteration 16:  log likelihood = -6613.3925  
+Iteration 17:  log likelihood =  -6584.541  
+Iteration 18:  log likelihood = -6444.4149  
+Iteration 19:  log likelihood = -6220.8854  
+Iteration 20:  log likelihood = -6128.2364  
+Iteration 21:  log likelihood = -6059.6179  
+Iteration 22:  log likelihood = -6025.4241  
+Iteration 23:  log likelihood = -6016.1831  
+Iteration 24:  log likelihood = -6014.8263  
+Iteration 25:  log likelihood = -6013.4463  
+Iteration 26:  log likelihood = -6012.9575  
+Iteration 27:  log likelihood = -6012.7403  
+Iteration 28:  log likelihood = -6012.6925  
+Iteration 29:  log likelihood = -6012.6595  
+Iteration 30:  log likelihood = -6012.6512  
+Iteration 31:  log likelihood = -6012.6489  
+Iteration 32:  log likelihood = -6012.6484  
+Iteration 33:  log likelihood = -6012.6483  
+Iteration 34:  log likelihood = -6012.6483  
 
 Mixed-process regression                                Number of obs =  3,226
-                                                        Wald chi2(8)  = 119.14
-Log likelihood = -6016.1639                             Prob > chi2   = 0.0000
+                                                        Wald chi2(8)  = 119.22
+Log likelihood = -6012.6483                             Prob > chi2   = 0.0000
 
  ( 1)  [esteem]high1 - [variety]high2 = 0
  ( 2)  [esteem]high1 - [autonomy]high3 = 0
@@ -1221,41 +1219,41 @@ Log likelihood = -6016.1639                             Prob > chi2   = 0.0000
              | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 esteem       |
-       high1 |   .1801095   .0370241     4.86   0.000     .1075436    .2526753
-        low1 |  -.1902523   .0416919    -4.56   0.000     -.271967   -.1085376
+       high1 |   .1805755   .0370317     4.88   0.000     .1079947    .2531564
+        low1 |  -.1899444   .0417232    -4.55   0.000    -.2717203   -.1081684
 -------------+----------------------------------------------------------------
 variety      |
-      female |  -.0381153   .0717914    -0.53   0.595    -.1788239    .1025933
-       score |   .1335552   .0366454     3.64   0.000     .0617315     .205379
-       high2 |   .1801095   .0370241     4.86   0.000     .1075436    .2526753
-        low2 |  -.1902523   .0416919    -4.56   0.000     -.271967   -.1085376
-       _cons |   1.516329   .0556516    27.25   0.000     1.407254    1.625404
+      female |   -.037951    .071782    -0.53   0.597     -.178641    .1027391
+       score |    .133815   .0366458     3.65   0.000     .0619906    .2056394
+       high2 |   .1805755   .0370317     4.88   0.000     .1079947    .2531564
+        low2 |  -.1899444   .0417232    -4.55   0.000    -.2717203   -.1081684
+       _cons |   1.516122   .0556324    27.25   0.000     1.407084    1.625159
 -------------+----------------------------------------------------------------
 autonomy     |
-      female |  -.0235301     .06573    -0.36   0.720    -.1523586    .1052984
-       score |   .0919844   .0336669     2.73   0.006     .0259986    .1579703
-       high3 |   .1801095   .0370241     4.86   0.000     .1075436    .2526753
-        low3 |  -.1902523   .0416919    -4.56   0.000     -.271967   -.1085376
-       _cons |   .8444654   .0500023    16.89   0.000     .7464626    .9424682
+      female |  -.0233107   .0656962    -0.35   0.723    -.1520728    .1054514
+       score |   .0922327     .03366     2.74   0.006     .0262603    .1582051
+       high3 |   .1805755   .0370317     4.88   0.000     .1079947    .2531564
+        low3 |  -.1899444   .0417232    -4.55   0.000    -.2717203   -.1081684
+       _cons |   .8426828   .0499492    16.87   0.000     .7447842    .9405813
 -------------+----------------------------------------------------------------
 security     |
-      female |   .1517154   .0834368     1.82   0.069    -.0118177    .3152486
-       score |  -.1584246    .042579    -3.72   0.000    -.2418779   -.0749713
-       high4 |   .1801095   .0370241     4.86   0.000     .1075436    .2526753
-        low4 |  -.1902523   .0416919    -4.56   0.000     -.271967   -.1085376
-       _cons |    1.13782   .0634075    17.94   0.000     1.013544    1.262097
+      female |   .1510139   .0832747     1.81   0.070    -.0122014    .3142292
+       score |   -.158406   .0425025    -3.73   0.000    -.2417094   -.0751027
+       high4 |   .1805755   .0370317     4.88   0.000     .1079947    .2531564
+        low4 |  -.1899444   .0417232    -4.55   0.000    -.2717203   -.1081684
+       _cons |   1.137053   .0633157    17.96   0.000     1.012957    1.261149
 -------------+----------------------------------------------------------------
-    /lnsig_3 |    .291227   .0326099     8.93   0.000     .2273127    .3551413
-    /lnsig_4 |    .589474   .0334966    17.60   0.000     .5238219    .6551262
-/atanhrho_23 |   .5321197   .0429489    12.39   0.000     .4479414    .6162981
-/atanhrho_24 |   .4225539   .0400504    10.55   0.000     .3440567    .5010512
-/atanhrho_34 |   .3756279   .0377639     9.95   0.000      .301612    .4496437
+    /lnsig_3 |   .2915451   .0325795     8.95   0.000     .2276905    .3553997
+    /lnsig_4 |   .5876073   .0334654    17.56   0.000     .5220163    .6531982
+/atanhrho_23 |   .5262939   .0425686    12.36   0.000      .442861    .6097269
+/atanhrho_24 |   .4189532   .0398884    10.50   0.000     .3407733     .497133
+/atanhrho_34 |   .3724088   .0375553     9.92   0.000     .2988018    .4460159
 -------------+----------------------------------------------------------------
-       sig_3 |   1.338068   .0436343                      1.255222    1.426382
-       sig_4 |    1.80304   .0603957                      1.688468    1.925385
-      rho_23 |   .4869998   .0327628                      .4202053    .5485453
-      rho_24 |   .3990798   .0336717                      .3310942    .4629434
-      rho_34 |   .3589045   .0328994                      .2927871    .4216061
+       sig_3 |   1.338494   .0436074                      1.255697    1.426751
+       sig_4 |   1.799677   .0602269                      1.685422    1.921677
+      rho_23 |   .4825431   .0326566                      .4160131    .5439348
+      rho_24 |   .3960482   .0336318                      .3281676    .4598595
+      rho_34 |   .3560969   .0327931                      .2902157    .4186186
 ------------------------------------------------------------------------------
 
 . predict cmppr1, eq(esteem) pr
