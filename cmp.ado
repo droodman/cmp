@@ -1,4 +1,4 @@
-*! cmp 8.6.2 1 June 2021
+*! cmp 8.6.4 22 July 2021
 *! Copyright (C) 2007-21 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -2527,6 +2527,8 @@ program define cmp_error
 end
 
 * Version history
+* 8.6.4 Fixed 8.6.0 bug in truncated-regression models
+* 8.6.3 speed tweaks
 * 8.6.2 Fixed crashes in margins, vce(unconditional) after svy estimation. Now requires Stata 13 or newer.
 * 8.6.1 Fixed crash in margins after resultsform(reduced) and observation weights, and crash in svy: , resultsform(reduced).
 *       Fixed computational bug affecting predict, lnl and predict, scores after resultsform(reduced) and thus standard errors from svy: , resultsform(reduced).

@@ -1,4 +1,4 @@
-/* cmp 8.6.2 1 June 2021
+/* cmp 8.6.4 22 July 2021
    Copyright (C) 2007-21 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -1454,7 +1454,7 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
 			if (v->d_trunc)
 				lnL = lnL - lnLTrunc(v, todo)
 
-			(*(base->plnL))[v->SubsampleInds] = lnL
+      (*(base->plnL))[v->SubsampleInds] = lnL
 
 			if (todo) {
 				if (v->d_cens)
@@ -1531,7 +1531,7 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
         // for each group, make weights proportional to L (not lnL) for the group/obs at next-lower level
 				t = RE->lnLlimits :- rowminmax(RE->lnLByDraw)  // In summing groups' Ls, shift just enough to prevent underflow in exp(), but if necessary even less to avoid overflow
 				lnLmin = t[,1]; lnLmax = t[,2]
-				t = lnLmin:*(lnLmin:>0) - lnLmax; shift = t:*(t :< 0) + lnLmax // parallelizes better than rowminmax()
+				t = lnLmin:*(lnLmin:>0) - lnLmax; shift = t :* (t :< 0) + lnLmax // parallelizes better than rowminmax()
 				L_g = editmissing(exp(RE->lnLByDraw:+shift), 0)  // un-log likelihood for each group & draw; lnL=. => L=0
 				if (Quadrature)
 					L_g = L_g :* RE->QuadW
@@ -2041,8 +2041,10 @@ void cmp_model::cmp_init(transmorphic M) {
 		if (v->d_cens)   v->pECens  = &J(v->N, v->d_cens  , 0)
 		if (NumCuts | sum(intregeqs) | sum(trunceqs)) {
 			v->pF = &J(v->N, v->dCensNonrobase, .)
-			if (sum(trunceqs))
-				v->pEt = v->pFt = &J(v->N, v->d_trunc, .)
+			if (sum(trunceqs)) {
+				v->pEt = &J(v->N, v->d_trunc, .)
+				v->pFt = &J(v->N, v->d_trunc, .)
+      }
 		}
 
 		if (v->d_frac) {

@@ -1,5 +1,5 @@
 {smcl}
-{* *! cmp 8.5.4 2 May 2021}{...}
+{* *! cmp 8.6.4 22 July 2021}{...}
 {cmd:help cmp}
 {hline}{...}
 
@@ -875,6 +875,11 @@ are the best way to introduce how to use {cmd:cmp} (colored text is clickable):
 {phang}. {stata margins, dydx(mrate)}{p_end}
 {phang}. {stata cmp (prate = mrate ltotemp age i.sole), ind($cmp_frac) qui}{p_end}
 {phang}. {stata margins, dydx(mrate) predict(pr)}{p_end}
+
+{phang}. {stata webuse fitness}{p_end}
+{phang}. {stata churdle linear hours age i.smoke distance i.single, select(commute whours age) ll(0)}{p_end}
+{phang}. {stata gen byte hours_pos = hours > 0}{p_end}
+{phang}. {stata cmp (hours = age i.smoke distance i.single, trunc(0 .)) (hours_pos = commute whours age), nolr ind("cond(hours_pos, $cmp_cont, $cmp_out)" $cmp_probit) covar(indep) qui}{p_end}
 
 {phang}. {stata webuse sysdsn3}{p_end}
 {phang}. {stata mprobit insure age male nonwhite site2 site3}{p_end}
