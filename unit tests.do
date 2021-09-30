@@ -70,6 +70,11 @@ use sysdsn3, clear
 cmp (insure = age male nonwhite site2 site3, iia), nolr ind($cmp_mprobit) qui
 margins, dydx(nonwhite) predict(eq(#2) pr)
 
+
+webuse fitness, clear
+gen byte hours_pos = hours > 0
+cmp (hours = age i.smoke distance i.single, trunc(0 .)) (hours_pos = commute whours age), nolr ind("cond(hours_pos, $cmp_cont, $cmp_out)" $cmp_probit) covar(indep) qui
+
 use travel, clear
 drop invehiclecost traveltime partysize
 reshape wide choice termtime travelcost, i(id) j(mode)

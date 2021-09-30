@@ -1,4 +1,4 @@
-*! cmp 8.6.4 22 July 2021
+*! cmp 8.6.5 30 September 2021
 *! Copyright (C) 2007-21 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -710,7 +710,7 @@ program define _cmp
 	mata _mod.setNumEff(st_matrix("cmp_NumEff"))
 	
 	local technique technique(`technique')
-	_vce_parse, optlist(robust jackknife bootstrap oim opg) argoptlist(cluster) pwallowed(robust jackknife bootstrap cluster oim opg) old: `wgtexp', `robust' cluster(`cluster') vce(`vce')
+	_vce_parse, optlist(Robust oim opg) argoptlist(CLuster) pwallowed(robust cluster oim opg) old: `wgtexp', `robust' cluster(`cluster') vce(`vce')
 	local vce `r(vceopt)'
 	local robust `r(robust)'
 	local cluster `r(cluster)'
@@ -2527,6 +2527,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.6.5 Allow abbreviation of vce() suboptions
 * 8.6.4 Fixed 8.6.0 bug in truncated-regression models
 * 8.6.3 speed tweaks
 * 8.6.2 Fixed crashes in margins, vce(unconditional) after svy estimation. Now requires Stata 13 or newer.
