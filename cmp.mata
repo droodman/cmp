@@ -1,4 +1,4 @@
-/* cmp 8.6.4 22 July 2021
+/* cmp 8.6.6 12 October 2021
    Copyright (C) 2007-21 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -57,6 +57,7 @@ struct scorescol {
 struct subview {  // info associated with subsets of data defined by given combinations of indicator values
   real matrix EUncens
   pointer (real matrix) scalar pECens, pF, pEt, pFt
+  real colvector Fi  // temporary var used in lf1(); store here in case setcol(pX, Fi...) leads to pX=&Fi and Fi should be preserved
 	struct smatrix colvector theta, y, Lt, Ut, yL
 	struct smatrix matrix dOmega_dGamma
 	struct scorescol rowvector Scores  // one col for each level, one col for each draw
@@ -1177,7 +1178,7 @@ void cmp_lf1(transmorphic M, real scalar todo, real rowvector b, real colvector 
 void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real colvector lnf, real matrix S) {
 	real matrix t, L_g, invGamma, C, dOmega_dSig, L_gv, L_gvr, sThetaScores, sCutScores
 	real scalar e, c, i, j, k, l, m, _l, r, tEq, EUncensEq, ECensEq, FCensEq, NewIter, eq, eq1, eq2, _eq, c1, c2, cut, lnsigWithin, lnsigAccross, atanhrhoAccross, atanhrhoWithin, Iter
-	real colvector shift, lnLmin, lnLmax, lnL, out, Fi
+	real colvector shift, lnLmin, lnLmax, lnL, out
 	pointer(struct subview scalar) scalar v
 	pointer(real matrix) scalar pdlnL_dtheta, pdlnL_dSig, pThisQuadXAdapt_j, pt
 	pointer(struct scores scalar) scalar pScores
@@ -1273,7 +1274,7 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
 				}
 		}
 
-	for (l=1; l<=L; l++) {
+  for (l=1; l<=L; l++) {
 		RE = &((*REs)[l])
 		if (RE->d == 1)
 			RE->Sig = (RE->T = RE->sig) * RE->sig
@@ -1383,29 +1384,28 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
 										setcol(v->pECens, ECensEq, cuts[v->y[i].M:+1, i] - v->theta[i].M)
 								} else // roprobit
 									setcol(v->pECens, ECensEq, -v->theta[i].M)
-
 								if (v->pF)
 									if (NonbaseCases[ECensEq]) {
 										++FCensEq
-                    Fi = J(0,0,0)
+                    v->Fi = J(0,0,0)
 										if (v->TheseInds[i]==`cmp_int')
-											Fi = v->yL[i].M - v->theta[i].M
+											v->Fi = v->yL[i].M - v->theta[i].M
 										else if (v->TheseInds[i]==`cmp_oprobit')
 											if (trunceqs[i]) {
 												t = v->y[i].M
-												Fi = (t :* v->Lt[i].M + (1:-t) :* cuts[v->y[i].M, i]) - v->theta[i].M
+												v->Fi = (t :* v->Lt[i].M + (1:-t) :* cuts[v->y[i].M, i]) - v->theta[i].M
 											} else
-												Fi = cuts[ v->y[i].M, i] - v->theta[i].M
+												v->Fi = cuts[ v->y[i].M, i] - v->theta[i].M
 										else if (trunceqs[i])
 											if (v->TheseInds[i]==`cmp_left')
-												Fi = v->Lt[i].M - v->theta[i].M
+												v->Fi = v->Lt[i].M - v->theta[i].M
 											else if (v->TheseInds[i]==`cmp_right')
-												Fi = v->theta[i].M - v->Ut[i].M
+												v->Fi = v->theta[i].M - v->Ut[i].M
 											else if (v->TheseInds[i]==`cmp_probit')
-												Fi = v->Lt[i].M - v->theta[i].M
+												v->Fi = v->Lt[i].M - v->theta[i].M
 											else if (v->TheseInds[i]==`cmp_probity1')
-												Fi = v->theta[i].M - v->Ut[i].M
-                    if (rows(Fi)) setcol(v->pF, FCensEq, Fi)
+												v->Fi = v->theta[i].M - v->Ut[i].M
+                    if (rows(v->Fi)) setcol(v->pF, FCensEq, v->Fi)
 									}
 							}
 
@@ -1413,16 +1413,16 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
 								++tEq
 								if (v->TheseInds[i]==`cmp_left') {
 									setcol(v->pEt, tEq, v->Ut[i].M - v->theta[i].M)
-									setcol(v->pFt, tEq, Fi)
+									setcol(v->pFt, tEq, v->Fi)
 								} else if (v->TheseInds[i]==`cmp_right') {
 									setcol(v->pEt, tEq, v->theta[i].M - v->Lt[i].M)
-									setcol(v->pFt, tEq, Fi)
+									setcol(v->pFt, tEq, v->Fi)
 								} else if (v->TheseInds[i]==`cmp_probit') {
 									setcol(v->pEt, tEq, v->Ut[i].M - v->theta[i].M)
-									setcol(v->pFt, tEq, Fi)
+									setcol(v->pFt, tEq, v->Fi)
 								} else if (v->TheseInds[i]==`cmp_probity1') {
 									setcol(v->pEt, tEq, v->theta[i].M - v->Lt[i].M)
-									setcol(v->pFt, tEq, Fi)
+									setcol(v->pFt, tEq, v->Fi)
 								} else if (anyof((`cmp_cont',`cmp_oprobit',`cmp_int'), v->TheseInds[i])) {
 									setcol(v->pEt, tEq, v->Ut[i].M - v->theta[i].M)
 									setcol(v->pFt, tEq, v->Lt[i].M - v->theta[i].M)
@@ -1432,7 +1432,7 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
 					}
 				}
 
-			for (j=rows(MprobitGroupInds); j; j--) // relative-difference mprobit errors
+      for (j=rows(MprobitGroupInds); j; j--) // relative-difference mprobit errors
 				if (v->mprobit[j].d > 0) {
 					out = base->theta[v->mprobit[j].out].M[v->SubsampleInds]
 					for (i=v->mprobit[j].d; i; i--)
