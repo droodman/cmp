@@ -933,6 +933,7 @@ program define _cmp
 		exit 0
 	}
 
+  ereturn clear
 	tempname b cmpInitFull
 	// Fit individual models before mis-specifed and constant-only ones in case perfect probit predictors shrink some eq samples
 	// Do InitSearch even if user specifies init() to check for that and to build fully labelled parameter vector for constraint work in Estimate

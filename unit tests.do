@@ -1,4 +1,5 @@
-cd "C:\Users\drood\OneDrive\Documents\Macros"
+cap cd "D:\OneDrive\Documents\Macros"
+cap cd "/mnt/d/OneDrive/Documents/Macros"
 set more off
 set rmsg off
 set trace off

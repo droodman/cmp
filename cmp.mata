@@ -856,7 +856,7 @@ real colvector cmp_model::vecmultinormal(real matrix E, real matrix F, real matr
 			Phi = normal2(Mdivs(*getcol(F,1), sqrtSig), Mdivs(*getcol(E,1), sqrtSig))
 			if (todo) {  // Compute partial deriv w.r.t. sig^2 in 1/sqrt(sig^2) term in normal dist
 				if (N_perm == 1) {
-					dPhi_dE =  editmissing(normalden(E, 0, sqrtSig), 0) :/ Phi  // only as of Stata 13 can 0 args to normalden be dropped
+					dPhi_dE =  editmissing(normalden(E, 0, sqrtSig), 0) :/ Phi  // only in Stata 13 can the middle 0's be dropped; but this is still mostly running as Stata 11
 					dPhi_dF = -editmissing(normalden(F, 0, sqrtSig), 0) :/ Phi
 				}
 				dPhi_dSig = (rowsum(dPhi_dE :* E) + rowsum(dPhi_dF :* F)) / (-2 * Sig)
