@@ -1,5 +1,5 @@
 {smcl}
-{* *! cmp 8.6.4 22 July 2021}{...}
+{* *! cmp 8.6.7 5 January 2022}{...}
 {cmd:help cmp}
 {hline}{...}
 
@@ -112,13 +112,6 @@ may be numbers or variables; {it:a} missing ({it:a} {ul:>} {cmd:.}) means minus 
 
 {title:UPDATES}
 
-{pstd} Versions 8.0.0 and 8.2.0 of {cmd:cmp}, released in mid-2017 and early 2018, include changes that can somewhat affect results in hierarchical models. An older version, 7.1.0, is available as a
-{browse "http://github.com/droodman/cmp/tree/09ce0ec1fe765a8c585208004b848758763a1cfe":Github archive}, and can be directly installed, in Stata 13 or later, via
-"{net "from https://raw.github.com/droodman/cmp/v7.1.0":net from https://raw.github.com/droodman/cmp/v7.1.0}".
-
-{pstd} Versions 8.6.2, released in June 2021, requires Stata 13 or later. The 
-{browse "https://github.com/droodman/cmp/releases/tag/v8.6.1":previous version} works in Stata 11 and 12 too.
-
 {pstd}Major features have been added to {cmd:cmp} since Roodman (2011), and are documented only here. They include:
 
 {p 4 6 0}
@@ -138,6 +131,17 @@ even if the resulting equation system is simultaneous rather than recursive.
 {p 4 6 0}
 * Multilevel random effects and coefficients can now be modeled, using simulation or (adaptive) quadrature. These 
 can be correlated within and across equations. For such multidimensional effects, quadrature is done on "sparse grids" for efficiency (Heiss and Winschel 2008). 
+
+{pstd} Versions of {cmd:cmp} back to 7.1.0 are {browse "https://github.com/droodman/cmp/releases":on GitHub}. In Stata 13 or later, they can be installed with
+{cmd:net install cmp, replace from(https://raw.github.com/droodman/cmp/vX.Y.Z)} where {cmd:X.Y.Z} is the version number.
+
+{pstd} Versions 8.0.0 and 8.2.0, released in mid-2017 and early 2018, include changes that can somewhat affect results in hierarchical models. The previous version, 7.1.0,
+avoids these changes.
+
+{pstd} Versions 8.6.2, released in June 2021, requires Stata 13 or later. Previous versions work in Stata 11 and 12 too.
+
+{pstd} Version 8.6.7, released in January 2022, includes a small change to work around a bug in {help:tobit} in Stata 16 and 17, which is used to
+find the estimation starting point in tobit-including models. This change slightly affects results in such models.
 
 {title:Donate?}
 

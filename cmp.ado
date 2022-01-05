@@ -1,5 +1,5 @@
-*! cmp 8.6.6 12 October 2021
-*! Copyright (C) 2007-21 David Roodman 
+*! cmp 8.6.7 5 January 2022
+*! Copyright (C) 2007-22 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -2531,6 +2531,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.6.7 workaround for obscure bug in Stata's tobit in Stata 16, 17 causing crash. Slightly affects results for tobit models.
 * 8.6.6 Fixed 8.6.3 crash when bicensored (oprobit intreg) eqs combined with eqs incomplete for some obs
 * 8.6.5 Allow abbreviation of vce() suboptions
 * 8.6.4 Fixed 8.6.0 bug in truncated-regression models
