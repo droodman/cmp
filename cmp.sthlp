@@ -194,7 +194,7 @@ parameters are structural. In the latter, it is a limited-information (LIML) est
 {cmd:cmp}'s modeling framework embraces those of the official Stata commands {help probit}, {help ivprobit}, {help treatreg}, 
 {help biprobit}, {help tetrachoric}, {help oprobit:oprobit}, {help mprobit}, {help asmprobit}, {help asroprobit}, {help tobit}, {help ivtobit}, 
 {help cnreg}, {help intreg}, {help truncreg}, {help fracreg}, {help heckman}, {help heckprob}, {help heckoprobit}, 
-{help xtreg}, {help xtprobit}, {help xttobit}, {help xtintreg}, {help xtheckman}, {help meintreg}, {help meoprobit}, {help metobit}, {help metobit}, 
+{help xtreg}, {help xtprobit}, {help xttobit}, {help xtintreg}, {help xtheckman}, {help meintreg}, {help meprobit}, {help meoprobit}, {help metobit}, {help metobit}, 
 {help eprobit}; to lesser degrees {help regress}, {help sureg}, 
 and {help reg3}; and user-written {stata findit ssm:ssm}, {stata findit polychoric:polychoric}, {stata findit triprobit:triprobit}, 
 {stata findit mvprobit:mvprobit}, {stata findit bitobit:bitobit}, 
