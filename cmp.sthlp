@@ -1,5 +1,5 @@
 {smcl}
-{* *! cmp 8.6.7 5 January 2022}{...}
+{* *! cmp 8.6.8 7 January 2022}{...}
 {cmd:help cmp}
 {hline}{...}
 
@@ -139,9 +139,6 @@ can be correlated within and across equations. For such multidimensional effects
 avoids these changes.
 
 {pstd} Versions 8.6.2, released in June 2021, requires Stata 13 or later. Previous versions work in Stata 11 and 12 too.
-
-{pstd} Version 8.6.7, released in January 2022, includes a small change to work around a bug in {help:tobit} in Stata 16 and 17, which is used to
-find the estimation starting point in tobit-including models. This change slightly affects results in such models.
 
 {title:Donate?}
 

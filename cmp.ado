@@ -1,4 +1,4 @@
-*! cmp 8.6.7 5 January 2022
+*! cmp 8.6.8 7 January 2022
 *! Copyright (C) 2007-22 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -14,7 +14,7 @@
 * You should have received a copy of the GNU General Public License
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-*! Version history at bottom
+* Version history at bottom
 
 cap program drop cmp
 program define cmp, sortpreserve properties(user_score svyb svyj svyr mi fvaddcons) byable(recall)
@@ -1774,10 +1774,8 @@ program InitSearch, rclass
 				if      strpos(" `r(levels)' ", " $cmp_oprobit ")  local regtype $cmp_oprobit
 				else if strpos(" `r(levels)' ", " $cmp_int ")      local regtype $cmp_int
 				else if strpos(" `r(levels)' ", " $cmp_roprobit ") local regtype $cmp_roprobit
-				else if strpos(" `r(levels)' ", " $cmp_left ") | strpos(" `r(levels)' ", " $cmp_right ") {
-          if strpos(" `r(levels)' ", " $cmp_left ")        local regtype $cmp_left
-          if strpos(" `r(levels)' ", " $cmp_right ")       local regtype $cmp_right
-        }
+				else if strpos(" `r(levels)' ", " $cmp_left ")     local regtype $cmp_left
+        else if strpos(" `r(levels)' ", " $cmp_right ")    local regtype $cmp_right
 				else if strpos(" `r(levels)' ", " $cmp_frac ")     local regtype $cmp_frac
 				else                                               local regtype $cmp_cont
 			}
@@ -1809,7 +1807,7 @@ program InitSearch, rclass
 				if $cmp_d > 1 | $parse_L > 1 qui gen `e`eq'' = 0 if e(sample)
 			}
 			else if `regtype'==$cmp_oprobit {
-				`quietly' `svy' oprobit ${cmp_y`eq'} `xvars' `iwgtexp' if `if' & _cmp_ind`eq', offset(${cmp_xo`eq'}) `mlopts'
+				`quietly' `svy' oprobit ${cmp_y`eq'} `xvars' `iwgtexp' if `if' & _cmp_ind`eq', offset(${cmp_xo`eq'}) `mlopts' iter(16000)
 				mat `beta' = e(b)
 				mat `V' = e(V)
 				scalar `sig' = 0
@@ -1835,7 +1833,7 @@ program InitSearch, rclass
 			else if `regtype'==$cmp_probit {
 				cap confirm variable _mp_cmp_y`eq' // check for cmp-made dummies for non-as mprobit
 				`quietly' `svy' probit `=cond(_rc, "${cmp_y`eq'}", "_mp_cmp_y`eq'")' `xvars' `iwgtexp' ///
-					if `if' & (inlist(_cmp_ind`eq',$cmp_probit,$cmp_probity1,$cmp_mprobit) | (_cmp_ind`eq' > $cmp_mprobit_ind_base & _cmp_ind`eq' < $cmp_roprobit_ind_base)), ${cmp_xc`eq'} offset(${cmp_xo`eq'}) `mlopts'
+					if `if' & (inlist(_cmp_ind`eq',$cmp_probit,$cmp_probity1,$cmp_mprobit) | (_cmp_ind`eq' > $cmp_mprobit_ind_base & _cmp_ind`eq' < $cmp_roprobit_ind_base)), ${cmp_xc`eq'} offset(${cmp_xo`eq'}) `mlopts' iter(16000)
 
         if "`adjustprobitsample'" != "" {
           forvalues r=1/$cmp_num_mprobit_groups {  // for mprobit obs that got zapped for perfect prediction, remove from all eqs in group
@@ -1876,7 +1874,7 @@ program InitSearch, rclass
 			}
 			else if `regtype'==$cmp_left | `regtype'==$cmp_right {
         
-				cap noisily `svy' tobit ${cmp_y`eq'} `xvars' `awgtexp' if `if' & inlist(_cmp_ind`eq', 1, 2, 3), ${cmp_xc`eq'} `=cond(`regtype'==$cmp_left,"ll","")' `=cond(`regtype'==$cmp_right,"ul","")'
+				cap noisily `svy' tobit ${cmp_y`eq'} `xvars' `awgtexp' if `if' & inlist(_cmp_ind`eq', 1, 2, 3), ${cmp_xc`eq'} ll ul iter(16000)
 				if _rc & _rc != 430 { // crash on error other than failure to converge
 					error _rc
 					cmp_error _rc
@@ -1892,7 +1890,7 @@ program InitSearch, rclass
 				}
 			}
 			else if `regtype'==$cmp_int {
-				cap `svy' intreg ${cmp_y`eq'_L} ${cmp_y`eq'} `xvars' `iwgtexp' if `if' & inlist(_cmp_ind`eq', 1, $cmp_int), ${cmp_xc`eq'} offset(${cmp_xo`eq'}) `mlopts'
+				cap `svy' intreg ${cmp_y`eq'_L} ${cmp_y`eq'} `xvars' `iwgtexp' if `if' & inlist(_cmp_ind`eq', 1, $cmp_int), ${cmp_xc`eq'} offset(${cmp_xo`eq'}) `mlopts' iter(16000)
 				if _rc & _rc != 430 { // crash on error other than failure to converge
 					error _rc
 					cmp_error _rc
@@ -2531,6 +2529,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.6.8 Rollback 8.6.7 changes in favor of iter(16000) on calls to tobit, probit, oprobit, intreg in order not to slightly change results
 * 8.6.7 workaround for obscure bug in Stata's tobit in Stata 16, 17 causing crash. Slightly affects results for tobit models.
 * 8.6.6 Fixed 8.6.3 crash when bicensored (oprobit intreg) eqs combined with eqs incomplete for some obs
 * 8.6.5 Allow abbreviation of vce() suboptions
