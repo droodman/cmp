@@ -1,4 +1,4 @@
-*! cmp 8.6.8 7 January 2022
+*! cmp 8.6.9 14 March 2022
 *! Copyright (C) 2007-22 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -2529,6 +2529,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.6.9 Fixed bug causing predict/margins to think system involving m/roprobits uses GHK just because it has more equations
 * 8.6.8 Rollback 8.6.7 changes in favor of iter(16000) on calls to tobit, probit, oprobit, intreg in order not to slightly change results
 * 8.6.7 workaround for obscure bug in Stata's tobit in Stata 16, 17 causing crash. Slightly affects results for tobit models.
 * 8.6.6 Fixed 8.6.3 crash when bicensored (oprobit intreg) eqs combined with eqs incomplete for some obs

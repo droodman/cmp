@@ -1,4 +1,4 @@
-*! cmp 8.6.2 1 June 2021
+*! cmp 8.6.9 14 March 2022
 *! Copyright (C) 2007-21 David Roodman
 
 * This program is free software: you can redistribute it and/or modify
@@ -137,7 +137,7 @@ program define cmp_p
 			mata _mod = cmp_model(); `M' = _mod.insert(I(`d'-1), `k', J(1, `d'-1, -1))
 			mata `Sigma' = `M' ' `Sigma' * `M'  // eq (12) in cmp article
 			mata st_view(`E'=., ., "`xbs'", "`touse'")
-			if colsof(`Sigma') > 3 {
+			if 0`e(ghkdraws)' {
 				mata `t1' = select(0..3, ("", "sqrt", "negsqrt", "fl"):=="`e(ghkscramble)'")
 				mata `ghk2DrawSet' = ghk2setup(rows(`E'), 0`e(ghkdraws)', `d', "`e(ghktype)'", 1, (NULL, &ghk2SqrtScrambler(), &ghk2NegSqrtScrambler(), &ghk2FLScrambler())[1+`t1'])
 			}
