@@ -1,4 +1,4 @@
-*! cmp 8.6.9 14 March 2022
+*! cmp 8.7.0 25 March 2022
 *! Copyright (C) 2007-22 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -466,11 +466,11 @@ program define _cmp
 			local N_roprobit `r(N)'
 			if `N_mprobit' | `N_roprobit' { // multinomial or rank-ordered probit
 				if (`N_mprobit' & "`m_ro'" == "ro") | (`N_roprobit' & "`m_ro'" == "m") cmp_error 148 "Cannot mix multinomial and rank-ordered indicator values in the same group."
-
 				cap assert inlist(_cmp_ind`cmp_eqno', 0, $cmp_mprobit, $cmp_roprobit) if `touse', fast
-				if _rc | `N_mprobit'&`N_roprobit' cmp_error "Dependent variables modeled as `=cond(`N_mprobit',"multinomial","rank-ordered")' probit may not be modeled differently for other observations in the same equation."
+
+				if _rc | `N_mprobit'&`N_roprobit' cmp_error 198 `"Dependent variables modeled as `=cond(`N_mprobit',"multinomial","rank-ordered")' probit may not be modeled differently for other observations in the same equation."'
 				
-				if ${cmp_truncreg`cmp_eqno'} cmp_error "Truncation not allowed in `=cond(`N_mprobit',"multinomial","rank-ordered")' probit equations."
+				if ${cmp_truncreg`cmp_eqno'} cmp_error 198 `'"Truncation not allowed in `=cond(`N_mprobit',"multinomial","rank-ordered")' probit equations."'
 				
 				if `asprobit_eq'==1 & "`m_ro'" == "" { // starting new asprobit group?
 					if `N_mprobit' {
@@ -2529,6 +2529,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.7.0 Fixed bugs in printing error messages in a few cases.
 * 8.6.9 Fixed bug causing predict/margins to think system involving m/roprobits uses GHK just because it has more equations
 * 8.6.8 Rollback 8.6.7 changes in favor of iter(16000) on calls to tobit, probit, oprobit, intreg in order not to slightly change results
 * 8.6.7 workaround for obscure bug in Stata's tobit in Stata 16, 17 causing crash. Slightly affects results for tobit models.
