@@ -1,4 +1,4 @@
-*! cmp 8.7.0 25 March 2022
+*! cmp 8.7.1 13 April 2022
 *! Copyright (C) 2007-22 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -239,7 +239,7 @@ program define _cmp
 		local FixedRhoFill`l' = cond("${cmp_cov`l'}"=="independent", 0, .)
 	}
 
-	local t : subinstr local indicators "(" "", all
+	local t: subinstr local indicators "(" "", all
 	if $cmp_d != `:word count `:subinstr local t ")" "", all'' cmp_error 198 `"The {cmdab:ind:icators()} option must contain $cmp_d `=plural($cmp_d,"variable","variables, one for each equation")'. Did you forget to type {stata "cmp setup"}?"'
 
 	mata _mod.setQuadrature(0); _mod.setREAnti(1)
@@ -360,11 +360,11 @@ program define _cmp
 				replace _cmp_ind`cmp_eqno' = $cmp_cont if _cmp_ind`cmp_eqno'==$cmp_trunc // deprecate this indicator value
 			}
 			
-			foreach macro in eq x xc xo xe y yR {
+			foreach macro in eq x xc xo xe y yR id {
 				global cmp_`macro'`cmp_eqno' ${parse_`macro'`parse_eqno'}
 			}
 
-			markout _cmp_ind`cmp_eqno' ${cmp_xo`cmp_eqno'} ${cmp_xe`cmp_eqno'}
+			markout _cmp_ind`cmp_eqno' ${cmp_xo`cmp_eqno'} ${cmp_xe`cmp_eqno'} `:subinstr global cmp_id`cmp_eqno' "_n" "", all word'
 			if "${cmp_xe`cmp_eqno'}" != "" replace _cmp_ind`cmp_eqno' = 0 if ${cmp_xe`cmp_eqno'}<=0
 			
 			cap assert _cmp_ind`cmp_eqno' != $cmp_int if `touse', fast
@@ -512,7 +512,7 @@ program define _cmp
 						global cmp_ind`j' _cmp_ind`j'
 						gen byte _cmp_ind`j' = $cmp_mprobit*(_cmp_ind`cmp_eqno'>0) if `touse'
 						LabelMprobitEq `j' `parse_eqno' `j' `cmp_eqno'
-						foreach macro in x xc xo xe yR {
+						foreach macro in x xc xo xe yR id {
 							global cmp_`macro'`j' ${cmp_`macro'`cmp_eqno'}
 						}
 						mat cmp_num_cuts = cmp_num_cuts \ 0
@@ -552,7 +552,7 @@ program define _cmp
 			if _rc==0 global cmp_y`cmp_eqno' .
 			qui replace _cmp_ind`cmp_eqno' = 0 if `touse' & mi(${cmp_y`cmp_eqno'}) & _cmp_ind`cmp_eqno'!=$cmp_int
 
-			forvalues i=`cmp_eqno'/`=`cmp_eqno'+`NAlts'*(`asprobit_eq'==0)' { // do once unless expanding non-as mprobit eq
+			forvalues i=`cmp_eqno'/`=`cmp_eqno'+`NAlts'*(`asprobit_eq'==0)' { // do once unless expanding non-alt-specific mprobit eq
 
 				if `i'==1 mat cmp_fixed_rhos$parse_L = 0
 				else      mat cmp_fixed_rhos$parse_L = (cmp_fixed_rhos$parse_L, J(`i'-1, 1, .)) \ J(1, `i', `FixedRhoFill$parse_L')
@@ -583,7 +583,7 @@ program define _cmp
 					forvalues l=1/`=$parse_L-1' {
 						mat cmp_fixed_sigs`l' = nullmat(cmp_fixed_sigs`l'), .
 					}
-					if `i'>=`cmp_eqno'+2 & "${parse_iia`parse_eqno'}" != "" { // impose IIA for non-as mprobits
+					if `i'>=`cmp_eqno'+2 & "${parse_iia`parse_eqno'}" != "" { // impose IIA for non-alt-specifc mprobits
 						mat cmp_fixed_sigs$parse_L = nullmat(cmp_fixed_sigs$parse_L), sqrt(2-`structural')
 						forvalues j=`=`cmp_eqno'+1'/`=`i'-1' {
 							mat cmp_fixed_rhos$parse_L[`i',`j'] = cond(`structural', 0, cond($cmpSigXform, atanh(.5), .5))
@@ -602,8 +602,6 @@ program define _cmp
 					constraint `r(free)' [${cmp_eq`i'}]_cons
 					local lrtest nocons
 				}
-
-				global cmp_id`i' ${parse_id`parse_eqno'}
 
 				replace _cmp_ind`i' = $cmp_probity1 if `touse' & _cmp_ind`i'==$cmp_probit & `:word 1 of ${cmp_y`i'}' // to streamline likelihood computation split probit samples into y=0 and y!=0
 
@@ -697,7 +695,7 @@ program define _cmp
 	forvalues eq = 1/$cmp_d {
 		foreach id in ${cmp_id`eq'} {
 			local l: list posof "`id'" in global(parse_id)
-			mat `Eqs'[`eq', `l'] = "`id'"=="_n" | cmp_fixed_sigs`l'[1,`eq']>0  // don't simulate REs with variance=0
+			mat `Eqs'[`eq', `l'] = "`id'"=="_n" | cmp_fixed_sigs`l'[1,`eq']>0  // don't simulate REs with variance 0
 		}
 	}
 	mata _mod.setEqs(st_matrix("`Eqs'"))
@@ -968,6 +966,7 @@ program define _cmp
 	qui count if `touse'
 	if r(N)==0 cmp_error 2000 "No observations."
 	drop `t'
+
 	tokenize $parse_id
 	cap drop _cmp_id*
 	local ids
@@ -1636,6 +1635,7 @@ program Estimate, eclass
 			`quietly' ml model `method' `mlmodelcmd' vce(`this_vce') `initopt' technique(`this_technique') `=cond(`gf' & "`svy'"!="", "group(_cmp_id1)", "")'
 
 			mata moptimize_init_userinfo($ML_M, 1, &_mod)
+
 			mata _mod.cmp_init($ML_M)
 
 			capture noisily `mlmaxcmd' noclear `this_mlopts' `iterate'  // Estimate!
@@ -1701,7 +1701,7 @@ program Estimate, eclass
 end
 
 // if estimating, transform a categorical variable with the equivalent of egen group(), storing the transformation in cmp_y`cmp_eqno'_label
-// if being called from predict transform the variable using the info stored in e(cat) via that label, in case the var has been modified for prediction purposes
+// if being called from predict, transform the variable using the info stored in e(cat) via that label, in case the var has been modified for prediction purposes
 // returns ordered row vector of the categories
 cap program drop GroupCategoricalVar
 program define GroupCategoricalVar, rclass
@@ -1943,7 +1943,7 @@ program InitSearch, rclass
 
 			local dropped
 			local k = colsof(`beta')
-			if (`k') {
+			if `k' {
 				local xvars: colnames `beta'
 				local xvars: list xvars - `_cons'
 				if diag0cnt(`V') & diag0cnt(`V') < rowsof(`V') { // unless all the coefs had se=0, drop those that did from this equation
@@ -2529,6 +2529,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.7.1 Prevent crash when random effect grouping var has missing values
 * 8.7.0 Fixed bugs in printing error messages in a few cases.
 * 8.6.9 Fixed bug causing predict/margins to think system involving m/roprobits uses GHK just because it has more equations
 * 8.6.8 Rollback 8.6.7 changes in favor of iter(16000) on calls to tobit, probit, oprobit, intreg in order not to slightly change results
