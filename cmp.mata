@@ -366,7 +366,7 @@ real matrix cmp_model::_PermuteTies(real colvector Indexes, real matrix TiedRang
 }
 
 // given indexes for variables, and dimension of variance matrix, return corresponding indexes in vectorized variance matrix
-// e.g., (1,3) ->((1,1), (3,1), (3,3)) -> (1, 3, 6)
+// e.g., (1,3) -> ((1,1), (3,1), (3,3)) -> (1, 3, 6)
 real rowvector cmp_model::vSigInds(real rowvector inds, real scalar d)
 	return (vech(invvech(1::d*(d+1)*0.5)[inds,inds])')
 
