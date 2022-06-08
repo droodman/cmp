@@ -27,6 +27,10 @@ program define cmp_p
 		di as error "{cmd:pr(`pr')} incompatible with {cmd:outcome(`outcome')}."
 		exit 198
 	}
+	if "`e'"!="" & `"`outcome'"'!="" {
+		di as error "{cmd:e(`e')} incompatible with {cmd:outcome(`outcome')}."
+		exit 198
+	}
 
 	if `: word count `xb' `_pr' `_e' `residuals' `scores' `lnl'' + (`"`pr'"'!="") + (`"`ystar'"'!="") + (`"`e'"'!="") > 1 {
 		di as err "Only one statistic allowed per {cmd:predict} call."
@@ -64,8 +68,8 @@ program define cmp_p
 		mat `num_cuts' = e(num_cuts)
 	}
 
-	if ("`pr'"=="" & "`_pr'"!="") | `"`outcome'"'!="" local pr 0 .
-	if  "`e'" =="" & "`_e'" !="" local e  . .
+	if ("`pr'"=="" & "`_pr'"!="") | ("`e'`_e'"  =="" & `"`outcome'"'!="") local pr 0 .
+	if ("`e'" =="" & "`_e'" !="") | ("`pr'`_pr'"=="" & `"`outcome'"'!="") local e  . .
 
 	tempvar xb
 	local _options `options'
@@ -117,17 +121,17 @@ program define cmp_p
 		mata `t1' = rows(`t1')? (rows(`t2')? `t1' \ `t2' : `t1') : `t2'
 		mata `t1' = select(`t1', (`_eqspec' :>= `t1'[,1]) :& (`_eqspec' :<= `t1'[,2]))
 		mata st_local("inds", rows(`t1')? invtokens(strofreal(`t1')) : "")
-		if "`inds'"!="" { // specified equation in an mprobit group?
+		if "`inds'"!="" {  // specified equation in an mprobit group?
 			local lo: word 1 of `inds'
 			local hi: word 2 of `inds'
-			local k = `_eqspec' - `lo' + 1 // chosen alternative
+			local k = `_eqspec' - `lo' + 1  // chosen alternative
 			forvalues eq=`lo'/`hi' {
 				tempvar xb`eq'
-				Predict double `xb`eq'' if `touse', eq(#`eq') // opposite sign sense from the error terms
+				Predict double `xb`eq'' if `touse', eq(#`eq')  // opposite sign sense from the error terms
 			}
 			forvalues eq=`lo'/`hi' {
 				if `eq' != `_eqspec'  {
-					replace `xb`eq'' = `xb`k'' - `xb`eq'' if `touse' // utility of each alternative relative to chosen one
+					replace `xb`eq'' = `xb`k'' - `xb`eq'' if `touse'  // utility of each alternative relative to chosen one
 					local xbs `xbs' `xb`eq''
 				}
 			}
@@ -175,7 +179,7 @@ program define cmp_p
 				}
 				else scalar `rho' = 1
 				if `"`ystar'`e'"' != "" {
-					if `"`condition'"'=="" | `"`ll'`ul'"'==".." { // use simpler formula if conditioning or dependent var unbounded or the two are uncorrelated, or conditioning variable undeclared
+					if `"`condition'"'=="" | `"`ll'`ul'"'==".." {  // use simpler formula if conditioning or dependent var unbounded or the two are uncorrelated, or conditioning variable undeclared
 						local cond = cond(`"`condition'"'!="", "cond", "")
 						qui gen double `L' = ((``cond'll')-``cond'xb')/``cond'sig' if `touse'
 						qui gen double `U' = ((``cond'ul')-``cond'xb')/``cond'sig' if `touse'
@@ -219,47 +223,27 @@ program define cmp_p
 				}
 				else if "`pr'" != "" {
 					local num_cats = `num_cuts'[`eq',1] + 1
-					if `num_cats' > 1 {
-						if `"`outcome'"' == "" {
-							_stubstar2names `1'_*, nvars(`num_cats') outcome
-							forvalues outno=1/`num_cats' {
-								condpr `xb' `rho' `vartype' `1'_`outno' if `touse', sig(1) condll(`condll') condul(`condul') condxb(`condxb') condsig(`condsig') ///
-									ll(`=cond(`outno'>1, "[cut_`eq'_`=`outno'-1']_cons", ".")') ///
-									ul(`=cond(`outno'<=`num_cuts'[`eq',1], "[cut_`eq'_`outno']_cons", ".")') 
-								label var `1'_`outno' "Pr(`depvar'=`=`cat'[`eq', `outno']')"
-							}
-						}
-						else {
-							if substr(`"`outcome'"', 1, 1) == "#" {
-								local outcome = substr(`"`outcome'"', 2, .)
-								if `outcome' > `num_cats' {
-									di as err `"There is no outcome #`outcome'. There are only `num_cats' outcomes for equation #`eq'."'
-									exit 111
-								}
-							}
-							else {
-								local i 1
-								while `i' <= `num_cats' & `cat'[`eq', `i']!=`outcome' {
-									local ++i
-								}
-								if `i' > `num_cats' {
-									di as error `"Outcome `outcome' not found in equation `eq'. outcome() must either be a value of `depvar' or #1, #2, ..."'
-									exit 111
-								}
-								local outcome `i'
-							}
-							condpr `xb' `rho' `vartype' `1' if `touse', sig(1) condll(`condll') condul(`condul') condxb(`condxb') condsig(`condsig') ///
-								ll(`=cond(`outcome'>1, "[cut_`eq'_`=`outcome'-1']_cons", ".")') ///
-								ul(`=cond(`outcome'<=`num_cuts'[`eq',1], "[cut_`eq'_`outcome']_cons", ".")')
-							label var `1' "Pr(`depvar'=`=`cat'[`eq', `outcome']')"
-						}
+          if `num_cats' > 1 {
+            parseoutcome, varname(`1') outcome(`outcome') eq(`eq') num_cats(`num_cats') cat(`cat')
+            local outcome `s(outcome)'
+
+            forvalues outno=`=cond("`outcome'"!="", "`outcome'/`outcome'", "1/`num_cats'")' {
+              local _outno = cond("`outcome'"!="", "", "_`outno'")
+              condpr `xb' `rho' `vartype' `1'`_outno' if `touse', sig(`sig') condll(`condll') condul(`condul') condxb(`condxb') condsig(`condsig') ///
+                ll(`=cond(`outno'>1, "[cut_`eq'_`=`outno'-1']_cons", ".")') ///
+                ul(`=cond(`outno'<=`num_cuts'[`eq',1], "[cut_`eq'_`outno']_cons", ".")') 
+              label var `1'`_outno' "Pr(`depvar'=`=`cat'[`eq', `outno']')"
+            }
 					}
 					else if `"`outcome'"' == "" {
 						if `"`condition'"'=="" & `"`pr'"'=="0 ." {
-							gen `vartype' `1' = normal(cond(`Sigma'[`eq',`eq']==1, `xb', `xb' / sqrt(`Sigma'[`eq',`eq'])))
+							gen `vartype' `1' = normal(`xb' / sqrt(`Sigma'[`eq',`eq']))
 							label var `1' "Pr(`depvar')"
 						}
-						else condpr `xb' `rho' `vartype' `1' if `touse', ll(`ll') ul(`ul') sig(`sig') condll(`condll') condul(`condul') condxb(`condxb') condsig(`condsig')
+						else {
+              condpr `xb' `rho' `vartype' `1' if `touse', sig(`sig') condll(`condll') condul(`condul') condxb(`condxb') condsig(`condsig') ll(`ll') ul(`ul')
+              label var `1' "Pr(`depvar'`=cond(`lmissing' & `umissing', "", "|`=cond(`lmissing', "", "`ll'<")'`depvar'`=cond(`umissing', "", "<`ul'")'")')"
+            }
 					}
 					else {
 						di as err "Equation #`eq' is not ordered probit. outcome() is not allowed."
@@ -271,11 +255,42 @@ program define cmp_p
 		}
 		macro shift
 	}
-set trace off
 end
 
+cap program drop parseoutcome
+program define parseoutcome, sclass
+  version 11.0
+  syntax, [varname(string) outcome(string) eq(string) num_cats(string) cat(string)]
+
+  if `"`outcome'"' == "" {
+    _stubstar2names `varname'_*, nvars(`num_cats') outcome  // just for error checking?
+  }
+  else {
+    if substr(`"`outcome'"', 1, 1) == "#" {
+      local outcome = substr(`"`outcome'"', 2, .)
+      if `outcome' > `num_cats' {
+        di as err `"There is no outcome #`outcome'. There are only `num_cats' outcomes for equation #`eq'."'
+        exit 111
+      }
+    }
+    else {
+      local i 1
+      while `i' <= `num_cats' & `cat'[`eq', `i'] != `outcome' {
+        local ++i
+      }
+      if `i' > `num_cats' {
+        di as error `"Outcome `outcome' not found in equation `eq'. outcome() must either be a value of `depvar' or #1, #2, ..."'
+        exit 111
+      }
+      local outcome `i'
+    }
+  }
+  sreturn local outcome `outcome'
+end
+
+
 cap program drop Predict
-program Predict, eclass
+program define Predict, eclass
 	version 11.0
 	
 	syntax anything [if], [eq(string) reducedform *]

@@ -711,7 +711,7 @@ variance is estimated:
 {synopt :{opt lnl}}observation-level log likelihood (in hierarchical models, averaged over groups){p_end}
 {synopt :{opt sc:ores}}derivative of the log likelihood with respect to xb or parameter{p_end}
 {synopt :{opt re:siduals}}residuals relative to linear prediction{p_end}
-{synopt :{cmd:pr}[{cmd:(}{it:a b}{cmd:)}]}probability of positive outcome (probit), given outcome (ordered probit, multinomial), or linear predictor being in given range (otherwise). Omitting {cmd:(}{it:a b}{cmd:)} defaults to {cmd:(0 .)}, meaning positive values{p_end}
+{synopt :{cmd:pr}[{cmd:(}{it:a b}{cmd:)}]}probability of positive outcome (probit) or given outcome (ordered probit, multinomial) or linear predictor being in given range (otherwise). Omitting {cmd:(}{it:a b}{cmd:)} defaults to {cmd:(0 .)}{p_end}
 {synopt :{cmd:e}[{cmd:(}{it:a b}{cmd:)}]}truncated expected value: E[y|{it:a}<y<{it:b}]. Omitting {cmd:(}{it:a b}{cmd:)} defaults to {cmd:(. .)}, meaning unbounded{p_end}
 {synopt :{cmd:ystar(}{it:a b}{cmd:)}}censored expected value: E(y*), y* = max({it:a}, min(y, {it:b})){p_end}
 {synopt :{cmdab:cond:ition(}{it:c d} [, {cmdab:eq:uation(#}{it:eqno}|{it:eqname}{cmd:)}]{cmd:)}}condition a {cmd:pr}, {cmd:e}, or {cmd:ystar} statistic on bounding another equation's continuous (latent) outcome between {it:c} and {it:d}{p_end}
