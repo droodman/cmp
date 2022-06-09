@@ -567,7 +567,7 @@ fem_inc      |
 Average marginal effects                                   Number of obs = 500
 Model VCE: OIM
 
-Expression: predict(pr(17 .))
+Expression: Pr(17<fem_inc), predict(pr(17 .))
 dy/dx wrt:  kids male_educ
 
 ------------------------------------------------------------------------------
@@ -1448,6 +1448,7 @@ dy/dx wrt:  education age married children
 (option xb assumed; fitted values)
 
 . predict e, eq(selectvar) e(0 .)
+__000003 not found
 
 . gen cmp_mills = e - xb
 
@@ -1492,7 +1493,7 @@ selectvar    |
 Average marginal effects                                 Number of obs = 2,000
 Model VCE: OIM
 
-Expression: predict(pr eq(wage2) condition(0 ., eq(selectvar)))
+Expression: Pr(0<wage2), predict(pr eq(wage2) condition(0 ., eq(selectvar)))
 dy/dx wrt:  education age married children
 
 ------------------------------------------------------------------------------

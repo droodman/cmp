@@ -1,4 +1,4 @@
-*! cmp 8.7.1 13 April 2022
+*! cmp 8.7.2 31 May 2022
 *! Copyright (C) 2007-22 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -2529,6 +2529,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.7.2 Added ability to predict many e's at once as it could already predict many pr's at once
 * 8.7.1 Prevent crash when random effect grouping var has missing values
 * 8.7.0 Fixed bugs in printing error messages in a few cases.
 * 8.6.9 Fixed bug causing predict/margins to think system involving m/roprobits uses GHK just because it has more equations

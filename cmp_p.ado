@@ -179,47 +179,62 @@ program define cmp_p
 				}
 				else scalar `rho' = 1
 				if `"`ystar'`e'"' != "" {
-					if `"`condition'"'=="" | `"`ll'`ul'"'==".." {  // use simpler formula if conditioning or dependent var unbounded or the two are uncorrelated, or conditioning variable undeclared
-						local cond = cond(`"`condition'"'!="", "cond", "")
-						qui gen double `L' = ((``cond'll')-``cond'xb')/``cond'sig' if `touse'
-						qui gen double `U' = ((``cond'ul')-``cond'xb')/``cond'sig' if `touse'
-						qui gen double `phiL' = cond(`L'>=., 0, normalden(`L'))    if `touse'
-						qui gen double `phiU' = cond(`U'>=., 0, normalden(`U'))    if `touse'
-						qui gen double `PhiL' = cond(`L'>=., 0, normal(   `L'))    if `touse'
-						qui gen double `PhiU' = cond(`U'>=., 1, normal(   `U'))    if `touse'
-						if `"`e'"'!="" gen `vartype' `1' = `xb' - cond(`"`condition'"'=="", `sig', `rho'*`sig') * (`phiU'-`phiL')/(`PhiU'-`PhiL') if `touse'
-						else           gen `vartype' `1' = (`PhiU'-`PhiL')*`xb'-`sig'*(`phiU'-`phiL')+cond((`ll')>=.,0,`PhiL'*(`ll'))+cond((`ul')>=.,0,(1-`PhiU')*(`ul')) if `touse'
-						drop `L' `U' `phiL' `phiU' `PhiL' `PhiU'
-					}
-					else {
-						qui gen double `L' = ((`ll')-`xb')/`sig' if `touse'
-						qui gen double `U' = ((`ul')-`xb')/`sig' if `touse'
-						qui gen double `condU' = ((`condul')-`condxb')/`condsig' if `touse'
-						qui gen double `condL' = ((`condll')-`condxb')/`condsig' if `touse'
-						xbinormal `U' `condU' + + `rho' `xbinormalU_condU'       if `touse'
-						xbinormal `U' `condL' + - `rho' `xbinormalU_condL'       if `touse'
-						xbinormal `L' `condU' - + `rho' `xbinormalL_condU'       if `touse'
-						xbinormal `L' `condL' - - `rho' `xbinormalL_condL'       if `touse'
-						 binormal `U' `condU' + + `rho'  `binormalU_condU'       if `touse'
-						 binormal `U' `condL' + - `rho'  `binormalU_condL'       if `touse'
-						 binormal `L' `condU' - + `rho'  `binormalL_condU'       if `touse'
-						 binormal `L' `condL' - - `rho'  `binormalL_condL'       if `touse'
+					local num_cats = `num_cuts'[`eq',1] + 1
+          if `num_cats' > 1 {
+            parseoutcome, varname(`1') outcome(`outcome') eq(`eq') num_cats(`num_cats') cat(`cat')
+            local outcome `s(outcome)'
+          }
 
-						if `"`e'"'!="" {
-							gen `vartype' `1' = `xb' - `sig'*(`xbinormalU_condU' - `xbinormalU_condL' - `xbinormalL_condU' + `xbinormalL_condL') ///
-																			                   /  ( `binormalU_condU' - `binormalU_condL' - `binormalL_condU' + `binormalL_condL') if `touse'
-						}
-						else {
-							qui gen double `denom' = cond(`condU'>=., 1, normal(`condU')) - cond(`condL'>=., 0, normal(`condL')) if `touse'
-							gen `vartype' `1' = `xb' + `sig'*(`xbinormalU_condL' + `xbinormalL_condU' -`xbinormalU_condU' - `xbinormalL_condL' ///
-						                                    + `L' * (`binormalL_condU' - `binormalL_condL') ///
-																								+ `U' * (`denom' - `binormalU_condU' + `binormalU_condL')) ///
-																									/ `denom' if `touse'
-							drop `denom'
-						}
-						drop `L' `U' `condU' `condL' `xbinormalL_condL' `xbinormalL_condU' `xbinormalU_condL' `xbinormalU_condU' `binormalL_condL' `binormalL_condU' `binormalU_condL' `binormalU_condU'
-					}
-					label var `1' "E(`depvar'`=cond(`"`e'"'=="","*","")'`=cond(`lmissing' & `umissing', "", "|`=cond(`lmissing', "", "`ll'<")'`depvar'`=cond(`umissing', "", "<`ul'")'")')"
+          forvalues outno=`=cond(`num_cats'==1, "1/1", cond("`outcome'"!="", "`outcome'/`outcome'", "1/`num_cats'"))' {
+            if `num_cats' > 1 {
+              local _outno = cond("`outcome'"!="", "", "_`outno'")
+              local ll = cond(`outno'>1                  , "[cut_`eq'_`=`outno'-1']_cons", ".")
+              local ul = cond(`outno'<=`num_cuts'[`eq',1], "[cut_`eq'_`outno']_cons"     , ".")
+            }
+
+            if `"`condition'"'=="" | `"`ll'`ul'"'==".." {  // use simpler formula if conditioning or dependent var unbounded or the two are uncorrelated, or conditioning variable undeclared
+              local cond = cond(`"`condition'"'!="", "cond", "")
+              qui gen double `L' = ((``cond'll')-``cond'xb')/``cond'sig' if `touse'
+              qui gen double `U' = ((``cond'ul')-``cond'xb')/``cond'sig' if `touse'
+              qui gen double `phiL' = cond(`L'>=., 0, normalden(`L'))    if `touse'
+              qui gen double `phiU' = cond(`U'>=., 0, normalden(`U'))    if `touse'
+              qui gen double `PhiL' = cond(`L'>=., 0, normal(   `L'))    if `touse'
+              qui gen double `PhiU' = cond(`U'>=., 1, normal(   `U'))    if `touse'
+              if `"`e'"'!="" gen `vartype' `1'`_outno' = `xb' - cond(`"`condition'"'=="", `sig', `rho'*`sig') * (`phiU'-`phiL')/(`PhiU'-`PhiL') if `touse'
+              else           gen `vartype' `1'`_outno' = (`PhiU'-`PhiL')*`xb'-`sig'*(`phiU'-`phiL')+cond((`ll')>=.,0,`PhiL'*(`ll'))+cond((`ul')>=.,0,(1-`PhiU')*(`ul')) if `touse'
+              drop `L' `U' `phiL' `phiU' `PhiL' `PhiU'
+            }
+            else {
+              qui gen double `L' = ((`ll')-`xb')/`sig' if `touse'
+              qui gen double `U' = ((`ul')-`xb')/`sig' if `touse'
+              qui gen double `condU' = ((`condul')-`condxb')/`condsig' if `touse'
+              qui gen double `condL' = ((`condll')-`condxb')/`condsig' if `touse'
+              xbinormal `U' `condU' + + `rho' `xbinormalU_condU'       if `touse'
+              xbinormal `U' `condL' + - `rho' `xbinormalU_condL'       if `touse'
+              xbinormal `L' `condU' - + `rho' `xbinormalL_condU'       if `touse'
+              xbinormal `L' `condL' - - `rho' `xbinormalL_condL'       if `touse'
+               binormal `U' `condU' + + `rho'  `binormalU_condU'       if `touse'
+               binormal `U' `condL' + - `rho'  `binormalU_condL'       if `touse'
+               binormal `L' `condU' - + `rho'  `binormalL_condU'       if `touse'
+               binormal `L' `condL' - - `rho'  `binormalL_condL'       if `touse'
+
+              if `"`e'"'!="" {
+                gen `vartype' `1'`_outno' = `xb' - `sig'*(`xbinormalU_condU' - `xbinormalU_condL' - `xbinormalL_condU' + `xbinormalL_condL') ///
+                                                           /  ( `binormalU_condU' - `binormalU_condL' - `binormalL_condU' + `binormalL_condL') if `touse'
+              }
+              else {
+                qui gen double `denom' = cond(`condU'>=., 1, normal(`condU')) - cond(`condL'>=., 0, normal(`condL')) if `touse'
+                gen `vartype' `1'`_outno' = `xb' + `sig'*(`xbinormalU_condL' + `xbinormalL_condU' -`xbinormalU_condU' - `xbinormalL_condL' ///
+                                                  + `L' * (`binormalL_condU' - `binormalL_condL') ///
+                                                  + `U' * (`denom' - `binormalU_condU' + `binormalU_condL')) ///
+                                                    / `denom' if `touse'
+                drop `denom'
+              }
+              drop `L' `U' `condU' `condL' `xbinormalL_condL' `xbinormalL_condU' `xbinormalU_condL' `xbinormalU_condU' `binormalL_condL' `binormalL_condU' `binormalU_condL' `binormalU_condU'
+            }
+            if `num_cats' > 1 label var `1'`_outno' "E(`depvar'*`=cond(`"`e'"'=="","*","")'|`depvar'=`=`cat'[`eq', `outno']')"
+              else            label var `1'`_outno' "E(`depvar'*`=cond(`"`e'"'=="","*","")'`=cond(`lmissing' & `umissing', "", "|`=cond(`lmissing', "", "`ll'<")'`depvar'`=cond(`umissing', "", "<`ul'")'")')"
+          }
 				}
 				else if "`pr'" != "" {
 					local num_cats = `num_cuts'[`eq',1] + 1
@@ -242,7 +257,7 @@ program define cmp_p
 						}
 						else {
               condpr `xb' `rho' `vartype' `1' if `touse', sig(`sig') condll(`condll') condul(`condul') condxb(`condxb') condsig(`condsig') ll(`ll') ul(`ul')
-              label var `1' "Pr(`depvar'`=cond(`lmissing' & `umissing', "", "|`=cond(`lmissing', "", "`ll'<")'`depvar'`=cond(`umissing', "", "<`ul'")'")')"
+              label var `1' "Pr(`=cond(`lmissing' & `umissing', "`depvar'>0", "`=cond(`lmissing', "", "`ll'<")'`depvar'`=cond(`umissing', "", "<`ul'")'")')"
             }
 					}
 					else {

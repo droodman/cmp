@@ -2332,10 +2332,15 @@ void cmp_model::SaveSomeResults() {
 			br = br, (SigXform? ln(sig), atanh(rho) : sig, rho)[keep]
 			_colstripe = _colstripe \ ((tokens(st_local("sigparams"+strofreal(l)))' \ tokens(st_local("rhoparams"+strofreal(l)))')[keep] , J(rows(keep), 1, "_cons"))
 			dbr_db = blockdiag(dbr_db, dOmega_dSig[keep,])
-			keep = colshape(rowsum(dOmega_dSig[|.,.\k*d,.|]:!=0):>0, k) // get retained sig params by eq
-			NumEff = NumEff \ rowsum(keep)'
-			for (j=d; j; j--)
-				st_global("e(EffNames_reducedform"+strofreal(l)+"_"+strofreal(j)+")", invtokens(tokens(st_local("cmp_rcu"+strofreal(l)))[selectindex(keep[j,])]))
+
+			if (RE->NSigParams) {
+        keep = colshape(rowsum(dOmega_dSig[|.,.\k*d,.|]:!=0):>0, k) // get retained sig params by eq
+        NumEff = NumEff \ rowsum(keep)'
+        for (j=d; j; j--)
+          st_global("e(EffNames_reducedform"+strofreal(l)+"_"+strofreal(j)+")", invtokens(tokens(st_local("cmp_rcu"+strofreal(l)))[selectindex(keep[j,])]))
+      } else
+        NumEff = NumEff \ J(1,d,0)
+
 			st_matrix("e(fixed_sigs_reducedform"+strofreal(l)+")", J(1, d, .)) 
 			st_matrix("e(fixed_rhos_reducedform"+strofreal(l)+")", J(d, d, .)) 
 		}
