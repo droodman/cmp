@@ -1413,7 +1413,7 @@ selectvar    |
 Average marginal effects                                 Number of obs = 2,000
 Model VCE: OIM
 
-Expression: E(wage), predict(e eq(wage) condition(0 ., eq(selectvar)))
+Expression: E(wage*), predict(e eq(wage) condition(0 ., eq(selectvar)))
 dy/dx wrt:  education age married children
 
 ------------------------------------------------------------------------------

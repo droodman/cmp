@@ -57,7 +57,7 @@ program define cmp_p
 			gen `vartype' `var' = . in 1
 		}
 
-		`=cond("`e(command)'"=="", "`e(cmdline)'", "`e(command)'")' predict(if `touse', `scores'`lnl'(`_varlist') eq(`_eqspec'))
+		`e(cmdline)' predict(if `touse', `scores'`lnl'(`_varlist') eq(`_eqspec'))
 		exit
 	}
 
