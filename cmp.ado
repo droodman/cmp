@@ -1,4 +1,4 @@
-*! cmp 8.7.3 21 July 2022
+*! cmp 8.7.4 28 July 2022
 *! Copyright (C) 2007-22 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -911,7 +911,8 @@ program define _cmp
     _est hold `hold', copy restore
 		local model `e(model)'
 		version 11: ml model `:subinstr local model ": . =" ": _cmp_ind1 =", all' if e(sample) & `if', collinear missing  // XXX incorporating user's if restriction here will affect results in hierarchical models?? too soon?
-		mata _mod.settodo("`scores'"!=""); _mod.cmp_init($ML_M)
+		mata _mod.settodo("`scores'"!=""); st_local("rc", strofreal(_mod.cmp_init($ML_M)))
+    if `rc' error `rc'
 		_est unhold `hold'
 		mata _lnf = _S = _H = .
 		mata moptimize_init_userinfo($ML_M, 1, &_mod)
@@ -1636,7 +1637,8 @@ program Estimate, eclass
 
 			mata moptimize_init_userinfo($ML_M, 1, &_mod)
 
-			mata _mod.cmp_init($ML_M)
+			mata st_local("rc", strofreal(_mod.cmp_init($ML_M)))
+      if `rc' error `rc'
 
 			capture noisily `mlmaxcmd' noclear `this_mlopts' `iterate'  // Estimate!
 
@@ -2529,6 +2531,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.7.4 Prevent crash when too few primes for Halton or multiple RC's causing passing of matrix to setcol()
 * 8.7.3 Fixed crash in predicting likelihoods and scores after cmp command line with quotes
 * 8.7.2 Added ability to predict many e's at once as it could already predict many pr's at once
 * 8.7.1 Prevent crash when random effect grouping var has missing values
