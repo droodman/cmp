@@ -503,17 +503,21 @@ is needed, i.e., the number of observations that are censored in at least three 
 draws is 
 sometimes necessary for convergence and can even speed it by improving search precision. On the other hand, especially when the number of observations is
 high, convergence can be achieved, at some loss in precision, with remarkably few draws per observations--as few as 5 when the sample size is 10,000 (Cappellari and Jenkins
-2003). And taking more draws can also greatly extend execution time.{p_end}
-{phang2}3. If getting many "(not concave)" messages, try the {opt diff:icult} option, which instructs {cmd:ml} to 
+2003). And taking fewer draws can slash execution time.{p_end}
+{phang2}3. Under the same circumstances, in Stata 15 or later, you can also specify {cmdab:ghkd:raws(0)}. This tells {cmd:cmp} to dispense with the GHK algorithm
+for computing cumulative multivariate normal distributions and instead use quadrature, as implemented by the built-in {help mf_mvnormal:mvnormal()} family
+of functions. When it works, this can run much faster. However, for cumulative probabilities that are close to zero, the functions sometimes return zero or small negative 
+values, which have undefined log likelihoods. If this happens, {cmd:cmp} will fail with the "initial values not feasible" message.{p_end}
+{phang2}4. If getting many "(not concave)" messages, try the {opt diff:icult} option, which instructs {cmd:ml} to 
 use a different search algorithm in non-concave regions.{p_end}
-{phang2}4. If the search appears to be converging in likelihood--if the log likelihood is hardly changing in each iteration--and yet fails to converge, try 
+{phang2}5. If the search appears to be converging in likelihood--if the log likelihood is hardly changing in each iteration--and yet fails to converge, try 
 adding a {opt nrtol:erance(#)} or {opt nonrtol:erance} option to the command line after the comma. These are {cmd:ml} options that control when convergence is declared. (See
 {help cmp##ml_opts:ml_opts}, below.) By default, {cmd:ml} declares convergence when the log likelihood is changing very little with successive iterations (within
 tolerances adjustable with the {opt tol:erance(#)} and {opt ltol:erance(#)} options) {it:and} when the calculated gradient vector is close enough to zero. 
 In some difficult problems, such as ones with nearly collinear regressors, the imprecision of floating point numbers prevents {cmd:ml} from quite satisfying the second criterion. 
 It can be loosened by using the {opt nrtol:erance(#)} to set the scaled gradient tolerance to a value larger than its default of 1e-5, or eliminated altogether
 with {opt nonrtol:erance}. Because of the risks of collinearity, {cmd:cmp} warns when the condition number of an equation's regressor matrix exceeds 20 (Greene 2000, p. 40).{p_end}
-{phang2}5. Try {cmd:cmp}'s interactive mode, via the {opt inter:active} option. This
+{phang2}6. Try {cmd:cmp}'s interactive mode, via the {opt inter:active} option. This
 allows the user to interrupt maximization by hitting Ctrl-Break or its equivalent, investigate and adjust the current solution, and then restart
 maximization by typing {help ml:ml max}. Techniques for exploring and changing the current solution include displaying the current coefficient and gradient vectors 
 (with {cmd:mat list $ML_b} or {cmd:mat list $ML_g}) and running {help ml:ml plot}. See {help ml:help ml}, {bf:[R] ml}, and 
@@ -590,13 +594,18 @@ to compute the first derivatives of the likelihood numerically instead of using 
 estimation but occassionally improves convergence.
 
 {phang}{cmdab:ghkd:raws(}[#]{cmd: , }[{opt type(halton | hammersley | ghalton | random)} {opt anti:thetics} {opt scr:amble(sqrt | negsqrt | fl)} ]{cmd:)} governs the draws used in GHK simulation of 
-higher-dimensional cumulative multivariate normal distributions. It is similar to the {opt red:raws} option. However, it takes at most one number;
+higher-dimensional cumulative multivariate normal distributions--or specifies using quadrature rather than the GHK algorithm. It is similar to the {opt red:raws} option. However, it takes at most one number;
 if it, or the entire option, is omitted, the number of draws is set rather arbitrarily to twice the square root of the number of observations 
 for which the simulation is needed. (Simulated maximum likelihood is consistent as long as the number of draws rises with the square root of the 
 number of observations. In practice, a higher number of observations often reduces the number of draws per observation needed
 for reliable results. Train 2009, p. 252.) As in the {cmdab:red:raws()} option, the optional {opt type(string)} suboption specifies the type of sequence in 
 the GHK simulation, {cmd:halton} being the default;
-{opt anti:thetics} requests antithetic draws; and {opt scr:amble()} applies a scrambler. 
+{opt anti:thetics} requests antithetic draws; and {opt scr:amble()} applies a scrambler.
+
+{pmore}In Stata 15 and later, {cmdab:ghkd:raws(0)} instructs {cmd:cmp} to discard
+the GHK algorithm in favor of quadrature, as implemented in the built-in {help mf_mvnormal:mvnormal()} family
+of functions. When it works, this can run much faster. However, for cumulative probabilities that are close to zero, the functions sometimes return zero or small negative 
+values, which have undefined log likelihoods. If this happens, {cmd:cmp} will fail with the "initial values not feasible" message.
 
 {phang}{opt nodr:op} prevents the dropping of regressors from equations in which they receive missing standard errors in initial single-equation 
 fits. It also prevents the removal of collinear variables.

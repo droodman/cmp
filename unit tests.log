@@ -827,7 +827,7 @@ dy/dx wrt:  nonwhite
 
 . 
 . 
-. webuse fitness, clear
+. use fitness, clear
 (Fictional fitness data)
 
 . gen byte hours_pos = hours > 0

@@ -845,8 +845,8 @@ real matrix cmp_model::dPhi_dpE_dSig(real matrix E_out, real colvector one2N, re
 // returns scores if requested in dPhi_dE, dPhi_dF, dPhi_dSig. dPhi_dF must already be allocated
 real colvector cmp_model::vecmultinormal(real matrix E, real matrix F, real matrix Sig, real scalar d, real rowvector bounded, real colvector one2N, real scalar todo, 
 						                             real matrix dPhi_dE, real matrix dPhi_dF, real matrix dPhi_dSig, transmorphic ghk2DrawSet, real scalar ghkAnti, real scalar GHKStart, real scalar N_perm) {
-	real matrix dPhi_dE1, dPhi_dE2, dPhi_dF1, dPhi_dF2, _dPhi_dF2, _dPhi_dE1, _dPhi_dF1, _dPhi_dSig
-	pragma unset dPhi_dE1; pragma unset dPhi_dE2; pragma unset dPhi_dF1; pragma unset dPhi_dF2; pragma unset _dPhi_dF2; pragma unset _dPhi_dE1; pragma unset _dPhi_dF1; pragma unset _dPhi_dSig
+	real matrix dPhi_dE1, dPhi_dE2, dPhi_dF1, dPhi_dF2, _dPhi_dF2, _dPhi_dE1, _dPhi_dF1, _dPhi_dSig, dM
+	pragma unset dPhi_dE1; pragma unset dPhi_dE2; pragma unset dPhi_dF1; pragma unset dPhi_dF2; pragma unset _dPhi_dF2; pragma unset _dPhi_dE1; pragma unset _dPhi_dF1; pragma unset _dPhi_dSig; pragma unset dM
 	real colvector Phi
 
 	if (d == 1) {
@@ -902,14 +902,26 @@ real colvector cmp_model::vecmultinormal(real matrix E, real matrix F, real matr
 		} else 
 			Phi = vecbinormal(E, Sig, one2N, todo, dPhi_dE, dPhi_dSig)
 	} else if (cols(bounded))
-		if (todo)
-			Phi = _ghk2_2d(ghk2DrawSet, F, E, Sig, ghkAnti, GHKStart, dPhi_dF, dPhi_dE, dPhi_dSig)
-		else
-			Phi = _ghk2_2 (ghk2DrawSet, F, E, Sig, ghkAnti, GHKStart)
-	else if (todo)
-			Phi = _ghk2_d (ghk2DrawSet,    E, Sig, ghkAnti, GHKStart,          dPhi_dE, dPhi_dSig)
-		else
-			Phi = _ghk2   (ghk2DrawSet,    E, Sig, ghkAnti, GHKStart)
+    if (ghk2DrawSet != .)
+      if (todo)
+        Phi = _ghk2_2d(ghk2DrawSet, F, E, Sig, ghkAnti, GHKStart, dPhi_dF, dPhi_dE, dPhi_dSig)
+      else
+        Phi = _ghk2_2 (ghk2DrawSet, F, E, Sig, ghkAnti, GHKStart)
+    else {
+      Phi = mvnormalcv(F, E, J(1,cols(E),0), vech(Sig)')
+      if (todo)
+          mvnormalcvderiv(F, E, J(1,cols(E),0), vech(Sig)', dPhi_dF, dPhi_dE, dM, dPhi_dSig)
+    }
+  else if (ghk2DrawSet != .)
+    if (todo)
+      Phi = _ghk2_d(ghk2DrawSet, E, Sig, ghkAnti, GHKStart, dPhi_dE, dPhi_dSig)
+    else
+      Phi = _ghk2  (ghk2DrawSet, E, Sig, ghkAnti, GHKStart)
+    else {
+      Phi = mvnormalcv(J(1, cols(E), mindouble()), E, J(1,cols(E),0), vech(Sig)')
+      if (todo)
+        mvnormalcvderiv(J(1, cols(E), invnormal(Phi*1e-20)), E, J(1,cols(E),0), vech(Sig)', dPhi_dF, dPhi_dE, dM, dPhi_dSig)
+    }
 
 	if (N_perm==1) {
 		if (todo) {
@@ -2225,25 +2237,27 @@ real scalar cmp_model::cmp_init(transmorphic M) {
 		for (l=L-1;l;l--)
 			BuildXU(l)
 
-	if (ghk_nobs) {
-		// by default, make # draws at least sqrt(N) (Cappellari and Jenkins 2003)
-		if (ghkDraws == 0) ghkDraws = ceil(2 * sqrt(ghk_nobs+1))
+  if (ghk_nobs)
+    if (ghkDraws < .) {
+      // by default, make # draws at least sqrt(N) (Cappellari and Jenkins 2003)
+      if (ghkDraws == 0) ghkDraws = ceil(2 * sqrt(ghk_nobs+1))
 
-		printf("{res}Likelihoods for %f observations involve cumulative normal distributions above dimension 2.\n", ghk_nobs)
-		printf(`"Using {stata "help ghk2" :ghk2()} to simulate them. Settings:\n"')
-		printf("    Sequence type = %s\n", ghkType)
-		printf("    Number of draws per observation = %f\n", ghkDraws)
-		printf("    Include antithetic draws = %s\n", ghkAnti? "yes" : "no")
-		printf("    Scramble = %s\n", ("no", "square root", "negative square root", "Faure-Lemieux")[1+ghkScramble])
-		printf("    Prime bases = %s\n", invtokens(strofreal(Primes[PrimeIndex..PrimeIndex-2+d_ghk])))
-		if (ghkType=="random" | ghkType=="ghalton")
-			printf(`"    Initial {stata "help mf_uniform" :seed string} = %s\n"', uniformseed())
-		printf(`"Each observation gets different draws, so changing the order of observations in the data set would change the results.\n\n"')
-		
-		ghk2DrawSet = ghk2setup(ghk_nobs, ghkDraws, d_ghk, ghkType, PrimeIndex, (NULL, &ghk2SqrtScrambler(), &ghk2NegSqrtScrambler(), &ghk2FLScrambler())[1+ghkScramble])
-	}
+      printf("{res}Likelihoods for %f observations involve cumulative normal distributions above dimension 2.\n", ghk_nobs)
+      printf(`"Using {stata "help ghk2" :ghk2()} to simulate them. Settings:\n"')
+      printf("    Sequence type = %s\n", ghkType)
+      printf("    Number of draws per observation = %f\n", ghkDraws)
+      printf("    Include antithetic draws = %s\n", ghkAnti? "yes" : "no")
+      printf("    Scramble = %s\n", ("no", "square root", "negative square root", "Faure-Lemieux")[1+ghkScramble])
+      printf("    Prime bases = %s\n", invtokens(strofreal(Primes[PrimeIndex..PrimeIndex-2+d_ghk])))
+      if (ghkType=="random" | ghkType=="ghalton")
+        printf(`"    Initial {stata "help mf_uniform" :seed string} = %s\n"', uniformseed())
+      printf(`"Each observation gets different draws, so changing the order of observations in the data set would change the results.\n\n"')
+      
+      ghk2DrawSet = ghk2setup(ghk_nobs, ghkDraws, d_ghk, ghkType, PrimeIndex, (NULL, &ghk2SqrtScrambler(), &ghk2NegSqrtScrambler(), &ghk2FLScrambler())[1+ghkScramble])
+    } else
+      ghk2DrawSet = .
 
-	if ((ghk_nobs & (ghkType=="random" | ghkType=="ghalton")) | (L>1 & (REType=="random" | REType=="ghalton")))
+	if ((ghk_nobs & ghkDraws<. & (ghkType=="random" | ghkType=="ghalton")) | (L>1 & (REType=="random" | REType=="ghalton")))
 		printf("Starting seed for random number generator = %s\n", st_strscalar("c(seed)"))
 
   return(0)

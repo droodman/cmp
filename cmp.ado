@@ -195,25 +195,27 @@ program define _cmp
 		syntax, [sqrt NEGsqrt fl]
 		local scramble `sqrt'`negsqrt'`fl'
 	}
-	
+
 	if `"`ghktype'"' != "" & `"`type'"' != "" & `"`ghktype'"' != `"`type'"' & `"`ghktype'`type'"' != "halton" {
 		di as res _n "Warning: {cmd:type(`type')} suboption overriding deprecated {cmd:ghktype(`ghktype')} option."
 	}
 	if `"`type'"' != "" local ghktype `type'
 	local 0, ghkdraws(`anything')
-	syntax, [ghkdraws(numlist integer>=1 max=1)]
-	if `"`ghktype'"'=="" local ghktype halton
-	else if inlist(`"`ghktype'"', "halton", "hammersley", "ghalton", "random") == 0 {
-		cmp_error 198 `"The {cmdab:ghkt:ype()} option must be "halton", "hammersley", "ghalton", or "random". It corresponds to the {cmd:{it:type}} option of {cmd:ghk()}. See help {help mf_ghk}."'
-	}
-	if "`scramble'"!="" & "`type'"=="ghalton" {
-		di as res "Warning: {cmd:scramble} in {cmd:ghkdraws()} option incompatible with {cmd:ghalton}. {cmd:scramble} ignored."
-		local scramble
-	}
-	if 0`ghkdraws' mata _mod.CheckPrime(`ghkdraws')
-	local ghkanti = "`antithetics'`ghkanti'"!=""
-	mata _mod.setGHKType("`ghktype'"); _mod.setGHKAnti(`ghkanti'); _mod.setGHKDraws(0`ghkdraws'); _mod.setGHKScramble("`scramble'")
-	local ghkscramble `scramble'
+	syntax, [ghkdraws(numlist integer>=`=c(stata_version)<15' max=1)]  // In Stata 15+, allow ghkdraws(0) to trigger use of mvnormal()
+  if "`ghkdraws'" == "" | 0`ghkdraws' {
+    if `"`ghktype'"'=="" local ghktype halton
+    else if inlist(`"`ghktype'"', "halton", "hammersley", "ghalton", "random") == 0 {
+      cmp_error 198 `"The {cmdab:ghkt:ype()} option must be "halton", "hammersley", "ghalton", or "random". It corresponds to the {cmd:{it:type}} option of {cmd:ghk()}. See help {help mf_ghk}."'
+    }
+    if "`scramble'"!="" & "`type'"=="ghalton" {
+      di as res "Warning: {cmd:scramble} in {cmd:ghkdraws()} option incompatible with {cmd:ghalton}. {cmd:scramble} ignored."
+      local scramble
+    }
+    if 0`ghkdraws' mata _mod.CheckPrime(`ghkdraws')
+    local ghkanti = "`antithetics'`ghkanti'"!=""
+    mata _mod.setGHKType("`ghktype'"); _mod.setGHKAnti(`ghkanti'); _mod.setGHKDraws(0`ghkdraws'); _mod.setGHKScramble("`scramble'")
+    local ghkscramble `scramble'
+  }
 
 	if `"`covariance'"' == "" {
 		forvalues l=1/$parse_L {
