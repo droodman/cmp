@@ -1,5 +1,5 @@
-*! cmp 8.7.4 28 July 2022
-*! Copyright (C) 2007-22 David Roodman 
+*! cmp 8.7.5 3 July 2023
+*! Copyright (C) 2007-23 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -100,7 +100,7 @@ program define _cmp
 	mata _mod = cmp_model()
 
 	global parse_wtypeL `weight'
-	tokenize `exp'
+	tokenize `"`exp'"'
 	macro shift // get rid of = prefix
 	global parse_wexpL `*'
 
@@ -2533,6 +2533,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.7.5 Fixed crash on complex weight expressions with parentheses
 * 8.7.4 Prevent crash when too few primes for Halton or multiple RC's causing passing of matrix to setcol()
 * 8.7.3 Fixed crash in predicting likelihoods and scores after cmp command line with quotes
 * 8.7.2 Added ability to predict many e's at once as it could already predict many pr's at once

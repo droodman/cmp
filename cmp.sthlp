@@ -723,7 +723,7 @@ variance is estimated:
 {synopt :{cmd:pr}[{cmd:(}{it:a b}{cmd:)}]}probability of positive outcome (probit) or given outcome (ordered probit, multinomial) or linear predictor being in given range (otherwise). Omitting {cmd:(}{it:a b}{cmd:)} defaults to {cmd:(0 .)}{p_end}
 {synopt :{cmd:e}[{cmd:(}{it:a b}{cmd:)}]}truncated expected value: E[y|{it:a}<y<{it:b}]. Omitting {cmd:(}{it:a b}{cmd:)} defaults to {cmd:(. .)}, meaning unbounded{p_end}
 {synopt :{cmd:ystar(}{it:a b}{cmd:)}}censored expected value: E(y*), y* = max({it:a}, min(y, {it:b})){p_end}
-{synopt :{cmdab:cond:ition(}{it:c d} [, {cmdab:eq:uation(#}{it:eqno}|{it:eqname}{cmd:)}]{cmd:)}}condition a {cmd:pr}, {cmd:e}, or {cmd:ystar} statistic on bounding another equation's continuous (latent) outcome between {it:c} and {it:d}{p_end}
+{synopt :{cmdab:cond:ition(}{it:c d} [, {cmdab:eq:uation(#}{it:eqno}|{it:eqname}{cmd:)}]{cmd:)}}condition a {cmd:pr}, {cmd:e}, or {cmd:ystar} statistic on bounding another equation's (latent) linear predictor between {it:c} and {it:d}{p_end}
 {synopt :{opt o:utcome}{cmd:(}{it:outcome}{cmd:)}}specify outcome(s), for ordered probit only{p_end}
 {synopt :{opt nooff:set}}ignore any {opt offset()} or {opt exposure()} variable{p_end}
 {synopt :{opt red:ucedform}}predict based on reduced form; relevant for linear systems{p_end}
@@ -741,7 +741,8 @@ on the bounding of another equation's outcome (or latent variable). E.g., one ca
 score is between 4 and 8 (with something like {cmd: pr(5 10) eq(math) cond(4 8, eq(reading))}), or her expected math score conditioned the same way
 ({cmd:e eq(math) cond(4 8, eq(reading))}), or even her expected math score when both variables are so bounded ({cmd:e(5 10) eq(math) cond(4 8, eq(reading))}). Probability
 estimates for (ordered) probit equations can be conditioned too. To condition on a censored variable being within a certain range, refer to the associated cut points for its hypothesized
-latent variable, whether it is fixed (in probit, tobit, and interval regressions) or estimated (ordered probit). The Heckman selection model examples below illustrate.
+latent variable, whether it is fixed (in probit, tobit, and interval regressions) or estimated (ordered probit). For example, to condition on a probit-modeled outcome
+{it:x} being 0 or 1, respectively, use {cmd:cond(. 0, eq(x))} or {cmd:cond(0 ., eq(x))}. The Heckman selection model examples below illustrate.
 
 {pstd}
 {it:eqno} can be an equation name (if not set explicitly, an equation's name is that of its dependent variable). Or it can be an equation number preceded by a 
