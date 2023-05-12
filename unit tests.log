@@ -281,10 +281,10 @@ Fitting individual models as starting point for full model fit.
 Note: For programming reasons, these initial estimates may deviate from your specification.
       For exact fits of each equation alone, run cmp separately on each.
 
-Iteration 0:   log likelihood = -229.52167  
-Iteration 1:   log likelihood = -222.14481  
-Iteration 2:   log likelihood = -222.11678  
-Iteration 3:   log likelihood = -222.11678  
+Iteration 0:  Log likelihood = -229.52167  
+Iteration 1:  Log likelihood = -222.14481  
+Iteration 2:  Log likelihood = -222.11678  
+Iteration 3:  Log likelihood = -222.11678  
 
 Probit regression                                       Number of obs =    500
                                                         LR chi2(2)    =  14.81
@@ -299,10 +299,10 @@ Log likelihood = -222.11678                             Pseudo R2     = 0.0323
        _cons |   1.835102   .3638179     5.04   0.000     1.122032    2.548172
 ------------------------------------------------------------------------------
 
-Iteration 0:   log likelihood = -344.63508  
-Iteration 1:   log likelihood = -327.72272  
-Iteration 2:   log likelihood =  -327.7042  
-Iteration 3:   log likelihood =  -327.7042  
+Iteration 0:  Log likelihood = -344.63508  
+Iteration 1:  Log likelihood = -327.72272  
+Iteration 2:  Log likelihood =  -327.7042  
+Iteration 3:  Log likelihood =  -327.7042  
 
 Probit regression                                       Number of obs =    500
                                                         LR chi2(1)    =  33.86
@@ -320,9 +320,9 @@ Fitting constant-only model for LR test of overall model fit.
 
 Fitting full model.
 
-Iteration 0:   log likelihood =  -549.7811  
-Iteration 1:   log likelihood = -549.72147  
-Iteration 2:   log likelihood = -549.72146  
+Iteration 0:  Log likelihood =  -549.7811  
+Iteration 1:  Log likelihood = -549.72147  
+Iteration 2:  Log likelihood = -549.72146  
 
 Mixed-process regression                                Number of obs =    500
                                                         LR chi2(3)    =  42.31
@@ -403,10 +403,10 @@ Fitting individual models as starting point for full model fit.
 Note: For programming reasons, these initial estimates may deviate from your specification.
       For exact fits of each equation alone, run cmp separately on each.
 
-Iteration 0:   log likelihood = -344.63508  
-Iteration 1:   log likelihood = -255.36855  
-Iteration 2:   log likelihood = -255.31444  
-Iteration 3:   log likelihood = -255.31444  
+Iteration 0:  Log likelihood = -344.63508  
+Iteration 1:  Log likelihood = -255.36855  
+Iteration 2:  Log likelihood = -255.31444  
+Iteration 3:  Log likelihood = -255.31444  
 
 Probit regression                                       Number of obs =    500
                                                         LR chi2(3)    = 178.64
@@ -452,11 +452,11 @@ Fitting constant-only model for LR test of overall model fit.
 
 Fitting full model.
 
-Iteration 0:   log likelihood =  -2370.935  
-Iteration 1:   log likelihood = -2369.6061  
-Iteration 2:   log likelihood = -2368.2515  
-Iteration 3:   log likelihood = -2368.2064  
-Iteration 4:   log likelihood = -2368.2062  
+Iteration 0:  Log likelihood =  -2370.935  
+Iteration 1:  Log likelihood = -2369.6061  
+Iteration 2:  Log likelihood = -2368.2515  
+Iteration 3:  Log likelihood = -2368.2064  
+Iteration 4:  Log likelihood = -2368.2062  
 
 Mixed-process regression                                Number of obs =    500
                                                         LR chi2(6)    = 191.16
@@ -624,19 +624,19 @@ Fitting constant-only model for LR test of overall model fit.
 
 Fitting full model.
 
-Iteration 0:   log likelihood = -2324.1055  (not concave)
-Iteration 1:   log likelihood = -2294.9222  (not concave)
-Iteration 2:   log likelihood = -2269.2158  
-Iteration 3:   log likelihood =  -2202.286  
-Iteration 4:   log likelihood = -2161.7932  
-Iteration 5:   log likelihood = -2103.8001  
-Iteration 6:   log likelihood = -2075.5742  
-Iteration 7:   log likelihood =   -2069.05  
-Iteration 8:   log likelihood = -2067.1253  
-Iteration 9:   log likelihood = -2066.2166  
-Iteration 10:  log likelihood = -2066.0937  
-Iteration 11:  log likelihood = -2065.9115  
-Iteration 12:  log likelihood = -2065.9114  
+Iteration 0:  Log likelihood = -2324.1055  (not concave)
+Iteration 1:  Log likelihood = -2294.9222  (not concave)
+Iteration 2:  Log likelihood = -2269.2158  
+Iteration 3:  Log likelihood =  -2202.286  
+Iteration 4:  Log likelihood = -2161.7932  
+Iteration 5:  Log likelihood = -2103.8001  
+Iteration 6:  Log likelihood = -2075.5742  
+Iteration 7:  Log likelihood =   -2069.05  
+Iteration 8:  Log likelihood = -2067.1253  
+Iteration 9:  Log likelihood = -2066.2166  
+Iteration 10: Log likelihood = -2066.0937  
+Iteration 11: Log likelihood = -2065.9115  
+Iteration 12: Log likelihood = -2065.9114  
 
 Mixed-process regression                                Number of obs =    500
                                                         LR chi2(5)    = 659.40
@@ -906,11 +906,11 @@ Fitting individual models as starting point for full model fit.
 Note: For programming reasons, these initial estimates may deviate from your specification.
       For exact fits of each equation alone, run cmp separately on each.
 
-Iteration 0:   log likelihood = -145.56091  
-Iteration 1:   log likelihood = -89.521965  
-Iteration 2:   log likelihood = -89.138921  
-Iteration 3:   log likelihood = -89.138524  
-Iteration 4:   log likelihood = -89.138524  
+Iteration 0:  Log likelihood = -145.56091  
+Iteration 1:  Log likelihood = -89.521965  
+Iteration 2:  Log likelihood = -89.138921  
+Iteration 3:  Log likelihood = -89.138524  
+Iteration 4:  Log likelihood = -89.138524  
 
 Probit regression                                       Number of obs =    210
                                                         Wald chi2(2)  =  87.01
@@ -928,11 +928,11 @@ This might prevent convergence. If it does, and if you have not done so already,
 collinear regressors to achieve convergence. Or you may need to add a nrtolerance(#) or nonrtolerance option to the command line.
 See cmp tips.
 
-Iteration 0:   log likelihood =  -128.2815  
-Iteration 1:   log likelihood = -99.654741  
-Iteration 2:   log likelihood = -99.360435  
-Iteration 3:   log likelihood = -99.359774  
-Iteration 4:   log likelihood = -99.359774  
+Iteration 0:  Log likelihood =  -128.2815  
+Iteration 1:  Log likelihood = -99.654741  
+Iteration 2:  Log likelihood = -99.360435  
+Iteration 3:  Log likelihood = -99.359774  
+Iteration 4:  Log likelihood = -99.359774  
 
 Probit regression                                       Number of obs =    210
                                                         LR chi2(3)    =  57.84
@@ -953,11 +953,11 @@ This might prevent convergence. If it does, and if you have not done so already,
 collinear regressors to achieve convergence. Or you may need to add a nrtolerance(#) or nonrtolerance option to the command line.
 See cmp tips.
 
-Iteration 0:   log likelihood = -86.124427  
-Iteration 1:   log likelihood = -56.185551  
-Iteration 2:   log likelihood = -55.564291  
-Iteration 3:   log likelihood = -55.561526  
-Iteration 4:   log likelihood = -55.561526  
+Iteration 0:  Log likelihood = -86.124427  
+Iteration 1:  Log likelihood = -56.185551  
+Iteration 2:  Log likelihood = -55.564291  
+Iteration 3:  Log likelihood = -55.561526  
+Iteration 4:  Log likelihood = -55.561526  
 
 Probit regression                                       Number of obs =    210
                                                         LR chi2(3)    =  61.13
@@ -979,10 +979,10 @@ collinear regressors to achieve convergence. Or you may need to add a nrtoleranc
 See cmp tips.
 
 note: termtime4 omitted because of collinearity.
-Iteration 0:   log likelihood = -124.70862  
-Iteration 1:   log likelihood = -117.48714  
-Iteration 2:   log likelihood = -117.45123  
-Iteration 3:   log likelihood = -117.45123  
+Iteration 0:  Log likelihood = -124.70862  
+Iteration 1:  Log likelihood = -117.48714  
+Iteration 2:  Log likelihood = -117.45123  
+Iteration 3:  Log likelihood = -117.45123  
 
 Probit regression                                       Number of obs =    210
                                                         LR chi2(2)    =  14.51
@@ -1010,37 +1010,37 @@ Using ghk2() to simulate them. Settings:
 Each observation gets different draws, so changing the order of observations in the data set would change the results.
 
 
-Iteration 0:   log likelihood = -377.95432  
-Iteration 1:   log likelihood = -252.83656  (backed up)
-Iteration 2:   log likelihood = -250.88465  (backed up)
-Iteration 3:   log likelihood =  -248.0956  (backed up)
-Iteration 4:   log likelihood = -243.91524  (backed up)
-Iteration 5:   log likelihood = -243.86367  (backed up)
-Iteration 6:   log likelihood = -221.52072  
-Iteration 7:   log likelihood = -218.46659  
-Iteration 8:   log likelihood = -218.16874  
-Iteration 9:   log likelihood = -212.92306  
-Iteration 10:  log likelihood = -207.82677  
-Iteration 11:  log likelihood = -205.35613  
-Iteration 12:  log likelihood = -201.52726  
-Iteration 13:  log likelihood = -200.12044  
-Iteration 14:  log likelihood = -195.76499  
-Iteration 15:  log likelihood = -193.19278  
-Iteration 16:  log likelihood = -191.47315  
-Iteration 17:  log likelihood = -190.59554  
-Iteration 18:  log likelihood = -190.32546  
-Iteration 19:  log likelihood = -190.30033  
-Iteration 20:  log likelihood = -190.17381  
-Iteration 21:  log likelihood = -190.14855  
-Iteration 22:  log likelihood =  -190.1413  
-Iteration 23:  log likelihood = -190.13318  
-Iteration 24:  log likelihood = -190.12611  
-Iteration 25:  log likelihood = -190.12088  
-Iteration 26:  log likelihood = -190.11598  
-Iteration 27:  log likelihood = -190.11354  
-Iteration 28:  log likelihood = -190.11316  
-Iteration 29:  log likelihood = -190.11312  
-Iteration 30:  log likelihood = -190.11311  
+Iteration 0:  Log likelihood = -377.95432  
+Iteration 1:  Log likelihood = -252.83656  (backed up)
+Iteration 2:  Log likelihood = -250.88465  (backed up)
+Iteration 3:  Log likelihood =  -248.0956  (backed up)
+Iteration 4:  Log likelihood = -243.91524  (backed up)
+Iteration 5:  Log likelihood = -243.86367  (backed up)
+Iteration 6:  Log likelihood = -221.52072  
+Iteration 7:  Log likelihood = -218.46659  
+Iteration 8:  Log likelihood = -218.16874  
+Iteration 9:  Log likelihood = -212.92306  
+Iteration 10: Log likelihood = -207.82677  
+Iteration 11: Log likelihood = -205.35613  
+Iteration 12: Log likelihood = -201.52726  
+Iteration 13: Log likelihood = -200.12044  
+Iteration 14: Log likelihood = -195.76499  
+Iteration 15: Log likelihood = -193.19278  
+Iteration 16: Log likelihood = -191.47315  
+Iteration 17: Log likelihood = -190.59554  
+Iteration 18: Log likelihood = -190.32546  
+Iteration 19: Log likelihood = -190.30033  
+Iteration 20: Log likelihood = -190.17381  
+Iteration 21: Log likelihood = -190.14855  
+Iteration 22: Log likelihood =  -190.1413  
+Iteration 23: Log likelihood = -190.13318  
+Iteration 24: Log likelihood = -190.12611  
+Iteration 25: Log likelihood = -190.12088  
+Iteration 26: Log likelihood = -190.11598  
+Iteration 27: Log likelihood = -190.11354  
+Iteration 28: Log likelihood = -190.11316  
+Iteration 29: Log likelihood = -190.11312  
+Iteration 30: Log likelihood = -190.11311  
 
 Mixed-process regression                                Number of obs =    210
                                                         Wald chi2(5)  =  32.43
@@ -1211,41 +1211,41 @@ Using ghk2() to simulate them. Settings:
 Each observation gets different draws, so changing the order of observations in the data set would change the results.
 
 
-Iteration 0:   log likelihood = -9347.7255  
-Iteration 1:   log likelihood =  -7077.654  (backed up)
-Iteration 2:   log likelihood = -6944.6929  (backed up)
-Iteration 3:   log likelihood = -6929.4095  (backed up)
-Iteration 4:   log likelihood = -6853.8271  (backed up)
-Iteration 5:   log likelihood =  -6840.926  (backed up)
-Iteration 6:   log likelihood = -6831.1098  (backed up)
-Iteration 7:   log likelihood = -6820.2201  (backed up)
-Iteration 8:   log likelihood = -6805.5757  (backed up)
-Iteration 9:   log likelihood = -6801.4722  (backed up)
-Iteration 10:  log likelihood = -6796.5856  (backed up)
-Iteration 11:  log likelihood = -6774.6343  
-Iteration 12:  log likelihood = -6771.6177  
-Iteration 13:  log likelihood = -6733.1704  
-Iteration 14:  log likelihood = -6722.8421  
-Iteration 15:  log likelihood = -6637.8299  
-Iteration 16:  log likelihood = -6613.3925  
-Iteration 17:  log likelihood =  -6584.541  
-Iteration 18:  log likelihood = -6444.4149  
-Iteration 19:  log likelihood = -6220.8854  
-Iteration 20:  log likelihood = -6128.2364  
-Iteration 21:  log likelihood = -6059.6179  
-Iteration 22:  log likelihood = -6025.4241  
-Iteration 23:  log likelihood = -6016.1831  
-Iteration 24:  log likelihood = -6014.8263  
-Iteration 25:  log likelihood = -6013.4463  
-Iteration 26:  log likelihood = -6012.9575  
-Iteration 27:  log likelihood = -6012.7403  
-Iteration 28:  log likelihood = -6012.6925  
-Iteration 29:  log likelihood = -6012.6595  
-Iteration 30:  log likelihood = -6012.6512  
-Iteration 31:  log likelihood = -6012.6489  
-Iteration 32:  log likelihood = -6012.6484  
-Iteration 33:  log likelihood = -6012.6483  
-Iteration 34:  log likelihood = -6012.6483  
+Iteration 0:  Log likelihood = -9347.7255  
+Iteration 1:  Log likelihood =  -7077.654  (backed up)
+Iteration 2:  Log likelihood = -6944.6929  (backed up)
+Iteration 3:  Log likelihood = -6929.4095  (backed up)
+Iteration 4:  Log likelihood = -6853.8271  (backed up)
+Iteration 5:  Log likelihood =  -6840.926  (backed up)
+Iteration 6:  Log likelihood = -6831.1098  (backed up)
+Iteration 7:  Log likelihood = -6820.2201  (backed up)
+Iteration 8:  Log likelihood = -6805.5757  (backed up)
+Iteration 9:  Log likelihood = -6801.4722  (backed up)
+Iteration 10: Log likelihood = -6796.5856  (backed up)
+Iteration 11: Log likelihood = -6774.6343  
+Iteration 12: Log likelihood = -6771.6177  
+Iteration 13: Log likelihood = -6733.1704  
+Iteration 14: Log likelihood = -6722.8421  
+Iteration 15: Log likelihood = -6637.8299  
+Iteration 16: Log likelihood = -6613.3925  
+Iteration 17: Log likelihood =  -6584.541  
+Iteration 18: Log likelihood = -6444.4149  
+Iteration 19: Log likelihood = -6220.8854  
+Iteration 20: Log likelihood = -6128.2364  
+Iteration 21: Log likelihood = -6059.6179  
+Iteration 22: Log likelihood = -6025.4241  
+Iteration 23: Log likelihood = -6016.1831  
+Iteration 24: Log likelihood = -6014.8263  
+Iteration 25: Log likelihood = -6013.4463  
+Iteration 26: Log likelihood = -6012.9575  
+Iteration 27: Log likelihood = -6012.7403  
+Iteration 28: Log likelihood = -6012.6925  
+Iteration 29: Log likelihood = -6012.6595  
+Iteration 30: Log likelihood = -6012.6512  
+Iteration 31: Log likelihood = -6012.6489  
+Iteration 32: Log likelihood = -6012.6484  
+Iteration 33: Log likelihood = -6012.6483  
+Iteration 34: Log likelihood = -6012.6483  
 
 Mixed-process regression                                Number of obs =  3,226
                                                         Wald chi2(8)  = 119.22
@@ -1581,13 +1581,13 @@ Note: For programming reasons, these initial estimates may deviate from your spe
 
 Fitting full model.
 
-Iteration 0:   log likelihood = -734.11692  (not concave)
-Iteration 1:   log likelihood = -731.87443  
-Iteration 2:   log likelihood = -726.66187  
-Iteration 3:   log likelihood = -724.33412  
-Iteration 4:   log likelihood = -724.20587  
-Iteration 5:   log likelihood = -724.20415  
-Iteration 6:   log likelihood = -724.20414  
+Iteration 0:  Log likelihood = -734.11692  (not concave)
+Iteration 1:  Log likelihood = -731.87443  
+Iteration 2:  Log likelihood = -726.66187  
+Iteration 3:  Log likelihood = -724.33412  
+Iteration 4:  Log likelihood = -724.20587  
+Iteration 5:  Log likelihood = -724.20415  
+Iteration 6:  Log likelihood = -724.20414  
 
 Mixed-process regression                                Number of obs =     74
                                                         Wald chi2(1)  =  13.55
@@ -1643,10 +1643,10 @@ Note: For programming reasons, these initial estimates may deviate from your spe
        _cons |   6165.257   342.8719    17.98   0.000     5481.914      6848.6
 ------------------------------------------------------------------------------
 
-Iteration 0:   log likelihood =  -45.03321  
-Iteration 1:   log likelihood = -39.264978  
-Iteration 2:   log likelihood = -39.258972  
-Iteration 3:   log likelihood = -39.258972  
+Iteration 0:  Log likelihood =  -45.03321  
+Iteration 1:  Log likelihood = -39.264978  
+Iteration 2:  Log likelihood = -39.258972  
+Iteration 3:  Log likelihood = -39.258972  
 
 Probit regression                                       Number of obs =     74
                                                         LR chi2(1)    =  11.55
@@ -1664,13 +1664,13 @@ Fitting constant-only model for LR test of overall model fit.
 
 Fitting full model.
 
-Iteration 0:   log likelihood = -732.86307  (not concave)
-Iteration 1:   log likelihood =   -727.472  
-Iteration 2:   log likelihood = -726.54755  (not concave)
-Iteration 3:   log likelihood = -724.30749  
-Iteration 4:   log likelihood = -722.89631  
-Iteration 5:   log likelihood = -722.80572  
-Iteration 6:   log likelihood = -722.80565  
+Iteration 0:  Log likelihood = -732.86307  (not concave)
+Iteration 1:  Log likelihood =   -727.472  
+Iteration 2:  Log likelihood = -726.54755  (not concave)
+Iteration 3:  Log likelihood = -724.30749  
+Iteration 4:  Log likelihood = -722.89631  
+Iteration 5:  Log likelihood = -722.80572  
+Iteration 6:  Log likelihood = -722.80565  
 
 Mixed-process regression                                Number of obs =     74
                                                         LR chi2(2)    =  35.70
@@ -1719,10 +1719,10 @@ Note: For programming reasons, these initial estimates may deviate from your spe
        _cons |   6093.444   360.7554    16.89   0.000     5369.861    6817.028
 ------------------------------------------------------------------------------
 
-Iteration 0:   log likelihood = -36.498656  
-Iteration 1:   log likelihood = -31.372525  
-Iteration 2:   log likelihood = -31.364321  
-Iteration 3:   log likelihood =  -31.36432  
+Iteration 0:  Log likelihood = -36.498656  
+Iteration 1:  Log likelihood = -31.372525  
+Iteration 2:  Log likelihood = -31.364321  
+Iteration 3:  Log likelihood =  -31.36432  
 
 Probit regression                                       Number of obs =     54
                                                         LR chi2(1)    =  10.27
@@ -1740,13 +1740,13 @@ Fitting constant-only model for LR test of overall model fit.
 
 Fitting full model.
 
-Iteration 0:   log likelihood = -530.42411  (not concave)
-Iteration 1:   log likelihood = -526.10108  
-Iteration 2:   log likelihood = -523.18842  
-Iteration 3:   log likelihood =  -522.6001  
-Iteration 4:   log likelihood = -522.55094  
-Iteration 5:   log likelihood = -522.54995  
-Iteration 6:   log likelihood = -522.54995  
+Iteration 0:  Log likelihood = -530.42411  (not concave)
+Iteration 1:  Log likelihood = -526.10108  
+Iteration 2:  Log likelihood = -523.18842  
+Iteration 3:  Log likelihood =  -522.6001  
+Iteration 4:  Log likelihood = -522.55094  
+Iteration 5:  Log likelihood = -522.54995  
+Iteration 6:  Log likelihood = -522.54995  
 
 Mixed-process regression                                Number of obs =     54
                                                         LR chi2(2)    =  31.01
@@ -2218,40 +2218,40 @@ Fitting full model.
 Random effects/coefficients for level 2 modeled with Gauss-Hermite quadrature with 12 integration points.
 Random effects/coefficients for level 1 modeled with Gauss-Hermite quadrature with 12 integration points.
 
-Iteration 0:   log likelihood =  1092.6464  
-Iteration 1:   log likelihood =  1118.9942  
-Iteration 2:   log likelihood =  1380.0765  
+Iteration 0:  Log likelihood =  1092.6464  
+Iteration 1:  Log likelihood =  1118.9942  
+Iteration 2:  Log likelihood =  1380.0765  
 
 Performing Naylor-Smith adaptive quadrature.
-Iteration 3:   log likelihood =  959.00345  (backed up)
-Iteration 4:   log likelihood =  979.72105  
-Iteration 5:   log likelihood =  983.51865  
-Iteration 6:   log likelihood =  984.18956  
-Iteration 7:   log likelihood =  984.34051  
-Iteration 8:   log likelihood =  984.40624  
-Iteration 9:   log likelihood =  984.43833  
-Iteration 10:  log likelihood =  984.45282  
-Iteration 11:  log likelihood =   984.4599  
-Iteration 12:  log likelihood =  984.46452  
-Iteration 13:  log likelihood =  984.46744  
-Iteration 14:  log likelihood =  984.46938  
-Iteration 15:  log likelihood =  984.47071  
-Iteration 16:  log likelihood =  984.47161  
+Iteration 3:  Log likelihood =  959.00345  (backed up)
+Iteration 4:  Log likelihood =  979.72105  
+Iteration 5:  Log likelihood =  983.51865  
+Iteration 6:  Log likelihood =  984.18956  
+Iteration 7:  Log likelihood =  984.34051  
+Iteration 8:  Log likelihood =  984.40624  
+Iteration 9:  Log likelihood =  984.43833  
+Iteration 10: Log likelihood =  984.45282  
+Iteration 11: Log likelihood =   984.4599  
+Iteration 12: Log likelihood =  984.46452  
+Iteration 13: Log likelihood =  984.46744  
+Iteration 14: Log likelihood =  984.46938  
+Iteration 15: Log likelihood =  984.47071  
+Iteration 16: Log likelihood =  984.47161  
 
 Adaptive quadrature points fixed.
-Iteration 17:  log likelihood =  984.47224  
-Iteration 18:  log likelihood =  984.47268  
-Iteration 19:  log likelihood =  984.47299  
-Iteration 20:  log likelihood =   984.4732  
-Iteration 21:  log likelihood =  984.47336  
-Iteration 22:  log likelihood =  984.47347  
-Iteration 23:  log likelihood =  984.47354  
-Iteration 24:  log likelihood =   984.4736  
-Iteration 25:  log likelihood =  984.47364  
-Iteration 26:  log likelihood =  984.47366  
-Iteration 27:  log likelihood =  984.47368  
-Iteration 28:  log likelihood =   984.4737  
-Iteration 29:  log likelihood =  984.47371  
+Iteration 17: Log likelihood =  984.47224  
+Iteration 18: Log likelihood =  984.47268  
+Iteration 19: Log likelihood =  984.47299  
+Iteration 20: Log likelihood =   984.4732  
+Iteration 21: Log likelihood =  984.47336  
+Iteration 22: Log likelihood =  984.47347  
+Iteration 23: Log likelihood =  984.47354  
+Iteration 24: Log likelihood =   984.4736  
+Iteration 25: Log likelihood =  984.47364  
+Iteration 26: Log likelihood =  984.47366  
+Iteration 27: Log likelihood =  984.47368  
+Iteration 28: Log likelihood =   984.4737  
+Iteration 29: Log likelihood =  984.47371  
 
 Mixed-process multilevel regression                  Number of obs =       816
                                                      Wald chi2(6)  = 244243.55
@@ -2302,11 +2302,11 @@ Fitting individual models as starting point for full model fit.
 Note: For programming reasons, these initial estimates may deviate from your specification.
       For exact fits of each equation alone, run cmp separately on each.
 
-Iteration 0:   log likelihood = -4887.8222  
-Iteration 1:   log likelihood = -3507.0018  
-Iteration 2:   log likelihood = -3492.9672  
-Iteration 3:   log likelihood = -3492.9445  
-Iteration 4:   log likelihood = -3492.9445  
+Iteration 0:  Log likelihood = -4887.8222  
+Iteration 1:  Log likelihood = -3507.0018  
+Iteration 2:  Log likelihood = -3492.9672  
+Iteration 3:  Log likelihood = -3492.9445  
+Iteration 4:  Log likelihood = -3492.9445  
 
 Probit regression                                      Number of obs =   7,200
                                                        LR chi2(5)    = 2789.76
@@ -2333,11 +2333,11 @@ This might prevent convergence. If it does, and if you have not done so already,
 collinear regressors to achieve convergence. Or you may need to add a nrtolerance(#) or nonrtolerance option to the command line.
 See cmp tips.
 
-Iteration 0:   log likelihood = -4228.0123  
-Iteration 1:   log likelihood = -3493.1825  
-Iteration 2:   log likelihood = -3477.7418  
-Iteration 3:   log likelihood = -3477.6874  
-Iteration 4:   log likelihood = -3477.6874  
+Iteration 0:  Log likelihood = -4228.0123  
+Iteration 1:  Log likelihood = -3493.1825  
+Iteration 2:  Log likelihood = -3477.7418  
+Iteration 3:  Log likelihood = -3477.6874  
+Iteration 4:  Log likelihood = -3477.6874  
 
 Probit regression                                      Number of obs =   7,200
                                                        LR chi2(2)    = 1500.65
@@ -2362,30 +2362,30 @@ See cmp tips.
 Fitting full model.
 Random effects/coefficients modeled with Gauss-Hermite quadrature with 7 integration points.
 
-Iteration 0:   log likelihood = -6918.7213  
-Iteration 1:   log likelihood = -6850.3289  
-Iteration 2:   log likelihood = -6844.8427  
-Iteration 3:   log likelihood = -6838.3335  
-Iteration 4:   log likelihood = -6837.5503  
+Iteration 0:  Log likelihood = -6918.7213  
+Iteration 1:  Log likelihood = -6850.3289  
+Iteration 2:  Log likelihood = -6844.8427  
+Iteration 3:  Log likelihood = -6838.3335  
+Iteration 4:  Log likelihood = -6837.5503  
 
 Performing Naylor-Smith adaptive quadrature.
-Iteration 5:   log likelihood = -6837.2467  
-Iteration 6:   log likelihood = -6837.1492  
-Iteration 7:   log likelihood = -6837.1046  
-Iteration 8:   log likelihood = -6837.0853  
-Iteration 9:   log likelihood = -6837.0762  
-Iteration 10:  log likelihood = -6837.0719  
+Iteration 5:  Log likelihood = -6837.2467  
+Iteration 6:  Log likelihood = -6837.1492  
+Iteration 7:  Log likelihood = -6837.1046  
+Iteration 8:  Log likelihood = -6837.0853  
+Iteration 9:  Log likelihood = -6837.0762  
+Iteration 10: Log likelihood = -6837.0719  
 
 Adaptive quadrature points fixed.
-Iteration 11:  log likelihood = -6837.0699  
-Iteration 12:  log likelihood = -6837.0689  
-Iteration 13:  log likelihood = -6837.0685  
-Iteration 14:  log likelihood = -6837.0682  
-Iteration 15:  log likelihood = -6837.0681  
-Iteration 16:  log likelihood = -6837.0681  
-Iteration 17:  log likelihood =  -6837.068  
-Iteration 18:  log likelihood =  -6837.068  
-Iteration 19:  log likelihood =  -6837.068  
+Iteration 11: Log likelihood = -6837.0699  
+Iteration 12: Log likelihood = -6837.0689  
+Iteration 13: Log likelihood = -6837.0685  
+Iteration 14: Log likelihood = -6837.0682  
+Iteration 15: Log likelihood = -6837.0681  
+Iteration 16: Log likelihood = -6837.0681  
+Iteration 17: Log likelihood =  -6837.068  
+Iteration 18: Log likelihood =  -6837.068  
+Iteration 19: Log likelihood =  -6837.068  
 
 Mixed-process multilevel regression                    Number of obs =   7,200
                                                        Wald chi2(7)  = 1245.40
@@ -2467,10 +2467,10 @@ Note: For programming reasons, these initial estimates may deviate from your spe
        _cons |    13.5062   .2120579    63.69   0.000     13.09031    13.92209
 ------------------------------------------------------------------------------
 
-Iteration 0:   log likelihood = -1189.7918  
-Iteration 1:   log likelihood =  -1109.256  
-Iteration 2:   log likelihood = -1108.6542  
-Iteration 3:   log likelihood = -1108.6541  
+Iteration 0:  Log likelihood = -1189.7918  
+Iteration 1:  Log likelihood =  -1109.256  
+Iteration 2:  Log likelihood = -1108.6542  
+Iteration 3:  Log likelihood = -1108.6541  
 
 Probit regression                                       Number of obs =  2,400
                                                         LR chi2(2)    = 162.28
@@ -2488,28 +2488,28 @@ Log likelihood = -1108.6541                             Pseudo R2     = 0.0682
 Fitting full model.
 Random effects/coefficients modeled with Gauss-Hermite quadrature with 7 integration points.
 
-Iteration 0:   log likelihood = -5613.6498  
-Iteration 1:   log likelihood =   -5577.07  
-Iteration 2:   log likelihood = -5503.2081  
-Iteration 3:   log likelihood = -5469.5677  
-Iteration 4:   log likelihood = -5466.3561  
-Iteration 5:   log likelihood =  -5465.296  
+Iteration 0:  Log likelihood = -5613.6498  
+Iteration 1:  Log likelihood =   -5577.07  
+Iteration 2:  Log likelihood = -5503.2081  
+Iteration 3:  Log likelihood = -5469.5677  
+Iteration 4:  Log likelihood = -5466.3561  
+Iteration 5:  Log likelihood =  -5465.296  
 
 Performing Naylor-Smith adaptive quadrature.
-Iteration 6:   log likelihood = -5464.5606  
-Iteration 7:   log likelihood = -5464.3505  
-Iteration 8:   log likelihood = -5464.2785  
-Iteration 9:   log likelihood = -5464.2521  
-Iteration 10:  log likelihood = -5464.2427  
-Iteration 11:  log likelihood = -5464.2393  
+Iteration 6:  Log likelihood = -5464.5606  
+Iteration 7:  Log likelihood = -5464.3505  
+Iteration 8:  Log likelihood = -5464.2785  
+Iteration 9:  Log likelihood = -5464.2521  
+Iteration 10: Log likelihood = -5464.2427  
+Iteration 11: Log likelihood = -5464.2393  
 
 Adaptive quadrature points fixed.
-Iteration 12:  log likelihood = -5464.2381  
-Iteration 13:  log likelihood = -5464.2376  
-Iteration 14:  log likelihood = -5464.2375  
-Iteration 15:  log likelihood = -5464.2374  
-Iteration 16:  log likelihood = -5464.2374  
-Iteration 17:  log likelihood = -5464.2374  
+Iteration 12: Log likelihood = -5464.2381  
+Iteration 13: Log likelihood = -5464.2376  
+Iteration 14: Log likelihood = -5464.2375  
+Iteration 15: Log likelihood = -5464.2374  
+Iteration 16: Log likelihood = -5464.2374  
+Iteration 17: Log likelihood = -5464.2374  
 
 Mixed-process multilevel regression                    Number of obs =   2,400
                                                        Wald chi2(4)  = 2822.66
@@ -2693,11 +2693,11 @@ Fitting constant-only model for LR test of overall model fit.
 
 Fitting full model.
 
-Iteration 0:   log likelihood = -3022.8836  
-Iteration 1:   log likelihood =  -3019.716  
-Iteration 2:   log likelihood = -3019.1972  
-Iteration 3:   log likelihood = -3019.1947  
-Iteration 4:   log likelihood = -3019.1947  
+Iteration 0:  Log likelihood = -3022.8836  
+Iteration 1:  Log likelihood =  -3019.716  
+Iteration 2:  Log likelihood = -3019.1972  
+Iteration 3:  Log likelihood = -3019.1947  
+Iteration 4:  Log likelihood = -3019.1947  
 
 Mixed-process regression                                Number of obs =    500
                                                         LR chi2(3)    =  90.21
@@ -2752,34 +2752,34 @@ Note: For programming reasons, these initial estimates may deviate from your spe
 Fitting full model.
 Random effects/coefficients modeled with Gauss-Hermite quadrature with 12 integration points.
 
-Iteration 0:   log likelihood = -14034.455  
-Iteration 1:   log likelihood = -14011.663  
-Iteration 2:   log likelihood = -14009.278  
+Iteration 0:  Log likelihood = -14034.455  
+Iteration 1:  Log likelihood = -14011.663  
+Iteration 2:  Log likelihood = -14009.278  
 
 Performing Naylor-Smith adaptive quadrature.
-Iteration 3:   log likelihood = -14007.144  
-Iteration 4:   log likelihood = -14005.666  
-Iteration 5:   log likelihood = -14005.226  
-Iteration 6:   log likelihood = -14005.015  
-Iteration 7:   log likelihood = -14004.884  
-Iteration 8:   log likelihood = -14004.788  
-Iteration 9:   log likelihood = -14004.736  
-Iteration 10:  log likelihood = -14004.693  
-Iteration 11:  log likelihood = -14004.669  
-Iteration 12:  log likelihood =  -14004.65  
-Iteration 13:  log likelihood = -14004.639  
+Iteration 3:  Log likelihood = -14007.144  
+Iteration 4:  Log likelihood = -14005.666  
+Iteration 5:  Log likelihood = -14005.226  
+Iteration 6:  Log likelihood = -14005.015  
+Iteration 7:  Log likelihood = -14004.884  
+Iteration 8:  Log likelihood = -14004.788  
+Iteration 9:  Log likelihood = -14004.736  
+Iteration 10: Log likelihood = -14004.693  
+Iteration 11: Log likelihood = -14004.669  
+Iteration 12: Log likelihood =  -14004.65  
+Iteration 13: Log likelihood = -14004.639  
 
 Adaptive quadrature points fixed.
-Iteration 14:  log likelihood =  -14004.63  
-Iteration 15:  log likelihood = -14004.625  
-Iteration 16:  log likelihood = -14004.621  
-Iteration 17:  log likelihood = -14004.619  
-Iteration 18:  log likelihood = -14004.617  
-Iteration 19:  log likelihood = -14004.615  
-Iteration 20:  log likelihood = -14004.614  
-Iteration 21:  log likelihood = -14004.614  
-Iteration 22:  log likelihood = -14004.613  
-Iteration 23:  log likelihood = -14004.613  
+Iteration 14: Log likelihood =  -14004.63  
+Iteration 15: Log likelihood = -14004.625  
+Iteration 16: Log likelihood = -14004.621  
+Iteration 17: Log likelihood = -14004.619  
+Iteration 18: Log likelihood = -14004.617  
+Iteration 19: Log likelihood = -14004.615  
+Iteration 20: Log likelihood = -14004.614  
+Iteration 21: Log likelihood = -14004.614  
+Iteration 22: Log likelihood = -14004.613  
+Iteration 23: Log likelihood = -14004.613  
 
 Mixed-process multilevel regression                     Number of obs =  4,059
                                                         Wald chi2(1)  = 775.01
@@ -2822,8 +2822,8 @@ Fitting individual models as starting point for full model fit.
 Note: For programming reasons, these initial estimates may deviate from your specification.
       For exact fits of each equation alone, run cmp separately on each.
 
-Iteration 0:   log likelihood = -739.16886  
-Iteration 1:   log likelihood = -739.16886  
+Iteration 0:  Log likelihood = -739.16886  
+Iteration 1:  Log likelihood = -739.16886  
 
 Probit regression                                       Number of obs =  1,313
                                                         LR chi2(0)    =   0.00
@@ -2836,9 +2836,9 @@ Log likelihood = -739.16886                             Pseudo R2     = 0.0000
        _cons |  -.6726933   .0375882   -17.90   0.000    -.7463647   -.5990219
 ------------------------------------------------------------------------------
 
-Iteration 0:   log likelihood = -909.39801  
-Iteration 1:   log likelihood = -909.35643  
-Iteration 2:   log likelihood = -909.35643  
+Iteration 0:  Log likelihood = -909.39801  
+Iteration 1:  Log likelihood = -909.35643  
+Iteration 2:  Log likelihood = -909.35643  
 
 Probit regression                                       Number of obs =  1,313
                                                         LR chi2(1)    =   0.08
@@ -2852,10 +2852,10 @@ Log likelihood = -909.35643                             Pseudo R2     = 0.0000
        _cons |   .0509084   .0486243     1.05   0.295    -.0443935    .1462104
 ------------------------------------------------------------------------------
 
-Iteration 0:   log likelihood = -712.88069  
-Iteration 1:   log likelihood = -700.51801  
-Iteration 2:   log likelihood = -700.50211  
-Iteration 3:   log likelihood = -700.50211  
+Iteration 0:  Log likelihood = -712.88069  
+Iteration 1:  Log likelihood = -700.51801  
+Iteration 2:  Log likelihood = -700.50211  
+Iteration 3:  Log likelihood = -700.50211  
 
 Probit regression                                       Number of obs =  1,313
                                                         LR chi2(1)    =  24.76
@@ -2872,24 +2872,24 @@ Log likelihood = -700.50211                             Pseudo R2     = 0.0174
 Fitting full model.
 Random effects/coefficients modeled with Gauss-Hermite quadrature with 12 integration points.
 
-Iteration 0:   log likelihood = -1407.4207  
-Iteration 1:   log likelihood = -1354.8329  
-Iteration 2:   log likelihood = -1339.5337  
-Iteration 3:   log likelihood = -1328.8529  
-Iteration 4:   log likelihood = -1305.2827  
-Iteration 5:   log likelihood = -1300.1925  
-Iteration 6:   log likelihood = -1299.5707  
-Iteration 7:   log likelihood = -1299.5123  
+Iteration 0:  Log likelihood = -1407.4207  
+Iteration 1:  Log likelihood = -1354.8329  
+Iteration 2:  Log likelihood = -1339.5337  
+Iteration 3:  Log likelihood = -1328.8529  
+Iteration 4:  Log likelihood = -1305.2827  
+Iteration 5:  Log likelihood = -1300.1925  
+Iteration 6:  Log likelihood = -1299.5707  
+Iteration 7:  Log likelihood = -1299.5123  
 
 Performing Naylor-Smith adaptive quadrature.
-Iteration 8:   log likelihood =   -1299.49  
-Iteration 9:   log likelihood = -1299.4868  
-Iteration 10:  log likelihood = -1299.4864  
+Iteration 8:  Log likelihood =   -1299.49  
+Iteration 9:  Log likelihood = -1299.4868  
+Iteration 10: Log likelihood = -1299.4864  
 
 Adaptive quadrature points fixed.
-Iteration 11:  log likelihood = -1299.4863  
-Iteration 12:  log likelihood = -1299.4863  
-Iteration 13:  log likelihood = -1299.4863  
+Iteration 11: Log likelihood = -1299.4863  
+Iteration 12: Log likelihood = -1299.4863  
+Iteration 13: Log likelihood = -1299.4863  
 
 Mixed-process multilevel regression                     Number of obs =  1,313
                                                         Wald chi2(2)  =  40.49
@@ -2947,10 +2947,10 @@ Fitting individual models as starting point for full model fit.
 Note: For programming reasons, these initial estimates may deviate from your specification.
       For exact fits of each equation alone, run cmp separately on each.
 
-Iteration 0:   log likelihood =  -13864.23  
-Iteration 1:   log likelihood = -13795.751  
-Iteration 2:   log likelihood = -13795.698  
-Iteration 3:   log likelihood = -13795.698  
+Iteration 0:  Log likelihood =  -13864.23  
+Iteration 1:  Log likelihood = -13795.751  
+Iteration 2:  Log likelihood = -13795.698  
+Iteration 3:  Log likelihood = -13795.698  
 
 Probit regression                                       Number of obs = 26,200
                                                         LR chi2(2)    = 137.06
@@ -2965,10 +2965,10 @@ Log likelihood = -13795.698                             Pseudo R2     = 0.0049
        _cons |  -.9326388    .041944   -22.24   0.000    -1.014848     -.85043
 ------------------------------------------------------------------------------
 
-Iteration 0:   log likelihood = -15398.375  
-Iteration 1:   log likelihood = -14408.353  
-Iteration 2:   log likelihood = -14405.674  
-Iteration 3:   log likelihood = -14405.674  
+Iteration 0:  Log likelihood = -15398.375  
+Iteration 1:  Log likelihood = -14408.353  
+Iteration 2:  Log likelihood = -14405.674  
+Iteration 3:  Log likelihood = -14405.674  
 
 Probit regression                                      Number of obs =  26,200
                                                        LR chi2(2)    = 1985.40
@@ -2988,25 +2988,25 @@ south#c.year |
 Fitting full model.
 Random effects/coefficients modeled with Gauss-Hermite quadrature with 12 integration points.
 
-Iteration 0:   log likelihood = -26898.743  
-Iteration 1:   log likelihood = -25043.134  
-Iteration 2:   log likelihood = -24938.769  
-Iteration 3:   log likelihood = -24920.611  
+Iteration 0:  Log likelihood = -26898.743  
+Iteration 1:  Log likelihood = -25043.134  
+Iteration 2:  Log likelihood = -24938.769  
+Iteration 3:  Log likelihood = -24920.611  
 
 Performing Naylor-Smith adaptive quadrature.
-Iteration 4:   log likelihood = -24912.398  
-Iteration 5:   log likelihood = -24911.293  
-Iteration 6:   log likelihood = -24911.137  
-Iteration 7:   log likelihood = -24911.091  
-Iteration 8:   log likelihood = -24911.074  
+Iteration 4:  Log likelihood = -24912.398  
+Iteration 5:  Log likelihood = -24911.293  
+Iteration 6:  Log likelihood = -24911.137  
+Iteration 7:  Log likelihood = -24911.091  
+Iteration 8:  Log likelihood = -24911.074  
 
 Adaptive quadrature points fixed.
-Iteration 9:   log likelihood = -24911.066  
-Iteration 10:  log likelihood = -24911.062  
-Iteration 11:  log likelihood = -24911.061  
-Iteration 12:  log likelihood = -24911.061  
-Iteration 13:  log likelihood = -24911.061  
-Iteration 14:  log likelihood = -24911.061  
+Iteration 9:  Log likelihood = -24911.066  
+Iteration 10: Log likelihood = -24911.062  
+Iteration 11: Log likelihood = -24911.061  
+Iteration 12: Log likelihood = -24911.061  
+Iteration 13: Log likelihood = -24911.061  
+Iteration 14: Log likelihood = -24911.061  
 
 Mixed-process multilevel regression                    Number of obs =  26,200
                                                        Wald chi2(4)  = 1953.26

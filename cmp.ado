@@ -1,4 +1,4 @@
-*! cmp 8.7.5 3 July 2023
+*! cmp 8.7.6 12 May 2023
 *! Copyright (C) 2007-23 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -114,7 +114,7 @@ program define _cmp
 		local atanh atanh
 	}
 
-	marksample touse
+	marksample touse, strok
 
 	_get_eformopts, soptions eformopts(`options') allowed(hr shr IRr or RRr)
 	local eformopts `s(eform)'
@@ -730,7 +730,7 @@ program define _cmp
 
 	forvalues l=1/$parse_L {
 		forvalues j=1/$cmp_d {
-			global cmp_rc`l'   ${cmp_rc`l'}   ${cmp_rc`l'_`j'} ${cmp_re`l'_`j'}
+			global cmp_rc`l' ${cmp_rc`l'} ${cmp_rc`l'_`j'} ${cmp_re`l'_`j'}
 			forvalues k=1/`: word count ${cmp_rc`l'_`j'} ${cmp_re`l'_`j'}' {
 				global cmp_rceq`l' ${cmp_rceq`l'} ${cmp_eq`j'}
 			}
@@ -1154,8 +1154,11 @@ program define ParseEqs
 			local 0 `*'
 			syntax [varlist(fv ts default=none)] [fw aw pw iw/], [noCONStant COVariance(string)]
 
-			if "`varlist'"!="" fvunab varlist: `varlist'
-			local t: list varlist - global(parse_x$parse_d)
+			if "`varlist'"!="" fvexpand `varlist'
+      local varlist
+      foreach var in `r(varlist)' {
+        if !strpos("`var'", "o.") & !strpos("`var'", "b.") local varlist `var'
+      }
 
 			if `"`weight'`exp'"' != "" {
 				if `"${parse_wtype`L'}${parse_wexp`L'}"' == ""  {
@@ -2533,6 +2536,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.7.6 Prevent crash when random-coefficient var list fv-expands to include omitted or base levels
 * 8.7.5 Fixed crash on complex weight expressions with parentheses
 * 8.7.4 Prevent crash when too few primes for Halton or multiple RC's causing passing of matrix to setcol()
 * 8.7.3 Fixed crash in predicting likelihoods and scores after cmp command line with quotes
