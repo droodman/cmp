@@ -1157,7 +1157,8 @@ program define ParseEqs
 			if "`varlist'"!="" fvexpand `varlist'
       local varlist
       foreach var in `r(varlist)' {
-        if !strpos("`var'", "o.") & !strpos("`var'", "b.") local varlist `var'
+        _ms_parse_parts `var'
+        if !r(omit) local varlist `varlist' `var'
       }
 
 			if `"`weight'`exp'"' != "" {
