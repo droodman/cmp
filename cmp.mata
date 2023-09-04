@@ -910,7 +910,7 @@ real colvector cmp_model::vecmultinormal(real matrix E, real matrix F, real matr
     else {
       Phi = mvnormalcv(F, E, J(1,cols(E),0), vech(Sig)')
       if (todo)
-          mvnormalcvderiv(F, E, J(1,cols(E),0), vech(Sig)', dPhi_dF, dPhi_dE, dM, dPhi_dSig)
+        mvnormalcvderiv(F, E, J(1,cols(E),0), vech(Sig)', dPhi_dF, dPhi_dE, dM, dPhi_dSig)
     }
   else if (ghk2DrawSet != .)
     if (todo)

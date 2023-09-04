@@ -1,4 +1,4 @@
-*! cmp 8.7.6 12 May 2023
+*! cmp 8.7.7 31 August 2023
 *! Copyright (C) 2007-23 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -305,7 +305,6 @@ program define _cmp
 	if 0`steps'==0 local steps 1
 
 	global cmp_max_cuts 0
-	global cmp_tot_cuts 0
 	global cmp_num_mprobit_groups 0
 	global cmp_num_roprobit_groups 0
 	global cmp_mprobit_ind_base 20
@@ -436,24 +435,12 @@ program define _cmp
 			replace `_touse' = `_touse' | _cmp_ind`cmp_eqno'
 
 			cap assert _cmp_ind`cmp_eqno' != $cmp_oprobit if `touse', fast
-			if _rc { // ordered probit
-				GroupCategoricalVar if ${cmp_y`cmp_eqno'} < . & `touse' & _cmp_ind`cmp_eqno', predict(`predict') cmp_eqno(`cmp_eqno')
-				mat cmp_cat`cmp_eqno' = r(cat)
-				local t = colsof(cmp_cat`cmp_eqno') - 1
-				mat cmp_num_cuts = nullmat(cmp_num_cuts) \ `t'
-				if $cmp_max_cuts < `t' global cmp_max_cuts = `t'
-				global cmp_tot_cuts = $cmp_tot_cuts + `t'
-				forvalues j=1/`t' {
-					local cutparams `cutparams' /cut_`cmp_eqno'_`j'
-				}
-				global cmp_y`cmp_eqno' _cmp_y`cmp_eqno'
+      mat cmp_num_cuts = nullmat(cmp_num_cuts) \ _rc  // _rc is a placeholder non-zero value, to be corrected later
+      if _rc {  // ordered probit
 				local i_oprobit_ys `i_oprobit_ys' i._cmp_y`cmp_eqno'
 				global cmpAnyOprobit 1
 			}
-			else {
-				local lrtest `lrtest' ${cmp_xc`cmp_eqno'}
-				mat cmp_num_cuts = nullmat(cmp_num_cuts) \ 0
-			}
+			else local lrtest `lrtest' ${cmp_xc`cmp_eqno'}
 
 			cap assert _cmp_ind`cmp_eqno' != $cmp_frac if `touse', fast
 			if _rc {
@@ -466,7 +453,7 @@ program define _cmp
 			local N_mprobit `r(N)'
 			count if _cmp_ind`cmp_eqno'==$cmp_roprobit & `touse'
 			local N_roprobit `r(N)'
-			if `N_mprobit' | `N_roprobit' { // multinomial or rank-ordered probit
+			if `N_mprobit' | `N_roprobit' {  // multinomial or rank-ordered probit
 				if (`N_mprobit' & "`m_ro'" == "ro") | (`N_roprobit' & "`m_ro'" == "m") cmp_error 148 "Cannot mix multinomial and rank-ordered indicator values in the same group."
 				cap assert inlist(_cmp_ind`cmp_eqno', 0, $cmp_mprobit, $cmp_roprobit) if `touse', fast
 
@@ -474,7 +461,7 @@ program define _cmp
 				
 				if ${cmp_truncreg`cmp_eqno'} cmp_error 198 `'"Truncation not allowed in `=cond(`N_mprobit',"multinomial","rank-ordered")' probit equations."'
 				
-				if `asprobit_eq'==1 & "`m_ro'" == "" { // starting new asprobit group?
+				if `asprobit_eq'==1 & "`m_ro'" == "" {  // starting new asprobit group?
 					if `N_mprobit' {
 						gen byte `asmprobit_dummy_sum' = 0 if `touse'
 						gen byte `asmprobit_ind' = $cmp_mprobit_ind_base + `cmp_eqno' - 1 if `touse'
@@ -642,7 +629,7 @@ program define _cmp
 			global cmp_yL $cmp_yL ${cmp_y`eq'_L}
 			global cmp_ind $cmp_ind _cmp_ind`eq'
 		}
-		mata _mod.setd($cmp_d); _mod.setL($parse_L); _mod.setMaxCuts($cmp_max_cuts)
+		mata _mod.setd($cmp_d); _mod.setL($parse_L)
 		mata _mod.setUtVars("$cmp_Ut"); _mod.setLtVars("$cmp_Lt"); _mod.setyLVars("$cmp_yL"); _mod.setindVars("$cmp_ind")
 
 		drop `_touse'
@@ -650,47 +637,65 @@ program define _cmp
 		replace `touse' = 0 if `_touse'==0 | `_touse'==.  // drop obs for which all outcomes unobserved
 		drop `_touse'
 
-		global cmpHasGamma 0
-		tempname GammaINobs GammaI GammaId
-		mat `GammaI'     = I($cmp_d)
-		mat `GammaINobs' = I($cmp_d)
-		forvalues eq1=1/$cmp_d {
-			foreach EndogVar in ${cmp_yR`eq1'} {
-				local eq2: list posof `"`EndogVar'"' in global(cmp_eq)
-				if `eq2' {
-					mat cmpGammaInd = nullmat(cmpGammaInd) \ `eq2',`eq1'
-					mat `GammaI'[`eq1', `eq2'] = 1
-					qui count if _cmp_ind`eq2' & `touse'  // is the linear functional referred to sometimes unavailable?
-					mat `GammaINobs'[`eq1', `eq2'] = r(N)>0
-					global cmp_gammaparams $cmp_gammaparams /gamma`eq1'_`eq2'
-					global cmpHasGamma = $cmpHasGamma + 1
-				}
-				else cmp_error 111 `"Equation `EndogVar' not found."'
-			}
-		}
-		mata _mod.setGammaI(st_matrix("`GammaI'")); _mod.setGammaInd(st_matrix("cmpGammaInd"))
-		if $cmpHasGamma {
-			mata st_matrix("`GammaId'", colsum(st_matrix("`GammaI'")))
-			forvalues eq=1/$cmp_d {
-				if "${cmp_y`eq'}"=="." & `GammaId'[1,`eq']==1 cmp_error 481 "Coefficients in ${cmp_eq`eq'} equation are unidentified because dependent variable is entirely unobserved and does not appear in any other equation."
-			}
-			mat `GammaId' = `GammaINobs'
-			forvalues eq1=1/`=$cmp_d-2' {
-				mat `GammaId' = `GammaId' * `GammaINobs'
-			}
+    global cmpHasGamma 0
+    tempname GammaINobs GammaI GammaId
+    mat `GammaI'     = I($cmp_d)
+    mat `GammaINobs' = I($cmp_d)
+    forvalues eq1=1/$cmp_d {
+      foreach EndogVar in ${cmp_yR`eq1'} {
+        local eq2: list posof `"`EndogVar'"' in global(cmp_eq)
+        if `eq2' {
+          mat cmpGammaInd = nullmat(cmpGammaInd) \ `eq2',`eq1'
+          mat `GammaI'[`eq1', `eq2'] = 1
+          qui count if _cmp_ind`eq2' & `touse'  // is the linear functional referred to sometimes unavailable?
+          mat `GammaINobs'[`eq1', `eq2'] = r(N)>0
+          global cmp_gammaparams $cmp_gammaparams /gamma`eq1'_`eq2'
+          global cmpHasGamma = $cmpHasGamma + 1
+        }
+        else cmp_error 111 `"Equation `EndogVar' not found."'
+      }
+    }
+    mata _mod.setGammaI(st_matrix("`GammaI'")); _mod.setGammaInd(st_matrix("cmpGammaInd"))
+    if $cmpHasGamma {
+      mata st_matrix("`GammaId'", colsum(st_matrix("`GammaI'")))
+      forvalues eq=1/$cmp_d {
+        if "${cmp_y`eq'}"=="." & `GammaId'[1,`eq']==1 cmp_error 481 "Coefficients in ${cmp_eq`eq'} equation are unidentified because dependent variable is entirely unobserved and does not appear in any other equation."
+      }
+      mat `GammaId' = `GammaINobs'
+      forvalues eq1=1/`=$cmp_d-2' {
+        mat `GammaId' = `GammaId' * `GammaINobs'
+      }
 
-			forvalues eq1=1/$cmp_d {
-				forvalues eq2=1/$cmp_d {
-					if `eq1' != `eq2' & `GammaId'[`eq1',`eq2'] {
-						count if _cmp_ind`eq1' & _cmp_ind`eq2'==0
-						replace _cmp_ind`eq1' = 0 if _cmp_ind`eq1' & _cmp_ind`eq2'==0
-						if r(N) noi di _n as txt "(" r(N) plural(r(N)," observation") " dropped from ${cmp_eq`eq1'} equation because " cond(r(N)>1,"they are","it is") " unavailable in the ${cmp_eq`eq2'} equation, on which the ${cmp_eq`eq1'} equation depends)"
-					}
-				}
-			}
-		}
-	}
-	xi, prefix(" ") noomit `i_oprobit_ys'
+      forvalues eq1=1/$cmp_d {
+        forvalues eq2=1/$cmp_d {
+          if `eq1' != `eq2' & `GammaId'[`eq1',`eq2'] {
+            count if _cmp_ind`eq1' & _cmp_ind`eq2'==0
+            replace _cmp_ind`eq1' = 0 if _cmp_ind`eq1' & _cmp_ind`eq2'==0
+            if r(N) noi di _n as txt "(" r(N) plural(r(N)," observation") " dropped from ${cmp_eq`eq1'} equation because " cond(r(N)>1,"they are","it is") " unavailable in the ${cmp_eq`eq2'} equation, on which the ${cmp_eq`eq1'} equation depends)"
+          }
+        }
+      }
+    }
+
+    global cmp_tot_cuts 0  // handle cut parameters now, *after* possibly deleting observations because of gamma interdependencies. which can empty a category
+    forvalues eq=1/$cmp_d {
+      if cmp_num_cuts[`eq',1] {
+        GroupCategoricalVar if ${cmp_y`eq'} < . & `touse' & _cmp_ind`eq', predict(`predict') cmp_eqno(`eq')
+        global cmp_y`eq' _cmp_y`eq'
+        mat cmp_cat`eq' = r(cat)
+        local t = colsof(cmp_cat`eq') - 1
+        mat cmp_num_cuts[`eq',1] = `t'
+        if $cmp_max_cuts < `t' global cmp_max_cuts = `t'
+        global cmp_tot_cuts = $cmp_tot_cuts + `t'
+        forvalues j=1/`t' {
+          local cutparams `cutparams' /cut_`eq'_`j'
+        }
+      }
+    }
+    mata  _mod.setMaxCuts($cmp_max_cuts)
+  }
+
+  xi, prefix(" ") noomit `i_oprobit_ys'
 
 	tempname Eqs
 	mat `Eqs' = J($cmp_d, $parse_L, 0)
@@ -1531,7 +1536,7 @@ program Estimate, eclass
 			tempname b
 			local _paramsdisplay `paramsdisplay'
 			if $cmpHasGamma {  // makeCns can't handle constraints with names suffixed by #; rename temporarily
-				foreach c of numlist `constraints' { // make temporary copy of constraint set
+				foreach c of numlist `constraints' {  // make temporary copy of constraint set
 					constraint free
 					constraint `r(free)' `:constraint `c''
 					local __constraints `__constraints' `r(free)'
@@ -1640,8 +1645,8 @@ program Estimate, eclass
 			local mlmaxcmd `quietly' ml max, search(off) nooutput
 
 			`quietly' ml model `method' `mlmodelcmd' vce(`this_vce') `initopt' technique(`this_technique') `=cond(`gf' & "`svy'"!="", "group(_cmp_id1)", "")'
-
 			mata moptimize_init_userinfo($ML_M, 1, &_mod)
+      mata moptimize_init_nmsimplexdeltas($ML_M, .1)  // in case nm used
 
 			mata st_local("rc", strofreal(_mod.cmp_init($ML_M)))
       if `rc' error `rc'
@@ -1653,7 +1658,9 @@ program Estimate, eclass
 				tempname zeroes
 				mat `zeroes' = J(1, `=colsof(`_init')', 0)
 				`quietly' ml model `method' `mlmodelcmd' vce(`this_vce') init(`zeroes', copy) technique(`this_technique')
-				capture noisiliy `mlmaxcmd' `this_mlopts' `iterate'
+        mata moptimize_init_userinfo($ML_M, 1, &_mod)
+        mata moptimize_init_nmsimplexdeltas($ML_M, .1)  // in case nm used
+				capture noisily `mlmaxcmd' `this_mlopts' `iterate'
 			}
 			if _rc==1 {
 				if "`interactive'"=="" cmp_clear
@@ -2537,6 +2544,9 @@ program define cmp_error
 end
 
 * Version history
+* 8.7.7 Prevent crash in a gamma model with ordered probits, when deleting obs because of eq interdependencies empties a category
+*       Support tech(nm)
+*       Fix crashes when restarting with all 0's
 * 8.7.6 Prevent crash when random-coefficient var list fv-expands to include omitted or base levels
 * 8.7.5 Fixed crash on complex weight expressions with parentheses
 * 8.7.4 Prevent crash when too few primes for Halton or multiple RC's causing passing of matrix to setcol()

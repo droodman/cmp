@@ -358,7 +358,7 @@ search method often works best.
 {pstd}
 To trigger simulation, include the {cmdab:red:raws()} option. This sets the number of draws per observation
 at each level, along with
-the type of sequence (Halton, Hammersley, generalized Halton, pseudorandom), whether antithetics are also drawn, and, in the Halton and Hammersley caes,
+the type of sequence (Halton, Hammersley, generalized Halton, pseudorandom), whether antithetics are also drawn, and, in the Halton and Hammersley cases,
 whether and how the sequences should be scrambled. (See Gates 2006 for more on all these concepts except scrambling, for which see Kolenikov 2012.)
 For (generalized) Halton and Hammersley sequences, it is preferable to make the number of draws prime, to insure more variable coverage of the
 distribution from observation to observation, making coverage more uniform overall. Increasing the 
