@@ -1,5 +1,5 @@
 {smcl}
-{* *! cmp 8.6.8 7 January 2022}{...}
+{* *! cmp 8.7.8 18 March 2024}{...}
 {cmd:help cmp}
 {hline}{...}
 
@@ -535,7 +535,7 @@ formulas. Individual formulas that contain spaces or parentheses should be enclo
 
 {phang}{opt l:evel(#)} specifies the confidence level, in percent,
 for confidence intervals of the coefficients; see {help level:help level}. The
-default is set by {help set level:level} and is usually 95.
+default is controlled by {help set level} and is usually 95.
 
 {phang}{cmdab:result:sform(}{cmdab:struct:ural} | {cmdab:red:uced)} affects how results are stored and displayed after fitting models with
 #-suffixed references. {cmdab:result:sform(}{cmdab:struct:ural)}, the default, displays results
@@ -663,8 +663,7 @@ analogous to but distinct from the stepping that occurs by default in simulating
 	{cmdab:dif:ficult}
 	{cmdab:const:raints(}{it:{help numlist}}{c |}{it:matname}{cmd:)}
 
-{phang}{it:display_opts}: {cmd:cmp} accepts the following standard {help ml##mldisplay:ml display} options, which affect how results are presented:
-{opt noh:eader}
+{phang}{it:display_opts}: {cmd:cmp} accepts the following standard {help ml##mldisplay:ml display} options, which affect how results are presented: {opt noh:eader}
 {opt nofoot:note}
 {opt neq(#)}
 {opt showeq:ns}

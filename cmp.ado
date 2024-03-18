@@ -1,5 +1,5 @@
-*! cmp 8.7.7 31 August 2023
-*! Copyright (C) 2007-23 David Roodman 
+*! cmp 8.7.8 18 March 2024
+*! Copyright (C) 2007-24 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -1127,7 +1127,7 @@ program define ParseEqs
 			}
 			if "`constant'" != "" global parse_xc$parse_d nocons
 			if "`offset'`exposure'"!="" {
-				if "`offset'" != "" & "`exposure'" != "" cmp_error 198 "Cannot specify both offset() and exposure()."
+				if "`offset'" != "" & "`exposure'" != "" cmp_error 198 "cannot specify both offset() and exposure()"
 				global parse_xo$parse_d `offset'
 				global parse_xe$parse_d `exposure'
 			}
@@ -2544,6 +2544,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.7.8 Fixed crash on ghkrdaws(0) with random effects.
 * 8.7.7 Prevent crash in a gamma model with ordered probits, when deleting obs because of eq interdependencies empties a category
 *       Support tech(nm)
 *       Fix crashes when restarting with all 0's
