@@ -1,4 +1,4 @@
-*! cmp 8.7.8 18 March 2024
+*! cmp 8.7.9 18 April 2024
 *! Copyright (C) 2007-24 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
@@ -36,7 +36,7 @@ end
 
 cap program drop _cmp
 program define _cmp
-	version 11.0
+	version 11
 
 	if replay() {
 		if "`e(cmd)'" != "cmp" error 301
@@ -1073,7 +1073,7 @@ end
 
 cap program drop ParseEqs
 program define ParseEqs
-	version 11.0
+	version 11
 	local _cons _cons
 	global parse_d 0
 
@@ -1273,7 +1273,7 @@ end
 * Parses and implements corr() option as constraint set
 /*cap program drop ParseCorr
 program define ParseCorr, rclass
-	version 11.0
+	version 11
 	
 	if `"`0'"' == "."
 	
@@ -1307,7 +1307,7 @@ end*/
 * These lines are in a subroutine to work around Stata parsing bug with "if...quietly {"
 cap program drop DoInitSearch
 program define DoInitSearch, rclass
-	version 11.0
+	version 11
 	`*'  // run InitSearch
 	tempname b
 	mat `b' = r(b)
@@ -1490,7 +1490,7 @@ end
 
 cap program drop NoEstimate
 program NoEstimate, eclass
-	version 11.0
+	version 11
 	ereturn post `0'
 	ereturn local title Mixed-process regression--initial fits only
 	ereturn local cmdline cmp `cmdline'
@@ -1499,7 +1499,7 @@ end
 
 cap program drop Estimate
 program Estimate, eclass
-	version 11.0
+	version 11
 	syntax if/ [fw aw pw iw], [auxparams(string) psampling(string) svy subpop(passthru) autoconstrain paramsdisplay(string) ///
 		modopts(string) mlopts(string) iterate(passthru) init(string) cmpinit(string) constraints(string) _constraints(string) technique(string) vce(string) 1only quietly resteps(string) redraws(string) interactive lf *]
 
@@ -1720,7 +1720,7 @@ end
 // returns ordered row vector of the categories
 cap program drop GroupCategoricalVar
 program define GroupCategoricalVar, rclass
-	version 11.0
+	version 11
 	syntax [if], cmp_eqno(string) [predict(string)]
 	tempname cat num_cuts
 	if "`predict'"=="" {
@@ -1743,7 +1743,7 @@ end
 
 cap program drop LabelMprobitEq
 program LabelMprobitEq
-	version 11.0
+	version 11
 	// try to name the eq after the outcome's label
 	local 3: label (_cmp_y`4') `3'
 	global cmp_eq`1': label (${parse_y`2'}) `3'
@@ -1756,7 +1756,7 @@ end
 // as well as constraints on rho's needed for equations with non-overlapping samples
 cap program drop InitSearch
 program InitSearch, rclass
-	version 11.0
+	version 11
 	syntax [aw fw iw pw] if/, [auxparams(string) adjustprobitsample nodrop svy 1only quietly mlopts(string)]
 	local if (`if')
 	tempname sig beta gamma betavec gammavec auxparamvec _auxparamvec sigvec atanhrho V mat_cons omit
@@ -2197,7 +2197,7 @@ end
 
 cap program drop Display
 program Display, eclass
-	version 11.0
+	version 11
 	novarabbrev {
 		syntax [, Level(real `c(level)') RESULTsform(string) *]
 		_get_eformopts, soptions eformopts(`options') allowed(hr shr IRr or RRr)
@@ -2499,7 +2499,7 @@ end
 // for same reason, deletes any showeqns option
 cap program drop _get_mldiopts
 program define _get_mldiopts, sclass
-	version 11.0
+	version 11
 	syntax, [NOHeader NOFOOTnote /*first*/ neq(string) SHOWEQns PLus NOCNSReport NOOMITted vsquish NOEMPTYcells BASElevels ALLBASElevels cformat(string) pformat(string) sformat(string) NOLSTRETCH coeflegend *]
 	foreach opt in neq cformat pformat sformat {
 		if `"``opt''"' != "" {
@@ -2512,7 +2512,7 @@ end
 
 cap program drop CheckCondition
 program define CheckCondition
-	version 11.0
+	version 11
 	if "`1'" != "" {
 		syntax varlist(ts fv) [aw iw]
 		tempname XX c
@@ -2537,13 +2537,14 @@ end
 
 cap program drop cmp_error
 program define cmp_error
-	version 11.0
+	version 11
 	noi di as err `"`2'"'
 	cmp_clear
 	exit `1'
 end
 
 * Version history
+* 8.7.9 Fixed broken compatibility with Stata < 15 from adding mvnormal() / ghkdraws(0) in 8.7.3
 * 8.7.8 Fixed crash on ghkrdaws(0) with random effects.
 * 8.7.7 Prevent crash in a gamma model with ordered probits, when deleting obs because of eq interdependencies empties a category
 *       Support tech(nm)

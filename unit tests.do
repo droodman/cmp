@@ -4,7 +4,7 @@ set more off
 set rmsg off
 set trace off
 set linesize 200
-cap set processors 8
+cap set processors 6
 
 timer clear
 timer on 1

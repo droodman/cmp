@@ -148,7 +148,7 @@ fem_work     |
 -------------+----------------------------------------------------------------
     /lnsig_1 |   .2849607   .0316228     9.01   0.000      .222981    .3469403
     /lnsig_2 |   -.183551   .5726942    -0.32   0.749    -1.306011     .938909
-/atanhrho_12 |  -1.507716   .6323635    -2.38   0.017    -2.747126   -.2683068
+/atanhrho_12 |  -1.507716   .6323634    -2.38   0.017    -2.747126   -.2683068
 -------------+----------------------------------------------------------------
        sig_1 |    1.32971   .0420492                      1.249797    1.414732
        sig_2 |   .8323094   .4766588                      .2708985     2.55719
@@ -1310,8 +1310,7 @@ security     |
 . use class10, clear
 (Class of 2010 profile)
 
-. cmp (graduate = program#(c.income roommate c.hsgpa) program income roommate hsgpa) (program = i.campus i.scholar income) (hsgpa = income i.hsc
-> omp), vce(robust) ind(4 4 1) qui nolr
+. cmp (graduate = program#(c.income roommate c.hsgpa) program income roommate hsgpa) (program = i.campus i.scholar income) (hsgpa = income i.hscomp), vce(robust) ind(4 4 1) qui nolr
 
 Fitting individual models as starting point for full model fit.
 
@@ -2295,8 +2294,7 @@ Level: Observations                 |
 
 . gen byte goodhlth = health > 3
 
-. cmp (goodhlth = insured#c.(exercise grade) exercise grade insured || personid:) (insured = grade i.workschool || personid:), ind($cmp_probit $
-> cmp_probit) intp(7) nolr
+. cmp (goodhlth = insured#c.(exercise grade) exercise grade insured || personid:) (insured = grade i.workschool || personid:), ind($cmp_probit $cmp_probit) intp(7) nolr
 
 For quadrature, defaulting to technique(bhhh) for speed.
 

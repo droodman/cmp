@@ -1,4 +1,4 @@
-/* cmp 8.7.8 18 March 2024
+/* cmp 8.7.9 18 April 2024
    Copyright (C) 2007-24 David Roodman
 
    This program is free software: you can redistribute it and/or modify
@@ -908,9 +908,9 @@ real colvector cmp_model::vecmultinormal(real matrix E, real matrix F, real matr
       else
         Phi = _ghk2_2 (ghk2DrawSet, F, E, Sig, ghkAnti, GHKStart)
     else {
-      Phi = mvnormalcv(F, E, J(1,cols(E),0), vech(Sig)')
+      Phi = _mvnormalcv(F, E, J(1,cols(E),0), vech(Sig)')
       if (todo)
-        mvnormalcvderiv(F, E, J(1,cols(E),0), vech(Sig)', dPhi_dF, dPhi_dE, dM, dPhi_dSig)
+        _mvnormalcvderiv(F, E, J(1,cols(E),0), vech(Sig)', dPhi_dF, dPhi_dE, dM, dPhi_dSig)
     }
   else if (ghk2DrawSet != .)
     if (todo)
@@ -918,9 +918,9 @@ real colvector cmp_model::vecmultinormal(real matrix E, real matrix F, real matr
     else
       Phi = _ghk2  (ghk2DrawSet, E, Sig, ghkAnti, GHKStart)
     else {
-      Phi = mvnormalcv(J(1, cols(E), mindouble()), E, J(1,cols(E),0), vech(Sig)')
+      Phi = _mvnormalcv(J(1, cols(E), mindouble()), E, J(1,cols(E),0), vech(Sig)')
       if (todo)
-        mvnormalcvderiv(J(1, cols(E), invnormal(Phi*1e-20)), E, J(1,cols(E),0), vech(Sig)', dPhi_dF, dPhi_dE, dM, dPhi_dSig)
+        _mvnormalcvderiv(J(1, cols(E), invnormal(Phi*1e-20)), E, J(1,cols(E),0), vech(Sig)', dPhi_dF, dPhi_dE, dM, dPhi_dSig)
     }
 
 	if (N_perm==1) {
@@ -933,6 +933,9 @@ real colvector cmp_model::vecmultinormal(real matrix E, real matrix F, real matr
 	}
 	return (Phi)
 }
+
+real colvector _mvnormalcv(a,b,c,d) return (mvnormalcv(a,b,c,d))
+void _mvnormalcvderiv(a,b,c,d,e,f,g,h) return (mvnormalcvderiv(a,b,c,d,e,f,g,h))
 
 // compute the log likelihood associated with a given error data matrix, for "continuous" variables
 // Sig is the assumed covariance for the full error set and inds marks the observed variables assumed to have a joint normal distribution,
