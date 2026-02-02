@@ -258,7 +258,7 @@ yourself. For example, {cmd:ivreg y x1 (x2=z)} corresponds to {cmd:cmp (y=x1 x2)
 
 {pstd}
 At its heart {cmd:cmp} is an SUR (seemingly unrelated regressions) estimator. With major exceptions explained just below, it treats the equations as related to each other only in 
-having errors that jointly normally distributed. Mathematically, the likelihood it computes is conditioned on observing {it:all} right-side
+having errors that are jointly normally distributed. Mathematically, the likelihood it computes is conditioned on observing {it:all} right-side
 variables, including those that also appear on the left side of equations. However, Maximum likelihood (ML) SUR estimators are appropriate for 
 many multi-equation models that are not SUR, meaning ones in which endogenous variables appear on the right side of other equations. Models of this 
 kind for which ML SUR is consistent must satisfy two criteria: 

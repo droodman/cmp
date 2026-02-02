@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ssc describe:*)",
+      "Bash(julia:*)",
+      "WebFetch(domain:raw.githubusercontent.com)"
+    ]
+  }
+}
