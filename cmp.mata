@@ -68,7 +68,6 @@ struct subview {  // info associated with subsets of data defined by given combi
 	real scalar NumCuts  // number of cuts in ordered probit eqs relevant for *these* observations
 	real colvector vNumCuts // number of cuts per eq for the eq for *these* observations
 	real matrix dSig_dLTSig  // derivative of Sig w.r.t. its lower triangle
-	real scalar bounded  // d_oprobit? d_one_cens+1..d_cens:J(1,0,0)
 	real scalar N_perm
 	real colvector CensLTInds // indexes of lower triangle of a vectorized square matrix of dimension d_cens
 	real colvector WeightProduct
@@ -172,7 +171,7 @@ class cmp_model {
 	real colvector vNumCuts
 	real matrix cuts
 	real colvector G // number of Gamma params in each eq
-	pointer(real matrix) colvector GammaIndByEq // d x 1 vector of pointers to rowvectors indicating which columns of Gamma, for the given row, are real model parameters
+	pointer(real colvector) colvector GammaIndByEq // d x 1 vector of pointers to rowvectors indicating which columns of Gamma, for the given row, are real model parameters
 	real matrix GammaInd // same information in a 2-col matrix, each row the coordinates in Gamma of a real parameter
 	struct smatrix matrix dOmega_dGamma
 	real rowvector trunceqs, intregeqs
@@ -193,10 +192,10 @@ class cmp_model {
 	void new(), BuildXU(), BuildTotalEffects(), 
 				setReverse(), setSigXform(), setQuadTol(), setQuadIter(), setGHKType(), setMaxCuts(), setindVars(), setLtVars(), setUtVars(), setyLVars(), 
 				setGHKAnti(), setGHKDraws(), setGHKScramble(), setQuadrature(), setd(), setL(), settodo(),
-				setREAnti(), setREType(), setREScramble(), setEqs(), setGammaI(), setNumEff(), setNumMprobitGroups(), setNumRoprobitGroups(),
+				setREAnti(), setREType(), setREScramble(), setEqs(), setGammaI(), setNumEff(), setNumMprobitGroups(),
 				setMprobitGroupInds(), setRoprobitGroupInds(), setNonbaseCases(), setvNumCuts(), settrunceqs(), setintregeqs(), setNumREDraws(), setGammaInd(),
-				setAdaptNow(), setWillAdapt(), lf1(), gf1(), SaveSomeResults()
-  static void scoreAccum(), setcol(), PasteAndAdvance(), CheckPrime()
+				setWillAdapt(), lf1(), gf1(), SaveSomeResults()
+  static void scoreAccum(), setcol(), PasteAndAdvance()
   real colvector lnLCensored(), lnLTrunc()
   static real colvector quadrowsum_lnnormalden(), binormal2(), binormalGenz(), lnLContinuous(), normal2(), vecbinormal(), vecbinormal2(), vecmultinormal()
   static real rowvector vSigInds()
@@ -208,8 +207,10 @@ class cmp_model {
 	real scalar getGHKDraws(), cmp_init()
 }
 
-void cmp_model::new()
-	Adapted = AdaptivePhaseThisEst = WillAdapt = AdaptNextTime = HasGamma = ghkScramble = REScramble = 0
+void cmp_model::new() {
+	Quadrature = Adapted = AdaptivePhaseThisEst = WillAdapt = AdaptNextTime = HasGamma = ghkScramble = REScramble = 0
+	REAnti = 1
+}
 
 void cmp_model::setcol(pointer(real matrix) scalar pX, real rowvector c, real matrix v)
   if (cols(*pX)==cols(c))
@@ -254,7 +255,6 @@ void cmp_model::setREScramble(string scalar t) REScramble = select(0..3, ("", "s
 void cmp_model::setQuadrature(real scalar t) Quadrature = t
 void cmp_model::setEqs(real matrix t) Eqs = t
 void cmp_model::setNumEff(real matrix t) NumEff = t
-void cmp_model::setNumRoprobitGroups(real matrix t) NumRoprobitGroups = t
 void cmp_model::setMprobitGroupInds(real matrix t) MprobitGroupInds = t
 void cmp_model::setRoprobitGroupInds(real matrix t) NumRoprobitGroups = rows(RoprobitGroupInds = t)
 void cmp_model::setNonbaseCases(real rowvector t) NonbaseCases = t
@@ -265,11 +265,9 @@ void cmp_model::setindVars(string scalar t) indVars = tokens(t)
 void cmp_model::setyLVars(string scalar t) yLVars = tokens(t)
 void cmp_model::setLtVars(string scalar t) LtVars = tokens(t)
 void cmp_model::setUtVars(string scalar t) UtVars = tokens(t)
-void cmp_model::setAdaptNow(real scalar t) Adapted = AdaptivePhaseThisEst = t
 
 void cmp_model::setWillAdapt(real scalar t) {
 	WillAdapt  = t
-	Adapted = AdaptivePhaseThisEst = AdaptNextTime = 0
 	Lastb = J(1,0,0)
 }
 
@@ -336,7 +334,7 @@ real matrix cmp_model::dSigdsigrhos(real scalar SigXform, real rowvector sig, re
 }
 
 // Check whether all entries in vector are prime
-void cmp_model::CheckPrime(real vector v) {
+void cmpCheckPrime(real vector v) {
 	real scalar i, j
 	for (i=length(v); i; i--)
 		for (j=floor(sqrt(v[i])); j>1; j--)
@@ -441,8 +439,7 @@ real colvector cmp_model::binormalGenz(real colvector x1, real colvector x2, rea
 	}
 
 	negx2 = -x2
-	if (r<0) px2 = &x2
-		else px2 = &negx2
+	px2 = r<0? &x2 : &negx2
 	if (rows(m)) {
 		px2 = &(m :* *px2)
 		normalx1    = normal( x1)
@@ -508,21 +505,21 @@ pointer (real matrix) rowvector cmp_model::SpGr(real scalar dim, real scalar k) 
 	real rowvector midx
 	real scalar q, bq, j, r
 
-	if (dim <= 2) { // "sparse" grids only sparser for dim > 2
+	if (dim <= 2) {  // "sparse" grids only sparser for dim > 2
 		nodes = *GQNn1d()[k]; weights = *GQNw1d()[k] // use non-nested nodes
 		nodes = nodes \ -nodes[|1+mod(k,2)\.|]; weights = weights \ weights[|1+mod(k,2)\.|]
 		return (dim==1? (&              nodes          , & weights         ) :
-		                (&(J(k,1,nodes),nodes#J(k,1,1)), &(weights#weights))) // Kronecker square of non-nested nodes
+		                (&(J(k,1,nodes),nodes#J(k,1,1)), &(weights#weights)))  // Kronecker square of non-nested nodes
 	}
 	
 	w1d = KPNw1d(); n1d = KPNn1d()
 	nodes = J(0, dim,.); weights = J(0,1,.); R1d = J(25, 1, 0)
 	for (r=25; r; r--) R1d[r] = rows(*n1d[r])
 
-	for(q=max((0,k-dim)); q<k; q++) {
+	for (q=max((0,k-dim)); q<k; q++) {
 		r = rows(weights)
 		bq = (2*mod(k-q, 2)-1) * comb(dim-1,dim+q-k)
-		is = SpGrGetSeq(dim, dim+q) // matrix of all rowvectors in N^D_{D+q}
+		is = SpGrGetSeq(dim, dim+q)  // matrix of all rowvectors in N^D_{D+q}
 		Rq = R1d[is[,1]]
 		for(j=dim; j>1; j--)
 			Rq = Rq :* R1d[is[,j]]
@@ -1280,7 +1277,7 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
 			LastIter = Iter
 			if (Adapted==0)
 				if (AdaptNextTime) {
-					setAdaptNow(1)
+					Adapted = AdaptivePhaseThisEst = 1
 					printf("\n{res}Performing Naylor-Smith adaptive quadrature.\n")
 				} else {
 					if (cols(Lastb))
@@ -1337,7 +1334,7 @@ void cmp_model::lf1(transmorphic M, real scalar todo, real rowvector b, real col
 
 	if (HasGamma) {
 		if (todo) {
-			dOmega_dSig = (Lmatrix(cols(invGamma))*(invGamma'#invGamma')*Dmatrix(rows(invGamma))) // QE2QSig(invGamma)
+			dOmega_dSig = (Lmatrix(cols(invGamma))*(invGamma'#invGamma')*Dmatrix(rows(invGamma)))  // QE2QSig(invGamma)
 			t = colshape(invGamma, 1)
 			t = (colshape(base->Sig,1)'#Idd)[vLd,vIKI] * (Idd#t + t#Idd)[,vKd]
 			for (m=d; m; m--)
@@ -1736,7 +1733,7 @@ void cmp_model::gf1(transmorphic M, real scalar todo, real rowvector b, real col
 
 real scalar cmp_model::cmp_init(transmorphic M) {
 	real scalar i, l, ghk_nobs, d_ghk, eq1, eq2, c, m, j, r, k, d_oprobit, d_mprobit, d_roprobit, start, stop, PrimeIndex, Hammersley, NDraws, HasRE, cols, d2
-	real matrix Yi, U
+	real matrix Yi, U, Kd, Id
 	real colvector remaining, S
 	real rowvector mprobit, Primes, t, one2d
 	string scalar varnames, LevelName
@@ -1759,8 +1756,9 @@ real scalar cmp_model::cmp_init(transmorphic M) {
 		dOmega_dGamma = smatrix(d,d)
 		Idd = I(d*d)
 		vLd = rowsum(Lmatrix(d) :*(1..d*d)) // X[vLd,] = L*X, but faster
-		vKd = colsum(Kmatrix(d,d) :* (1::d*d))
-		vIKI = colsum((I(d) # Kmatrix(d,d) # I(d)) :* (1::d^4))  // storage for I(d) # Kmatrix(d,d) # I(d) grows with d^8!
+    Kd = Kmatrix(d,d); Id = I(d)
+		vKd = colsum(Kd :* (1::d*d))
+		vIKI = colsum((Id # Kd # Id) :* (1::d^4))  // storage for I(d) # Kmatrix(d,d) # I(d) grows with d^8!
 	} else
     pOmega = &(base->Sig)
 

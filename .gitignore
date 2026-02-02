@@ -6,3 +6,4 @@ Save Gaussian quadrature nodes & weights.do
 cmp with wrong GQN nodes.mata
 ~cmp.ado.stswp
 *.stswp
+fwtpts.jl

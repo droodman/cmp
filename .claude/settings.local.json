@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ssc describe:*)",
+      "Bash(julia:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "mcp__stata-mcp__stata_run_selection"
+    ]
+  }
+}
