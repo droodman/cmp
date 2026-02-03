@@ -20,6 +20,7 @@ cap program drop cmp
 program define cmp, sortpreserve properties(user_score svyb svyj svyr mi fvaddcons) byable(recall)
   version 11
   cap version 13.0
+cap cmp_clear
   if _rc {
      di as err "This version of {cmd:cmp} requires Stata version 13 or later. An older version compatible with Stata `c(stata_version)'"
      di as err "is at https://github.com/droodman/cmp/releases/tag/v8.6.1."
@@ -28,7 +29,7 @@ program define cmp, sortpreserve properties(user_score svyb svyj svyr mi fvaddco
 
 	cap noi _cmp `0'
 	local rc = _rc
-	if `rc'>1 cmp_clear
+// 	if `rc'>1 cmp_clear
 	exit `rc'
 end
 
@@ -204,7 +205,6 @@ program define _cmp
 	local 0, ghkdraws(`anything')
 	syntax, [ghkdraws(numlist integer>=`=c(stata_version)<15' max=1)]  // In Stata 15+, allow ghkdraws(0) to trigger use of mvnormal()
   if "`ghkdraws'" == "" | 0`ghkdraws' {
-    _assert !`julia', rc(198) msg(GHK options not accepted when using Julia)
     if `"`ghktype'"'=="" local ghktype halton
     else if inlist(`"`ghktype'"', "halton", "hammersley", "ghalton", "random") == 0 {
       cmp_error 198 `"The {cmdab:ghkt:ype()} option must be "halton", "hammersley", "ghalton", or "random". It corresponds to the {cmd:{it:type}} option of {cmd:ghk()}. See help {help mf_ghk}."'
@@ -215,7 +215,10 @@ program define _cmp
     }
     if 0`ghkdraws' mata cmpCheckPrime(`ghkdraws')
     local ghkanti = "`antithetics'`ghkanti'"!=""
-    mata _mod.setGHKType("`ghktype'"); _mod.setGHKAnti(`ghkanti'); _mod.setGHKDraws(0`ghkdraws'); _mod.setGHKScramble("`scramble'")
+    if !`julia' {
+      mata _mod.setGHKType("`ghktype'"); _mod.setGHKAnti(`ghkanti'); _mod.setGHKDraws(0`ghkdraws'); _mod.setGHKScramble("`scramble'")
+    }
+    // For Julia, ghktype, ghkanti, ghkdraws, ghkscramble locals are set later during initialization
     local ghkscramble `scramble'
   }
 
@@ -629,6 +632,7 @@ program define _cmp
 			global cmp_Lt $cmp_Lt ${cmp_Lt`eq'}
 			global cmp_Ut $cmp_Ut ${cmp_Ut`eq'}
 			global cmp_yL $cmp_yL ${cmp_y`eq'_L}
+			global cmp_y $cmp_y ${cmp_y`eq'}
 			global cmp_ind $cmp_ind _cmp_ind`eq'
 		}
 
@@ -906,47 +910,41 @@ program define _cmp
 	// Note: $cmpHasGamma and $cmp_tot_cuts are already set earlier
 
 	if `julia' {
-    // Ensure Julia is initialized
-    cap _jl: 1+1
-    if _rc {
-      jl start, threads(auto)
-    }
-
     // Load the CMP module if not already loaded
-    cap _jl: CMP
-    if _rc {
-      // Find the path to cmp.jl
-      qui findfile cmp.jl
-      local cmpjl_path = r(fn)
-      _jl: include("`cmpjl_path'")
-      _jl: using .CMP
-    }
+//     qui findfile CMP.jl
+//     _jl: pushfirst!(LOAD_PATH, dirname(expanduser(raw"`r(fn)'")))
+    qui jl: using CMP
 
     // Create and configure the model object
     _jl: _cmp_model = CMP.CmpModel()
     _jl: _cmp_model.d = $cmp_d
     _jl: _cmp_model.L = $parse_L
-    _jl: _cmp_model._todo = ("`lf'"=="") ? 1 : 0
+    _jl: _cmp_model._todo = "`lf'"==""
     _jl: _cmp_model.SigXform = $cmpSigXform
-    _jl: _cmp_model.vNumCuts = sf_get_matrix("cmp_num_cuts")
+    _jl: _cmp_model.vNumCuts = vec(st_matrix("cmp_num_cuts"))
     _jl: _cmp_model.MaxCuts = $cmp_max_cuts
-    _jl: _cmp_model.trunceqs = sf_get_matrix("cmp_trunceqs")
-    _jl: _cmp_model.intregeqs = sf_get_matrix("cmp_intregeqs")
+    _jl: _cmp_model.trunceqs = vec(st_matrix("cmp_trunceqs"))
+    _jl: _cmp_model.intregeqs = vec(st_matrix("cmp_intregeqs"))
     _jl: _cmp_model.reverse = $cmp_reverse != 0
-    _jl: _cmp_model.NonbaseCases = sf_get_matrix("cmp_nonbase_cases")
-    _jl: _cmp_model.RoprobitGroupInds = sf_get_matrix("cmp_roprobit_group_inds")
-    _jl: _cmp_model.MprobitGroupInds = sf_get_matrix("cmp_mprobit_group_inds")
+    _jl: _cmp_model.NonbaseCases = vec(st_matrix("cmp_nonbase_cases"))
+    _jl: _cmp_model.RoprobitGroupInds = st_matrix("cmp_roprobit_group_inds")
+    _jl: _cmp_model.MprobitGroupInds = st_matrix("cmp_mprobit_group_inds")
     _jl: _cmp_model.indVars = split("$cmp_ind")
     _jl: _cmp_model.LtVars = split("$cmp_Lt")
     _jl: _cmp_model.UtVars = split("$cmp_Ut")
     _jl: _cmp_model.yLVars = split("$cmp_yL")
+    _jl: _cmp_model.yVars = split("$cmp_y")
     _jl: _cmp_model.QuadTol = 0`quadtol'
     _jl: _cmp_model.QuadIter = 0`quaditer'
-    _jl: _cmp_model.GammaId = sf_get_matrix("`GammaI'")
-    _jl: _cmp_model.GammaInd = sf_get_matrix("cmpGammaInd")
-    _jl: _cmp_model.Eqs = sf_get_matrix("`Eqs'")
-    _jl: _cmp_model.NumEff = sf_get_matrix("cmp_NumEff")
+    _jl: _cmp_model.GammaId = st_matrix("`GammaI'")
+    _jl: _cmp_model.GammaInd = st_matrix("cmpGammaInd")
+    _jl: _cmp_model.Eqs = st_matrix("`Eqs'")
+    _jl: _cmp_model.NumEff = st_matrix("cmp_NumEff")
     _jl: _cmp_model.WillAdapt = $cmp_IntMethod != 0
+    _jl: _cmp_model.ghkType = "`ghktype'"
+    _jl: _cmp_model.ghkDraws = 0`ghkdraws'
+    _jl: _cmp_model.ghkAnti = Bool(0`ghkanti')
+    _jl: _cmp_model.ghkScramble = `=cond("`ghkscramble'"=="", 0, cond("`ghkscramble'"=="sqrt", 1, cond("`ghkscramble'"=="negsqrt", 2, 3)))'
   }
   else {
 		mata _mod.setd($cmp_d); _mod.setL($parse_L)
@@ -992,7 +990,7 @@ program define _cmp
 //    if "`e(resultsform)'" == "reduced" mata _H[,] = _S * ("`equation'" == ""? st_matrix("e(dbr_db)") : st_matrix("e(dbr_db)")[`equation',])'
         else                             mata _H[,] =       "`equation'" == ""? _S                     : _S                    [,`equation']
     }
-		cmp_clear
+// 		cmp_clear
 		exit 0
 	}
 
@@ -1053,7 +1051,7 @@ program define _cmp
 		qui InitSearch if `touse' `=cond("`subpop'"!="","& `subpop'","")', `drop' auxparams(`auxparams') mlopts(`mlopts')
 		mat `b' = r(b)
 		Estimate if `touse' `=cond("`subpop'"!="","& `subpop'","")', init(`init') cmpinit(`b') `vce' auxparams(`auxparams') psampling(`psampling') resteps(`steps') `lf' ///
-			`constraints' _constraints(`_constraints' `initconstraints') `autoconstrain' mlopts(`mlopts') `iterate' `technique' `quietly' redraws(`redraws') paramsdisplay(`r(ParamsDisplay)') `interactive'
+			`constraints' _constraints(`_constraints' `initconstraints') `autoconstrain' mlopts(`mlopts') `iterate' `technique' `quietly' redraws(`redraws') paramsdisplay(`r(ParamsDisplay)') julia(`julia') `interactive'
 		if _rc==0 {
 			tempname vsmp
 			mat `vsmp' = e(V)
@@ -1071,13 +1069,13 @@ program define _cmp
 		local 1onlyinitconstraints `r(initconstraints)'
 		mat `b' = r(b)
 		qui Estimate if `touse' `wgtexp', cmpinit(`b') `constraints' _constraints(`_constraints' `1onlyinitconstraints') `autoconstrain' psampling(`psampling') resteps(`steps') `lf' ///
-		                `svy' subpop(`subpop') modopts(`modopts') mlopts(`mlopts') `iterate' `technique' auxparams(`r(auxparams)') 1only `quietly' redraws(`redraws') paramsdisplay(`r(ParamsDisplay)') `interactive'
+		                `svy' subpop(`subpop') modopts(`modopts') mlopts(`mlopts') `iterate' `technique' auxparams(`r(auxparams)') 1only `quietly' redraws(`redraws') paramsdisplay(`r(ParamsDisplay)') julia(`julia') `interactive'
 		if _rc==0 local lf0opt lf0(`e(rank)' `e(ll)')
 
 		global cmpHasGamma `HasGamma'
 		global cmp_num_scores = $cmp_num_scores + $cmpHasGamma
 	}
-	mata _mod.setGammaInd(st_matrix("cmpGammaInd"))  // hidden from constants-only fit
+	if !`julia' mata _mod.setGammaInd(st_matrix("cmpGammaInd"))  // hidden from constants-only fit
 
 	tempname LeftCens RightCens
 	qui {
@@ -1122,7 +1120,7 @@ program define _cmp
 	cmp_full_model if `touse' `wgtexp', `vce' `lf0opt' modopts(`modopts') mlopts(`mlopts') `iterate' `technique' `lf' paramsdisplay(`ParamsDisplay') xvarsall(`XVarsAll') ///
 		`constraints' _constraints(`_constraints' `initconstraints') init(`init') cmpinit(`cmpInitFull') `svy' subpop(`subpop') psampling(`psampling') ///
 		`quietly' auxparams(`auxparams') cmdline(`"`cmdline'"') resteps(`steps') redraws(`redraws') intpoints(`intpoints') ///
-		vsmp(`vsmp') meff(`meff') ghkanti(`ghkanti') ghkdraws(`ghkdraws') ghktype(`ghktype') ghkscramble(`ghkscramble') diparmopt(`diparmopt') `interactive'
+		vsmp(`vsmp') meff(`meff') ghkanti(`ghkanti') ghkdraws(`ghkdraws') ghktype(`ghktype') ghkscramble(`ghkscramble') diparmopt(`diparmopt') `interactive' julia(`julia')
 	constraint drop `_constraints' `initconstraints' `1onlyinitconstraints'
 
 	if e(cmd)=="cmp" Display, `diopts'
@@ -1382,9 +1380,9 @@ program define cmp_full_model, eclass
 	version 11
 	syntax if/ [pw fw aw iw], [auxparams(string) vsmp(string) meff(string) paramsdisplay(string) xvarsall(string) ///
 					ghkanti(string) ghkdraws(string) ghktype(string) ghkscramble(string) diparmopt(string) cmdline(string) ///
-					redraws(string) resteps(string) retype(string) reanti(string) intpoints(string) svy *]
+					redraws(string) resteps(string) retype(string) reanti(string) intpoints(string) svy julia(string) *]
 
-	Estimate if `if' [`weight'`exp'], auxparams(`auxparams') paramsdisplay(`paramsdisplay') resteps(`resteps') redraws(`redraws') `svy' `options'
+	Estimate if `if' [`weight'`exp'], auxparams(`auxparams') paramsdisplay(`paramsdisplay') resteps(`resteps') redraws(`redraws') julia(`julia') `svy' `options'
 
 	if _rc==0 {
 		if "`meff'" != "" _svy_mkmeff `vsmp'
@@ -1456,7 +1454,7 @@ program define cmp_full_model, eclass
 			}
 		}
 
-		mata _mod.SaveSomeResults() // Get final Sig; if weights, get weighted sample size; for Gamma models build e(br), e(Vr)
+		if !`julia' mata _mod.SaveSomeResults() // Get final Sig; if weights, get weighted sample size; for Gamma models build e(br), e(Vr)
 
 		if $cmpHasGamma {  // eliminate unnecessary "#"'s in e(b) colnames, unnecessary for predict that is, which wrongly imply that variable is unobserved
 			mat colnames `b' = `paramsdisplay'
@@ -1541,7 +1539,7 @@ program define cmp_full_model, eclass
 		ereturn local cmdline cmp `cmdline'
 		ereturn local cmd cmp
 	}
-	cmp_clear
+// 	cmp_clear
 	if _rc==1 error 1
 end
 
@@ -1558,7 +1556,8 @@ cap program drop Estimate
 program Estimate, eclass
 	version 11
 	syntax if/ [fw aw pw iw], [auxparams(string) psampling(string) svy subpop(passthru) autoconstrain paramsdisplay(string) ///
-		modopts(string) mlopts(string) iterate(passthru) init(string) cmpinit(string) constraints(string) _constraints(string) technique(string) vce(string) 1only quietly resteps(string) redraws(string) interactive lf *]
+		modopts(string) mlopts(string) iterate(passthru) init(string) cmpinit(string) constraints(string) _constraints(string) ///
+      technique(string) vce(string) 1only quietly resteps(string) redraws(string) interactive lf julia(string) *]
 
 	if "`svy'" == "" {
   	if "`weight'" != "" local awgtexp [aw`exp']
@@ -1716,6 +1715,9 @@ program Estimate, eclass
 
 			`quietly' ml model `method' `mlmodelcmd' vce(`this_vce') `initopt' technique(`this_technique') `=cond(`gf' & "`svy'"!="", "group(_cmp_id1)", "")'
 
+			mata moptimize_init_userinfo($ML_M, 1, &_mod)
+			mata moptimize_init_nmsimplexdeltas($ML_M, .1)  // in case nm used
+
 			if `julia' {
 				// Julia initialization - transfer data and initialize model
 				// Note: Julia doesn't need moptimize_init_userinfo since it uses global _cmp_model
@@ -1723,8 +1725,6 @@ program Estimate, eclass
 				_jl: st_local("rc", string(_cmp_rc))
 			}
 			else {
-				mata moptimize_init_userinfo($ML_M, 1, &_mod)
-				mata moptimize_init_nmsimplexdeltas($ML_M, .1)  // in case nm used
 				mata st_local("rc", strofreal(_mod.cmp_init($ML_M)))
 			}
       if `rc' error `rc'
@@ -1741,7 +1741,7 @@ program Estimate, eclass
 				capture noisily `mlmaxcmd' `this_mlopts' `iterate'
 			}
 			if _rc==1 {
-				if "`interactive'"=="" cmp_clear
+// 				if "`interactive'"=="" cmp_clear
 				error 1
 			}
 			error _rc
@@ -2617,9 +2617,12 @@ cap program drop cmp_error
 program define cmp_error
 	version 11
 	noi di as err `"`2'"'
-	cmp_clear
+// 	cmp_clear
 	exit `1'
 end
+
+cap program _julia_cmp, plugin using(jl.plugin)  // create an extra handle to the plugin to reduce the chance that Stata unloads it
+
 
 * Version history
 * 8.7.9 Fixed broken compatibility with Stata < 15 from adding mvnormal() / ghkdraws(0) in 8.7.3

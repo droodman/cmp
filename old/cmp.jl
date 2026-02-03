@@ -1,4 +1,4 @@
-module MP
+module CMP
 # export :.
 
 using LinearAlgebra, Kronecker, Combinatorics, SparseArrays
@@ -289,14 +289,13 @@ function panelsum(X::AbstractVecOrMat{T}, wt::AbstractVector{T}, info::AbstractV
 end
 
 # fast(?) computation of a .+ quadrowsum(lnnormalden(X))
-const logτ = log(2π)
 function quadrowsum_lnnormalden!(dest::Vector{T}, X::Matrix{T}, a::T) where T
 	@inbounds Threads.@threads for i ∈ eachindex(axes(X,1))
 		S = zero(T)
 		@inbounds for j ∈ eachindex(axes(X,2))
 			S += X[i,j] ^ 2
 		end
-		dest[i] = (a - T(logτ) * ncols(X)) - S / 2
+		dest[i] = (a - T(log2π) * ncols(X)) - S / 2
 	end
 end
 function quadrowsum_lnnormalden(X::Matrix{T}, a::T) where T
@@ -868,7 +867,7 @@ function quadrowsum_lnnormalden!(dest::Vector{T}, X::Matrix{T}, a::T) where T
 		@inbounds for j ∈ eachindex(axes(X,2))
 			S += X[i,j] ^ 2
 		end
-		dest[i] = (a - T(logτ) * ncols(X)) - S / 2
+		dest[i] = (a - T(log2π) * ncols(X)) - S / 2
 	end
 end
 function quadrowsum_lnnormalden(X::Matrix{T}, a::T) where T

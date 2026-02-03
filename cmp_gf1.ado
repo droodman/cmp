@@ -18,7 +18,7 @@ program cmp_gf1
 
     // Transfer linear predictions to Julia
     forvalues eq = 1/`neq' {
-        _jl: _cmp_model.REs[end].theta[`eq'] = sf_get_var("`theta`eq''")
+        _jl: _cmp_model.REs[end].theta[`eq'] = st_data("`theta`eq''")
     }
 
     // Extract auxiliary parameters (gamma, cuts, sig/rho) using mleval
@@ -37,7 +37,7 @@ program cmp_gf1
             tempvar aux`eq'
             mleval `aux`eq'' = `b', eq(`eq')
             // For scalar equations, all obs have same value; take first
-            _jl: _cmp_aux_params[`aux_idx'] = sf_get_var("`aux`eq''")[1]
+            _jl: _cmp_aux_params[`aux_idx'] = st_data("`aux`eq''")[1]
             local ++aux_idx
         }
     }
