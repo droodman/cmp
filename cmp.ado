@@ -1,5 +1,5 @@
-*! cmp 8.7.9 18 April 2024
-*! Copyright (C) 2007-24 David Roodman 
+*! cmp 8.8.0 26 April 2026
+*! Copyright (C) 2007-26 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -912,7 +912,7 @@ program define _cmp
 
 	if "`predict'" != "" {
 		local 0 `predict'
-		syntax if/, [lnl(varname) scores(varlist) EQuation(string)]
+		syntax if/, [lnl(varname) l(varname) scores(varlist) EQuation(string)]
 		local s = cond(0`e(k_gamma)'`e(k_gamma_reducedform)', "s", "")  // for gamma models, make sure to use structural parameter set
 		tempname hold
     _est hold `hold', copy restore
@@ -924,7 +924,11 @@ program define _cmp
 		mata _lnf = _S = _H = .
 		mata moptimize_init_userinfo($ML_M, 1, &_mod)
     mata (void) cmp_lf1($ML_M, "`scores'"!="", st_matrix("e(b`s')"), _lnf, _S, _H)
-		if "`lnl'" != "" mata st_view(_H, ., "`lnl'", st_global("ML_samp")); _H[,] = _lnf
+		if "`lnl'`l'" != "" {
+      mata st_view(_H, ., "`lnl'`l'", st_global("ML_samp"))
+      if "`l'"!="" mata _editmissing(_lnf = exp(_lnf), 0)  // return likelihood instead of log likelihood
+      mata _H[,] = _lnf
+    }
     else {  // scores requested
       mata st_view(_H, ., "`scores'", st_global("ML_samp"))
       if "`e(resultsform)'" == "reduced" {
@@ -2544,6 +2548,7 @@ program define cmp_error
 end
 
 * Version history
+* 8.8.0 Add l option to predict, for likelihood
 * 8.7.9 Fixed broken compatibility with Stata < 15 from adding mvnormal() / ghkdraws(0) in 8.7.3
 * 8.7.8 Fixed crash on ghkrdaws(0) with random effects.
 * 8.7.7 Prevent crash in a gamma model with ordered probits, when deleting obs because of eq interdependencies empties a category

@@ -1,5 +1,5 @@
-*! cmp 8.7.3 21 July 2022
-*! Copyright (C) 2007-22 David Roodman
+*! cmp 8.8.0 26 April 2026
+*! Copyright (C) 2007-26 David Roodman 
 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 cap program drop cmp_p
 program define cmp_p
 	version 11.0
-	syntax anything [if] [in], [EQuation(string) Outcome(string) /*FIXEDonly RELevel(string)*/ xb NOOFFset e pr REsiduals lnl SCores Ystar(string) REDucedform CONDition(string) *]
+	syntax anything [if] [in], [EQuation(string) Outcome(string) /*FIXEDonly RELevel(string)*/ xb NOOFFset e pr REsiduals lnl l SCores Ystar(string) REDucedform CONDition(string) *]
 	marksample touse, novarlist
 	local _pr `pr'
 	local _e `e'
@@ -32,7 +32,7 @@ program define cmp_p
 		exit 198
 	}
 
-	if `: word count `xb' `_pr' `_e' `residuals' `scores' `lnl'' + (`"`pr'"'!="") + (`"`ystar'"'!="") + (`"`e'"'!="") > 1 {
+	if `: word count `xb' `_pr' `_e' `residuals' `scores' `lnl' `l'' + (`"`pr'"'!="") + (`"`ystar'"'!="") + (`"`e'"'!="") > 1 {
 		di as err "Only one statistic allowed per {cmd:predict} call."
 		exit 198
 	}
@@ -42,22 +42,22 @@ program define cmp_p
 	if "`scores'"=="" mat `b' = `b'[1,1..`=e(k)-e(k_aux)']
 
 	_score_spec `anything', equation(`equation') b(`b')
-	if "`s(eqspec)'"=="#1" & `"`equation'`lnl'"'=="" & e(k_dv)>1 di as txt "(equation #1 assumed)"
+	if "`s(eqspec)'"=="#1" & `"`equation'`lnl'`l'"'=="" & e(k_dv)>1 di as txt "(equation #1 assumed)"
 	local vartype: word 1 of `s(typlist)'
 	local _varlist `s(varlist)'
 	local _eqspec = subinstr("`s(eqspec)'", "#", "", .)
 
-	quietly if "`scores'`lnl'" != "" {
+	quietly if "`scores'`lnl'`l'" != "" {
 		if e(L) > 1 {
 			di as error "Observation-level likelihoods and scores not defined for random effects/coefficient models."
 			exit 111
 		}
-		if "`lnl'"!="" local _varlist: word 1 of `_varlist'
+		if "`lnl'`l'"!="" local _varlist: word 1 of `_varlist'
 		foreach var of newlist `_varlist' {
 			gen `vartype' `var' = . in 1
 		}
 
-		`e(cmdline)' predict(if `touse', `scores'`lnl'(`_varlist') eq(`_eqspec'))
+		`e(cmdline)' predict(if `touse', `scores'`lnl'`l'(`_varlist') eq(`_eqspec'))
 		exit
 	}
 
@@ -232,8 +232,12 @@ program define cmp_p
               }
               drop `L' `U' `condU' `condL' `xbinormalL_condL' `xbinormalL_condU' `xbinormalU_condL' `xbinormalU_condU' `binormalL_condL' `binormalL_condU' `binormalU_condL' `binormalU_condU'
             }
-            if `num_cats' > 1 label var `1'`_outno' "E(`depvar'*`=cond(`"`e'"'=="","*","")'|`depvar'=`=`cat'[`eq', `outno']')"
-              else            label var `1'`_outno' "E(`depvar'*`=cond(`"`e'"'=="","*","")'`=cond(`lmissing' & `umissing', "", "|`=cond(`lmissing', "", "`ll'<")'`depvar'`=cond(`umissing', "", "<`ul'")'")')"
+            if `num_cats' > 1 {
+              label var `1'`_outno' "E(`depvar'*`=cond(`"`e'"'=="","*","")'|`depvar'=`=`cat'[`eq', `outno']')"
+            }
+            else {
+              label var `1'`_outno' "E(`depvar'*`=cond(`"`e'"'=="","*","")'`=cond(`lmissing' & `umissing', "", "|`=cond(`lmissing', "", "`ll'<")'`depvar'`=cond(`umissing', "", "<`ul'")'")')"
+            }
           }
 				}
 				else if "`pr'" != "" {

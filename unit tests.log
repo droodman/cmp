@@ -832,7 +832,8 @@ dy/dx wrt:  nonwhite
 
 . gen byte hours_pos = hours > 0
 
-. cmp (hours = age i.smoke distance i.single, trunc(0 .)) (hours_pos = commute whours age), nolr ind("cond(hours_pos, $cmp_cont, $cmp_out)" $cmp_probit) covar(indep) qui
+. cmp (hours = age i.smoke distance i.single, trunc(0 .)) (hours_pos = commute whours age), nolr ind("cond(hours_pos, $cmp_cont, $cmp_out)" $cmp_probit) covar(indep) 
+> qui
 
 Fitting individual models as starting point for full model fit.
 
@@ -1128,8 +1129,8 @@ xij variables:
 
 . constraint 6 [esteem]low1=[security]low4
 
-. cmp (esteem:rank1=high1 low1)(variety:rank2=female score high2 low2)(autonomy:rank3=female score high3 low3)(security:rank4=female score high4 low4), ind((9 9 9 9)) tech(dfp) ghkd(47, type(hammersle
-> y) scramble) rev constr(1/6)
+. cmp (esteem:rank1=high1 low1)(variety:rank2=female score high2 low2)(autonomy:rank3=female score high3 low3)(security:rank4=female score high4 low4), ind((9 9 9 9))
+>  tech(dfp) ghkd(47, type(hammersley) scramble) rev constr(1/6)
 
 Fitting individual models as starting point for full model fit.
 Note: For programming reasons, these initial estimates may deviate from your specification.
@@ -1310,7 +1311,8 @@ security     |
 . use class10, clear
 (Class of 2010 profile)
 
-. cmp (graduate = program#(c.income roommate c.hsgpa) program income roommate hsgpa) (program = i.campus i.scholar income) (hsgpa = income i.hscomp), vce(robust) ind(4 4 1) qui nolr
+. cmp (graduate = program#(c.income roommate c.hsgpa) program income roommate hsgpa) (program = i.campus i.scholar income) (hsgpa = income i.hscomp), vce(robust) ind(
+> 4 4 1) qui nolr
 
 Fitting individual models as starting point for full model fit.
 
@@ -1448,7 +1450,6 @@ dy/dx wrt:  education age married children
 (option xb assumed; fitted values)
 
 . predict e, eq(selectvar) e(0 .)
-__000003 not found
 
 . gen cmp_mills = e - xb
 
@@ -2294,7 +2295,8 @@ Level: Observations                 |
 
 . gen byte goodhlth = health > 3
 
-. cmp (goodhlth = insured#c.(exercise grade) exercise grade insured || personid:) (insured = grade i.workschool || personid:), ind($cmp_probit $cmp_probit) intp(7) nolr
+. cmp (goodhlth = insured#c.(exercise grade) exercise grade insured || personid:) (insured = grade i.workschool || personid:), ind($cmp_probit $cmp_probit) intp(7) no
+> lr
 
 For quadrature, defaulting to technique(bhhh) for speed.
 

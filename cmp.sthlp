@@ -1,5 +1,5 @@
 {smcl}
-{* *! cmp 8.7.8 18 March 2024}{...}
+{* *! cmp 8.8.0 26 April 2026}{...}
 {cmd:help cmp}
 {hline}{...}
 
@@ -104,7 +104,7 @@ The syntax of {help predict} following {cmd:cmp} is{p_end}
 [{cmd:,} {it:statistic} {cmdab:eq:uation(}[{cmd:#}{it:eqno}|{it:eqname} {cmd:#}{it:eqno}|{it:eqname}...]{cmd:)}
 {opt o:utcome}{cmd:(}{it:outcome}{cmd:)} {opt nooff:set} {opt red:ucedform} {cmdab:cond:ition(}{it:a b} [, {cmdab:eq:uation(#}{it:eqno}|{it:eqname}{cmd:)}]{cmd:)}]
 
-{phang}where {it:statistic} is {opt xb}, {opt stdp}, {opt stddp}, {opt re:siduals}, {opt lnl}, {opt sc:ores}, 
+{phang}where {it:statistic} is {opt xb}, {opt stdp}, {opt stddp}, {opt re:siduals}, {opt lnl}, {opt l}, {opt sc:ores}, 
 {cmd:pr}[{cmd:(}{it:a b}{cmd:)}], {cmd:e}[{cmd:(}{it:a b}{cmd:)}], or {cmd:ystar(}{it:a b}{cmd:)}; and {it:a} and {it:b} 
 may be numbers or variables; {it:a} missing ({it:a} {ul:>} {cmd:.}) means minus infinity, and {it:b} missing ({it:b} {ul:>} {cmd:.}) means plus infinity; see {help missing}.
 
@@ -717,6 +717,7 @@ variance is estimated:
 {synopt :{opt stdp}}standard error of linear prediction{p_end}
 {synopt :{opt stddp}}standard error of difference in linear predictions{p_end}
 {synopt :{opt lnl}}observation-level log likelihood (in hierarchical models, averaged over groups){p_end}
+{synopt :{opt l}}observation-level likelihood{p_end}
 {synopt :{opt sc:ores}}derivative of the log likelihood with respect to xb or parameter{p_end}
 {synopt :{opt re:siduals}}residuals relative to linear prediction{p_end}
 {synopt :{cmd:pr}[{cmd:(}{it:a b}{cmd:)}]}probability of positive outcome (probit) or given outcome (ordered probit, multinomial) or linear predictor being in given range (otherwise). Omitting {cmd:(}{it:a b}{cmd:)} defaults to {cmd:(0 .)}{p_end}
@@ -775,7 +776,7 @@ option (see above) in order to produce any results.
 
 {pstd}
 For non-hierarchical models, to compute marginal effects on the probability of a particular outcome, such as (1,1) from a bivariate probit model, you can preserve the data, set the outcome variables to the values of interest,
-run {cmd:margins} on the exponential of the predicted log likelihood, using the option {cmd:expression(exp(predict(lnl)))}, then restore the original data set. The method is slow
+run {cmd:margins} on the predicted likelihood, using the option {cmd:predict(l)}, then restore the original data set. The method is slow
 but intuitive and effective. Examples are below for bivariate probit and multinomial probit models.
 
 {pstd}When non-final-stage equations are uncensored, {cmd:predict}'s {cmdab:red:ucedform} option affects how predictions are made. Suppose we estimate:
@@ -850,7 +851,7 @@ are the best way to introduce how to use {cmd:cmp} (colored text is clickable):
 {phang}. {stata preserve}{p_end}
 {phang}. {stata replace anykids=1}{p_end}
 {phang}. {stata replace fem_work=1}{p_end}
-{phang}. {stata margins, dydx(fem_inc) expression(exp(predict(lnl))) force} // marginal effect on probability of (1,1){p_end}
+{phang}. {stata margins, dydx(fem_inc) predict(l) force} // marginal effect on probability of (1,1){p_end}
 {phang}. {stata restore}{p_end}
 
 {phang}. {stata tetrachoric anykids fem_work}{p_end}
